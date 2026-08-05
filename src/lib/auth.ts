@@ -14,16 +14,16 @@ function sessionKey() {
   return encoder.encode(secret);
 }
 
-export async function verifyAdminCredentials(email: string, password: string) {
-  const configuredEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+export async function verifyAdminCredentials(username: string, password: string) {
+  const configuredUsername = process.env.ADMIN_USERNAME?.trim().toLowerCase();
   const hash = process.env.ADMIN_PASSWORD_HASH;
-  if (!configuredEmail || !hash) return false;
-  if (email.trim().toLowerCase() !== configuredEmail) return false;
+  if (!configuredUsername || !hash) return false;
+  if (username.trim().toLowerCase() !== configuredUsername) return false;
   return bcrypt.compare(password, hash);
 }
 
-export async function createAdminSessionToken(email: string) {
-  return new SignJWT({ role: "admin", email })
+export async function createAdminSessionToken(username: string) {
+  return new SignJWT({ role: "admin", username })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("7d")
@@ -39,8 +39,8 @@ export async function verifyAdminSessionToken(token?: string) {
       issuer: "sthelp",
       audience: "sthelp-admin"
     });
-    if (payload.role !== "admin" || typeof payload.email !== "string") return null;
-    return { email: payload.email };
+    if (payload.role !== "admin" || typeof payload.username !== "string") return null;
+    return { username: payload.username };
   } catch {
     return null;
   }

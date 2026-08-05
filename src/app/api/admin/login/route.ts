@@ -4,10 +4,11 @@ import { apiError } from "@/lib/api";
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json();
-    const valid = await verifyAdminCredentials(String(email || ""), String(password || ""));
-    if (!valid) return apiError("Incorrect email or password.", 401);
-    const token = await createAdminSessionToken(String(email).trim().toLowerCase());
+    const { username, password } = await request.json();
+    const normalizedUsername = String(username || "").trim().toLowerCase();
+    const valid = await verifyAdminCredentials(normalizedUsername, String(password || ""));
+    if (!valid) return apiError("Incorrect username or password.", 401);
+    const token = await createAdminSessionToken(normalizedUsername);
     const response = NextResponse.json({ ok: true });
     response.cookies.set(ADMIN_COOKIE, token, {
       httpOnly: true,
