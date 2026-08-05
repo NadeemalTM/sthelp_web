@@ -1,7 +1,24 @@
 import { NextResponse } from "next/server";
+import { SupabaseConfigurationError } from "@/lib/supabase-server";
 
 export function apiError(message: string, status = 400) {
   return NextResponse.json({ error: message }, { status });
+}
+
+export function apiRouteError(error: unknown, fallback: string, exposeMessage = false) {
+  if (error instanceof SupabaseConfigurationError) {
+    return apiError(error.message, 503);
+  }
+  if (exposeMessage && error instanceof Error) {
+    return apiError(error.message, 500);
+  }
+  return apiError(fallback, 500);
+}
+
+export function logApiError(error: unknown) {
+  if (!(error instanceof SupabaseConfigurationError)) {
+    console.error(error);
+  }
 }
 
 export function requiredText(value: unknown, label: string, max = 5000) {

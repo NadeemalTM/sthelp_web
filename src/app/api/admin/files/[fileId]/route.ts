@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/auth";
-import { apiError } from "@/lib/api";
+import { apiError, apiRouteError, logApiError } from "@/lib/api";
 import { getServiceSupabase } from "@/lib/supabase-server";
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ fileId: string }> }) {
@@ -15,7 +15,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     if (error || !data) throw error || new Error("Unable to create file link.");
     return NextResponse.redirect(data.signedUrl);
   } catch (error) {
-    console.error(error);
-    return apiError("Unable to open file.", 500);
+    logApiError(error);
+    return apiRouteError(error, "Unable to open file.");
   }
 }

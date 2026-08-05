@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/auth";
-import { apiError, optionalText, requiredText } from "@/lib/api";
+import { apiError, apiRouteError, logApiError, optionalText, requiredText } from "@/lib/api";
 import { createClientPin, hashClientPin } from "@/lib/security";
 import { getServiceSupabase } from "@/lib/supabase-server";
 
@@ -14,8 +14,8 @@ export async function GET() {
     if (error) throw error;
     return NextResponse.json({ links: data || [] });
   } catch (error) {
-    console.error(error);
-    return apiError("Unable to load client links.", 500);
+    logApiError(error);
+    return apiRouteError(error, "Unable to load client links.", true);
   }
 }
 
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     const origin = process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin;
     return NextResponse.json({ clientId: data.client_id, pin, url: `${origin.replace(/\/$/, "")}/portal/${data.token}` });
   } catch (error) {
-    console.error(error);
-    return apiError(error instanceof Error ? error.message : "Unable to create client link.", 500);
+    logApiError(error);
+    return apiRouteError(error, "Unable to create client link.", true);
   }
 }

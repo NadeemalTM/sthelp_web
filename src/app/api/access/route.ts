@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { apiError } from "@/lib/api";
+import { apiError, apiRouteError, logApiError } from "@/lib/api";
 import { hashClientPin } from "@/lib/security";
 import { getServiceSupabase } from "@/lib/supabase-server";
 
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ url: `/portal/${link.token}` });
   } catch (error) {
-    console.error(error);
-    return apiError(error instanceof Error ? error.message : "Unable to verify access.", 500);
+    logApiError(error);
+    return apiRouteError(error, "Unable to verify access.", true);
   }
 }

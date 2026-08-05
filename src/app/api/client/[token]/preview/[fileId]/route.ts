@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { apiError } from "@/lib/api";
+import { apiError, apiRouteError, logApiError } from "@/lib/api";
 import { getServiceSupabase } from "@/lib/supabase-server";
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ token: string; fileId: string }> }) {
@@ -18,7 +18,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     response.headers.set("Cache-Control", "private, no-store, max-age=0");
     return response;
   } catch (error) {
-    console.error(error);
-    return apiError("Unable to open preview.", 500);
+    logApiError(error);
+    return apiRouteError(error, "Unable to open preview.");
   }
 }

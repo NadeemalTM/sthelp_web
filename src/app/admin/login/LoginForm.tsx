@@ -19,5 +19,5 @@ export function LoginForm() {
     finally { setLoading(false); }
   }
 
-  return <form className="stack" onSubmit={submit}><div className="field"><label>Username</label><input className="input" type="text" name="username" autoComplete="username" required/></div><div className="field"><label>Password</label><input className="input" type="password" name="password" autoComplete="current-password" required/></div>{error ? <div className="notice notice-error">{error}</div> : null}<button className="btn btn-blue btn-block" disabled={loading}><LogIn size={18}/>{loading ? "Signing in…" : "Sign in"}</button></form>;
+  return <form className="stack" onSubmit={submit}><div className="field"><label htmlFor="admin-username">Username</label><input id="admin-username" className="input" type="text" name="username" autoComplete="username" required/></div><div className="field"><label htmlFor="admin-password">Password</label><input id="admin-password" className="input" type="password" name="password" autoComplete="current-password" required/></div>{error ? <div className="notice notice-error" role="alert">{error}</div> : null}<button className="btn btn-blue btn-block" disabled={loading}><LogIn size={18}/>{loading ? "Signing in…" : "Sign in"}</button></form>;
 }

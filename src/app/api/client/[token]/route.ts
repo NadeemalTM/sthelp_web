@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { apiError, optionalText, publicFile, requiredText } from "@/lib/api";
+import { apiError, apiRouteError, logApiError, optionalText, publicFile, requiredText } from "@/lib/api";
 import { getPublicContent } from "@/lib/data";
 import { getServiceSupabase } from "@/lib/supabase-server";
 
@@ -43,8 +43,8 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       files: (files || []).map(publicFile)
     });
   } catch (error) {
-    console.error(error);
-    return apiError(error instanceof Error ? error.message : "Unable to load portal.", 500);
+    logApiError(error);
+    return apiRouteError(error, "Unable to load portal.", true);
   }
 }
 
@@ -163,7 +163,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     return apiError("Unknown action.");
   } catch (error) {
-    console.error(error);
-    return apiError(error instanceof Error ? error.message : "Unable to process request.", 500);
+    logApiError(error);
+    return apiRouteError(error, "Unable to process request.", true);
   }
 }

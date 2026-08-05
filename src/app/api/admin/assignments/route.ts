@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/auth";
-import { apiError } from "@/lib/api";
+import { apiError, apiRouteError, logApiError } from "@/lib/api";
 import { getServiceSupabase } from "@/lib/supabase-server";
 
 export async function GET() {
@@ -12,7 +12,7 @@ export async function GET() {
     if (error) throw error;
     return NextResponse.json({ assignments: data || [] });
   } catch (error) {
-    console.error(error);
-    return apiError("Unable to load assignments.", 500);
+    logApiError(error);
+    return apiRouteError(error, "Unable to load assignments.", true);
   }
 }

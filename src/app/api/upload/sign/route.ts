@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { apiError } from "@/lib/api";
+import { apiError, apiRouteError, logApiError } from "@/lib/api";
 import { ACCEPTED_SUPPORT_TYPES, FIVE_MB, TWENTY_FIVE_MB } from "@/lib/constants";
 import { requireAdminApi } from "@/lib/auth";
 import { randomPathSegment, safeFileName } from "@/lib/security";
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     if (error || !data) throw error || new Error("Could not create upload permission.");
     return NextResponse.json({ path, uploadToken: data.token });
   } catch (error) {
-    console.error(error);
-    return apiError(error instanceof Error ? error.message : "Unable to prepare upload.", 500);
+    logApiError(error);
+    return apiRouteError(error, "Unable to prepare upload.", true);
   }
 }

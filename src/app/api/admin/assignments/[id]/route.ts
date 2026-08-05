@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/auth";
-import { apiError, optionalText, requiredText } from "@/lib/api";
+import { apiError, apiRouteError, logApiError, optionalText, requiredText } from "@/lib/api";
 import { STATUS_OPTIONS } from "@/lib/constants";
 import { getServiceSupabase } from "@/lib/supabase-server";
 
@@ -28,8 +28,8 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     ]);
     return NextResponse.json({ assignment, link, progress: progress || [], comments: comments || [], files: files || [], settings });
   } catch (error) {
-    console.error(error);
-    return apiError("Unable to load assignment.", 500);
+    logApiError(error);
+    return apiRouteError(error, "Unable to load assignment.", true);
   }
 }
 
@@ -76,8 +76,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
     return NextResponse.json({ assignment: updated });
   } catch (error) {
-    console.error(error);
-    return apiError(error instanceof Error ? error.message : "Unable to update assignment.", 500);
+    logApiError(error);
+    return apiRouteError(error, "Unable to update assignment.", true);
   }
 }
 
@@ -161,7 +161,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     return apiError("Unknown action.");
   } catch (error) {
-    console.error(error);
-    return apiError(error instanceof Error ? error.message : "Unable to perform action.", 500);
+    logApiError(error);
+    return apiRouteError(error, "Unable to perform action.", true);
   }
 }

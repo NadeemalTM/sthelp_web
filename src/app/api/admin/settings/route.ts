@@ -1,15 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/auth";
-import { apiError, requiredText } from "@/lib/api";
+import { apiError, apiRouteError, logApiError, requiredText } from "@/lib/api";
 import { getServiceSupabase } from "@/lib/supabase-server";
 
 export async function GET() {
   const session = await requireAdminApi();
   if (!session) return apiError("Admin login required.", 401);
-  const db = getServiceSupabase();
-  const { data, error } = await db.from("settings").select("*").eq("id", 1).maybeSingle();
-  if (error) return apiError("Unable to load settings.", 500);
-  return NextResponse.json({ settings: data });
+  try {
+    const db = getServiceSupabase();
+    const { data, error } = await db.from("settings").select("*").eq("id", 1).maybeSingle();
+    if (error) throw error;
+    return NextResponse.json({ settings: data });
+  } catch (error) {
+    logApiError(error);
+    return apiRouteError(error, "Unable to load settings.", true);
+  }
 }
 
 export async function PATCH(request: NextRequest) {
@@ -33,7 +38,7 @@ export async function PATCH(request: NextRequest) {
     if (error) throw error;
     return NextResponse.json({ settings: data });
   } catch (error) {
-    console.error(error);
-    return apiError(error instanceof Error ? error.message : "Unable to save settings.", 500);
+    logApiError(error);
+    return apiRouteError(error, "Unable to save settings.", true);
   }
 }

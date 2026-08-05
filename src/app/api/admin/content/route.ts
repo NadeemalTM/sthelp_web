@@ -1,18 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/auth";
-import { apiError, optionalText, requiredText } from "@/lib/api";
+import { apiError, apiRouteError, logApiError, optionalText, requiredText } from "@/lib/api";
 import { getServiceSupabase } from "@/lib/supabase-server";
 
 export async function GET() {
   const session = await requireAdminApi();
   if (!session) return apiError("Admin login required.", 401);
-  const db = getServiceSupabase();
-  const [{ data: portfolio, error: pError }, { data: testimonials, error: tError }] = await Promise.all([
-    db.from("portfolio_items").select("*").order("sort_order").order("created_at", { ascending: false }),
-    db.from("testimonials").select("*").order("created_at", { ascending: false })
-  ]);
-  if (pError || tError) return apiError("Unable to load website content.", 500);
-  return NextResponse.json({ portfolio: portfolio || [], testimonials: testimonials || [] });
+  try {
+    const db = getServiceSupabase();
+    const [{ data: portfolio, error: pError }, { data: testimonials, error: tError }] = await Promise.all([
+      db.from("portfolio_items").select("*").order("sort_order").order("created_at", { ascending: false }),
+      db.from("testimonials").select("*").order("created_at", { ascending: false })
+    ]);
+    if (pError || tError) throw pError || tError;
+    return NextResponse.json({ portfolio: portfolio || [], testimonials: testimonials || [] });
+  } catch (error) {
+    logApiError(error);
+    return apiRouteError(error, "Unable to load website content.", true);
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -67,7 +72,7 @@ export async function POST(request: NextRequest) {
 
     return apiError("Unknown content action.");
   } catch (error) {
-    console.error(error);
-    return apiError(error instanceof Error ? error.message : "Unable to update content.", 500);
+    logApiError(error);
+    return apiRouteError(error, "Unable to update content.", true);
   }
 }

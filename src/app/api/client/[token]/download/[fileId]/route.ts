@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { apiError } from "@/lib/api";
+import { apiError, apiRouteError, logApiError } from "@/lib/api";
 import { getServiceSupabase } from "@/lib/supabase-server";
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ token: string; fileId: string }> }) {
@@ -17,7 +17,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     if (error || !data) throw error || new Error("Unable to create download.");
     return NextResponse.redirect(data.signedUrl);
   } catch (error) {
-    console.error(error);
-    return apiError("Unable to download this file.", 500);
+    logApiError(error);
+    return apiRouteError(error, "Unable to download this file.");
   }
 }
