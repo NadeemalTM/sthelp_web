@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="160" viewBox="0 0 512 160" role="img" aria-label="StHelp logo">
+  <rect width="512" height="160" rx="34" fill="#0b1f3a"/>
+  <path d="M43 104c20-46 40-69 61-69 19 0 32 17 47 51 10 22 19 32 29 32 12 0 25-14 39-42" fill="none" stroke="#f6b73c" stroke-width="17" stroke-linecap="round"/>
+  <circle cx="104" cy="36" r="12" fill="#f6b73c"/>
+  <text x="238" y="86" font-family="Arial, Helvetica, sans-serif" font-size="58" font-weight="800" fill="#ffffff">StHelp</text>
+  <text x="242" y="121" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="600" letter-spacing="2" fill="#b9c7da">ASSIGNMENT SUPPORT</text>
+</svg>
