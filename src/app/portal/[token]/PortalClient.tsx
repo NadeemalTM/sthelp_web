@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import {
   AlertCircle,
   Banknote,
@@ -64,7 +65,7 @@ export function PortalClient({ token }: { token: string }) {
 
   return (
     <main className="page-shell">
-      <header className="portal-header"><div className="container portal-header-inner"><a className="brand" href="/"><span className="brand-mark">St</span><span className="brand-copy">StHelp<small>Private client portal</small></span></a><div className="small">Client ID: <strong>{data.link.client_id}</strong></div></div></header>
+      <header className="portal-header"><div className="container portal-header-inner"><a className="brand" href="/"><Image className="brand-logo" src="/sthelp-mark.png" alt="" width={48} height={48}/><span className="brand-copy">StHelp<small>Private client portal</small></span></a><div className="small">Client ID: <strong>{data.link.client_id}</strong></div></div></header>
       <div className="container portal-main">
         {notice ? <div className={`notice notice-${notice.type}`}>{notice.text}</div> : null}
         {!data.assignment ? (

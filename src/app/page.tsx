@@ -19,7 +19,7 @@ export default async function HomePage() {
             <h1>One link for your entire assignment journey.</h1>
             <p className="lead">Submit your requirements, upload guidance documents, follow live progress, request revisions, confirm payment and securely receive your final files.</p>
             <div className="hero-actions">
-              <Link className="btn btn-primary" href="/access">Place / track assignment <ArrowRight size={18}/></Link>
+              <Link className="btn btn-primary" href="/access" prefetch={false}>Place / track assignment <ArrowRight size={18}/></Link>
               {whatsapp ? <a className="btn btn-outline" href={`https://wa.me/${whatsapp}`} target="_blank" rel="noreferrer">Contact on WhatsApp</a> : null}
             </div>
             <div className="trust-row">
@@ -69,7 +69,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="cta-band"><div className="container cta-inner"><div><h2 style={{fontSize:"1.8rem"}}>Already received your StHelp client details?</h2><p>Open the link sent through WhatsApp or use your client ID and PIN.</p></div><Link className="btn btn-primary" href="/access">Open client portal <ArrowRight size={18}/></Link></div></section>
+      <section className="cta-band"><div className="container cta-inner"><div><h2 style={{fontSize:"1.8rem"}}>Already received your StHelp client details?</h2><p>Open the link sent through WhatsApp or use your client ID and PIN.</p></div><Link className="btn btn-primary" href="/access" prefetch={false}>Open client portal <ArrowRight size={18}/></Link></div></section>
       <footer className="site-footer"><div className="container footer-inner"><div><strong style={{color:"#fff"}}>{settings.business_name}</strong><div className="small">Assignment guidance, technical support and learning assistance.</div></div><div className="small">© {new Date().getFullYear()} StHelp · {settings.support_notice}</div></div></footer>
     </main>
   );
