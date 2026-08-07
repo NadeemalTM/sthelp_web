@@ -9,6 +9,28 @@ const previewTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"
 const paymentTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 const portfolioImageTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
+async function ensureBucket(
+  db: ReturnType<typeof getServiceSupabase>,
+  bucket: string,
+  options: { public: boolean; fileSizeLimit: number; allowedMimeTypes: string[] }
+) {
+  const { data, error } = await db.storage.getBucket(bucket);
+  if (data) return data;
+
+  const notFound = error && ("status" in error ? (error as { status?: number }).status === 404 : false);
+  if (!error || notFound) {
+    const { data: created, error: createError } = await db.storage.createBucket(bucket, {
+      public: options.public,
+      fileSizeLimit: options.fileSizeLimit,
+      allowedMimeTypes: options.allowedMimeTypes
+    });
+    if (createError || !created) throw createError || new Error(`Could not create storage bucket "${bucket}".`);
+    return created;
+  }
+
+  throw error;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -62,6 +84,12 @@ export async function POST(request: NextRequest) {
 
     if (size > limit) return apiError(`File must be ${Math.round(limit / 1024 / 1024)} MB or smaller.`);
     if (!allowed.includes(mimeType) && mimeType !== "application/octet-stream") return apiError("This file type is not allowed.");
+
+    await ensureBucket(db, bucket, {
+      public: bucket === "portfolio-images",
+      fileSizeLimit: limit,
+      allowedMimeTypes: allowed
+    });
 
     const { data, error } = await db.storage.from(bucket).createSignedUploadUrl(path, { upsert: false });
     if (error || !data) throw error || new Error("Could not create upload permission.");
