@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Eye, EyeOff, Plus, Save, Trash2 } from "lucide-react";
+import { uploadPublicImage } from "@/lib/upload-client";
 
 type Notice = { type: "success" | "error" | "info"; text: string };
 
@@ -17,6 +18,7 @@ export function ContentManager({ supabaseConfigured }: { supabaseConfigured: boo
   const [loading, setLoading] = useState(supabaseConfigured);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
+  const [portfolioImage, setPortfolioImage] = useState<File | null>(null);
 
   const load = useCallback(async () => {
     if (!supabaseConfigured) {
@@ -94,6 +96,11 @@ export function ContentManager({ supabaseConfigured }: { supabaseConfigured: boo
     const formElement = event.currentTarget;
     const form = new FormData(formElement);
     const saved = await run(async () => {
+      let imageUrl: string | null = null;
+      if (portfolioImage) {
+        const uploaded = await uploadPublicImage({ file: portfolioImage });
+        imageUrl = uploaded.imageUrl;
+      }
       const response = await fetch("/api/admin/content", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -103,14 +110,17 @@ export function ContentManager({ supabaseConfigured }: { supabaseConfigured: boo
           title: form.get("title"),
           category: form.get("category"),
           description: form.get("description"),
-          imageUrl: form.get("imageUrl"),
+          imageUrl,
           sortOrder: Number(form.get("sortOrder")),
           isPublished: true
         })
       });
       await responseJson(response);
     }, "Portfolio item added.");
-    if (saved) formElement.reset();
+    if (saved) {
+      formElement.reset();
+      setPortfolioImage(null);
+    }
   }
 
   async function createTestimonial(event: React.FormEvent<HTMLFormElement>) {
@@ -188,13 +198,13 @@ export function ContentManager({ supabaseConfigured }: { supabaseConfigured: boo
 
     <section className="admin-grid">
       <div className="panel">
-        <div className="panel-title"><div><h3>Add previous work</h3><p className="muted small">Use an image URL or leave it empty for the default visual.</p></div><Plus/></div>
+        <div className="panel-title"><div><h3>Add previous work</h3><p className="muted small">Upload an image file or leave it empty for the default visual.</p></div><Plus/></div>
         <form className="stack" onSubmit={createPortfolio}>
           <div className="form-grid">
             <div className="field"><label htmlFor="portfolio-title">Title</label><input id="portfolio-title" className="input" name="title" autoComplete="off" required/></div>
             <div className="field"><label htmlFor="portfolio-category">Category</label><input id="portfolio-category" className="input" name="category" autoComplete="off" required/></div>
             <div className="field full"><label htmlFor="portfolio-description">Description</label><textarea id="portfolio-description" className="textarea" name="description" required/></div>
-            <div className="field full"><label htmlFor="portfolio-image">Image URL</label><input id="portfolio-image" className="input" type="url" name="imageUrl" inputMode="url" autoComplete="url" placeholder="https://..."/></div>
+            <div className="field full"><label htmlFor="portfolio-image">Upload image</label><input id="portfolio-image" className="input" type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(e) => setPortfolioImage(e.target.files?.[0] || null)}/><span className="help">Accepted: JPG, PNG, WebP or GIF. The file is uploaded to public storage and linked automatically.</span></div>
             <div className="field"><label htmlFor="portfolio-order">Sort order</label><input id="portfolio-order" className="input" type="number" name="sortOrder" defaultValue="0"/></div>
           </div>
           <button className="btn btn-primary" disabled={busy}>Add work item</button>

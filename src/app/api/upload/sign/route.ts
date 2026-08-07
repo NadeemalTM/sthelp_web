@@ -7,6 +7,7 @@ import { getServiceSupabase } from "@/lib/supabase-server";
 
 const previewTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 const paymentTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
+const portfolioImageTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
 export async function POST(request: NextRequest) {
   try {
@@ -47,6 +48,12 @@ export async function POST(request: NextRequest) {
       limit = TWENTY_FIVE_MB;
       allowed = scope === "admin-preview" ? previewTypes : ACCEPTED_SUPPORT_TYPES;
       path = `assignments/${assignment.id}/${scope === "admin-preview" ? "preview" : "final"}/${randomPathSegment()}-${name}`;
+    } else if (scope === "portfolio-image") {
+      const session = await requireAdminApi();
+      if (!session) return apiError("Admin login required.", 401);
+      limit = FIVE_MB;
+      allowed = portfolioImageTypes;
+      path = `portfolio/${randomPathSegment()}-${name}`;
     } else {
       return apiError("Unknown upload scope.");
     }
