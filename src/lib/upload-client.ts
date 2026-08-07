@@ -65,14 +65,14 @@ export async function uploadPublicImage({ file }: { file: File }) {
 
   const supabase = getBrowserSupabase();
   const { error } = await supabase.storage
-    .from("portfolio-images")
+    .from(payload.bucket || "portfolio-images")
     .uploadToSignedUrl(payload.path, payload.uploadToken, file, {
       contentType: file.type || "application/octet-stream"
     });
 
   if (error) throw new Error(error.message);
 
-  const { data } = supabase.storage.from("portfolio-images").getPublicUrl(payload.path);
+  const { data } = supabase.storage.from(payload.bucket || "portfolio-images").getPublicUrl(payload.path);
 
   return {
     imageUrl: data.publicUrl,

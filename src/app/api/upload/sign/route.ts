@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
     if (!Number.isFinite(size) || size <= 0) return apiError("The selected file is empty.");
 
     let path = "";
+    let bucket = "assignment-files";
     let limit = FIVE_MB;
     let allowed = ACCEPTED_SUPPORT_TYPES;
 
@@ -53,6 +54,7 @@ export async function POST(request: NextRequest) {
       if (!session) return apiError("Admin login required.", 401);
       limit = FIVE_MB;
       allowed = portfolioImageTypes;
+      bucket = "portfolio-images";
       path = `portfolio/${randomPathSegment()}-${name}`;
     } else {
       return apiError("Unknown upload scope.");
@@ -61,9 +63,9 @@ export async function POST(request: NextRequest) {
     if (size > limit) return apiError(`File must be ${Math.round(limit / 1024 / 1024)} MB or smaller.`);
     if (!allowed.includes(mimeType) && mimeType !== "application/octet-stream") return apiError("This file type is not allowed.");
 
-    const { data, error } = await db.storage.from("assignment-files").createSignedUploadUrl(path, { upsert: false });
+    const { data, error } = await db.storage.from(bucket).createSignedUploadUrl(path, { upsert: false });
     if (error || !data) throw error || new Error("Could not create upload permission.");
-    return NextResponse.json({ path, uploadToken: data.token });
+    return NextResponse.json({ bucket, path, uploadToken: data.token });
   } catch (error) {
     logApiError(error);
     return apiRouteError(error, "Unable to prepare upload.", true);
