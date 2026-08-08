@@ -17,7 +17,7 @@ export default async function HomePage() {
           <div>
             <span className="eyebrow" style={{color:"#ffc95d"}}>Clear support from start to finish</span>
             <h1>One link for your entire assignment journey.</h1>
-            <p className="lead">Submit your requirements, upload guidance documents, follow live progress, request revisions, confirm payment and securely receive your final files.</p>
+            <p className="lead">Submit your requirements, upload one or more guidance documents if needed, follow live progress, request revisions, confirm payment and securely receive your final files.</p>
             <div className="hero-actions">
               <Link className="btn btn-primary" href="/access" prefetch={false}>Place / track assignment <ArrowRight size={18}/></Link>
               {whatsapp ? <a className="btn btn-outline" href={`https://wa.me/${whatsapp}`} target="_blank" rel="noreferrer">Contact on WhatsApp</a> : null}
@@ -30,7 +30,7 @@ export default async function HomePage() {
           </div>
           <div className="hero-panel">
             {[
-              ["1", "Submit requirements", "Complete the guided form and attach one support document up to 5 MB."],
+              ["1", "Submit requirements", "Complete the guided form and optionally attach one or more support documents up to 5 MB each."],
               ["2", "Track the work", "See acceptance, progress percentage, updates and messages on the same link."],
               ["3", "Review protected preview", "View a watermarked preview and request changes before payment verification."],
               ["4", "Download final files", "Submit the payment reference; downloads unlock after admin verification."]
@@ -43,7 +43,7 @@ export default async function HomePage() {
         <div className="container">
           <div className="section-title center"><span className="eyebrow">How it helps</span><h2>Less confusion. Better communication.</h2><p className="muted">Everything remains connected to one secure client portal instead of being scattered across messages.</p></div>
           <div className="feature-grid">
-            <div className="card feature-card"><span className="icon-box"><UploadCloud/></span><h3>Guided submission</h3><p className="muted">Collect university, module, deadline, group details, instructions and a supporting file.</p></div>
+            <div className="card feature-card"><span className="icon-box"><UploadCloud/></span><h3>Guided submission</h3><p className="muted">Collect university, module, deadline, group details, instructions and any supporting files you want to share.</p></div>
             <div className="card feature-card"><span className="icon-box"><MessageSquareText/></span><h3>Revision comments</h3><p className="muted">Clients and admin can leave short, time-stamped comments throughout the work.</p></div>
             <div className="card feature-card"><span className="icon-box"><FileLock2/></span><h3>Controlled delivery</h3><p className="muted">Original files remain locked until payment is checked and downloads are enabled.</p></div>
             <div className="card feature-card"><span className="icon-box"><Smartphone/></span><h3>Built for phones</h3><p className="muted">Forms, dashboard cards, previews and admin controls adapt to mobile screens.</p></div>

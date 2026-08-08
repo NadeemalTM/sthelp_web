@@ -79,24 +79,24 @@ export function PortalClient({ token }: { token: string }) {
 }
 
 function SubmissionView({ token, data, busy, setBusy, onDone, setNotice }: any) {
-  const [supportFile, setSupportFile] = useState<File | null>(null);
+  const [supportFiles, setSupportFiles] = useState<File[]>([]);
   const [isGroup, setIsGroup] = useState(false);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    if (supportFile && supportFile.size > FIVE_MB) {
-      setNotice({ type: "error", text: "The support document must be 5 MB or smaller." });
+    const oversizedFile = supportFiles.find((file) => file.size > FIVE_MB);
+    if (oversizedFile) {
+      setNotice({ type: "error", text: "Each support document must be 5 MB or smaller." });
       return;
     }
 
     setBusy(true);
     setNotice(null);
     try {
-      let supportFileMeta = null;
-      if (supportFile) {
-        supportFileMeta = await uploadPrivateFile({ file: supportFile, scope: "client-support", token });
-      }
+      const supportFilesMeta = await Promise.all(
+        supportFiles.map((file) => uploadPrivateFile({ file, scope: "client-support", token }))
+      );
       const response = await fetch(`/api/client/${token}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -116,7 +116,7 @@ function SubmissionView({ token, data, busy, setBusy, onDone, setNotice }: any) 
           groupMembers: isGroup ? Number(form.get("groupMembers")) : null,
           description: form.get("description"),
           specialInstructions: form.get("specialInstructions"),
-          supportFile: supportFileMeta
+          supportFiles: supportFilesMeta
         })
       });
       const payload = await response.json();
@@ -153,7 +153,7 @@ function SubmissionView({ token, data, busy, setBusy, onDone, setNotice }: any) 
         {isGroup ? <div className="field"><label>Number of group members *</label><input className="input" name="groupMembers" type="number" min="2" max="100" required /></div> : null}
         <div className="field full"><label>Task description and requirements *</label><textarea className="textarea" name="description" placeholder="Explain the task, required sections, technologies, word count, marking criteria and expected output." required /></div>
         <div className="field full"><label>Special instructions</label><textarea className="textarea" name="specialInstructions" placeholder="Referencing style, formatting rules, lecturer instructions, preferred software, etc." /></div>
-        <div className="field full"><label>Support / guidance document (one file, maximum 5 MB)</label><input className="input" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.txt,.csv,.jpg,.jpeg,.png,.webp" onChange={(e)=>setSupportFile(e.target.files?.[0] || null)} /><span className="help">The file is uploaded directly to private storage. Accepted: documents, spreadsheets, slides, ZIP, text and images.</span></div>
+        <div className="field full"><label>Support / guidance documents (optional, up to 5 MB each)</label><input className="input" type="file" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.txt,.csv,.jpg,.jpeg,.png,.webp" onChange={(e)=>setSupportFiles(Array.from(e.target.files || []))} /><span className="help">You can upload one or more files, or skip this entirely. Accepted: documents, spreadsheets, slides, ZIP, text and images.</span></div>
         <label className="checkbox-row field full"><input type="checkbox" required/><span>I confirm that the details are correct and that I am responsible for following my university’s academic-integrity and submission rules.</span></label>
       </div>
       <div style={{marginTop:22}}><button className="btn btn-primary" disabled={busy}>{busy ? <><Loader2 className="spinner" size={18}/> Submitting…</> : <><UploadCloud size={18}/> Submit requirements</>}</button></div>

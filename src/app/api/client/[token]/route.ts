@@ -87,9 +87,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       }).select("id").single();
       if (error || !created) throw error || new Error("Unable to create assignment.");
 
-      const file = body.supportFile;
-      if (file) {
-        const path = String(file.storagePath || "");
+      const supportFiles = Array.isArray(body.supportFiles)
+        ? body.supportFiles
+        : body.supportFile
+          ? [body.supportFile]
+          : [];
+      for (const file of supportFiles) {
+        const path = String(file?.storagePath || "");
         if (!path.startsWith(`clients/${link.id}/support/`)) return apiError("Invalid support file path.");
         const { error: fileError } = await db.from("assignment_files").insert({
           assignment_id: created.id,
