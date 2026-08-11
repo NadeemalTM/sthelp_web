@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/auth";
-import { apiError, apiRouteError, logApiError, optionalText, requiredText } from "@/lib/api";
+import { apiError, apiRouteError, logApiError, requiredText } from "@/lib/api";
 import { getServiceSupabase } from "@/lib/supabase-server";
 
 export async function GET() {
@@ -29,10 +29,10 @@ export async function PATCH(request: NextRequest) {
       account_name: requiredText(body.accountName, "Account name", 150),
       account_number: requiredText(body.accountNumber, "Account number", 100),
       bank_branch: requiredText(body.bankBranch, "Bank branch", 150),
-      bank_code: optionalText(body.bankCode, 100),
-      branch_code: optionalText(body.branchCode, 100),
-      swift_code: optionalText(body.swiftCode, 100),
-      account_type: optionalText(body.accountType, 100),
+      bank_name_2: requiredText(body.bankName2, "Second bank name", 150),
+      account_name_2: requiredText(body.accountName2, "Second account name", 150),
+      account_number_2: requiredText(body.accountNumber2, "Second account number", 100),
+      bank_branch_2: requiredText(body.bankBranch2, "Second bank branch", 150),
       payment_note: requiredText(body.paymentNote, "Payment note", 1000),
       currency: requiredText(body.currency, "Currency", 10).toUpperCase(),
       support_notice: requiredText(body.supportNotice, "Support notice", 2000)
