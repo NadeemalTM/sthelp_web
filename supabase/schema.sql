@@ -117,6 +117,20 @@ create table if not exists public.testimonials (
   updated_at timestamptz not null default now()
 );
 
+-- One-time public review URLs for customers who do not have a client portal.
+create table if not exists public.feedback_links (
+  id uuid primary key default gen_random_uuid(),
+  token uuid not null unique default gen_random_uuid(),
+  customer_name text,
+  university text,
+  expires_at timestamptz,
+  submitted_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+alter table public.testimonials
+  add column if not exists feedback_link_id uuid unique references public.feedback_links(id) on delete set null;
+
 create index if not exists idx_client_links_token on public.client_links(token);
 create index if not exists idx_client_links_client_id on public.client_links(client_id);
 create unique index if not exists idx_client_links_id_pin on public.client_links(client_id, access_pin_hash);
@@ -124,6 +138,7 @@ create index if not exists idx_assignments_status on public.assignments(status);
 create index if not exists idx_assignment_files_assignment on public.assignment_files(assignment_id);
 create index if not exists idx_progress_assignment on public.progress_updates(assignment_id, created_at);
 create index if not exists idx_comments_assignment on public.comments(assignment_id, created_at);
+create index if not exists idx_feedback_links_token on public.feedback_links(token);
 
 create or replace function public.set_updated_at()
 returns trigger language plpgsql as $$
@@ -154,6 +169,7 @@ alter table public.progress_updates enable row level security;
 alter table public.comments enable row level security;
 alter table public.portfolio_items enable row level security;
 alter table public.testimonials enable row level security;
+alter table public.feedback_links enable row level security;
 
 insert into public.settings (id) values (1) on conflict (id) do nothing;
 
