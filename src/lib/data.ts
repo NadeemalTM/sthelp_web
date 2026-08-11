@@ -48,6 +48,10 @@ export const demoSettings = {
   account_name: "StHelp",
   account_number: "0000000000",
   bank_branch: "Your Branch",
+  bank_code: "",
+  branch_code: "",
+  swift_code: "",
+  account_type: "",
   payment_note: "Use your client ID as the payment reference.",
   currency: "LKR",
   support_notice:

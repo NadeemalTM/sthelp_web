@@ -82,6 +82,10 @@ export function ContentManager({ supabaseConfigured }: { supabaseConfigured: boo
           accountName: form.get("accountName"),
           accountNumber: form.get("accountNumber"),
           bankBranch: form.get("bankBranch"),
+          bankCode: form.get("bankCode"),
+          branchCode: form.get("branchCode"),
+          swiftCode: form.get("swiftCode"),
+          accountType: form.get("accountType"),
           paymentNote: form.get("paymentNote"),
           currency: form.get("currency"),
           supportNotice: form.get("supportNotice")
@@ -189,6 +193,10 @@ export function ContentManager({ supabaseConfigured }: { supabaseConfigured: boo
         <div className="field"><label htmlFor="account-name">Account name</label><input id="account-name" className="input" name="accountName" autoComplete="name" defaultValue={settings.account_name} required/></div>
         <div className="field"><label htmlFor="account-number">Account number</label><input id="account-number" className="input" name="accountNumber" inputMode="numeric" autoComplete="off" defaultValue={settings.account_number} required/></div>
         <div className="field"><label htmlFor="bank-branch">Branch</label><input id="bank-branch" className="input" name="bankBranch" autoComplete="off" defaultValue={settings.bank_branch} required/></div>
+        <div className="field"><label htmlFor="bank-code">Bank code</label><input id="bank-code" className="input" name="bankCode" autoComplete="off" defaultValue={settings.bank_code || ""} placeholder="Optional"/></div>
+        <div className="field"><label htmlFor="branch-code">Branch code</label><input id="branch-code" className="input" name="branchCode" autoComplete="off" defaultValue={settings.branch_code || ""} placeholder="Optional"/></div>
+        <div className="field"><label htmlFor="swift-code">SWIFT / BIC</label><input id="swift-code" className="input" name="swiftCode" autoComplete="off" defaultValue={settings.swift_code || ""} placeholder="Optional"/></div>
+        <div className="field"><label htmlFor="account-type">Account type</label><input id="account-type" className="input" name="accountType" autoComplete="off" defaultValue={settings.account_type || ""} placeholder="Optional"/></div>
         <div className="field"><label htmlFor="currency">Currency</label><input id="currency" className="input" name="currency" autoComplete="off" defaultValue={settings.currency} required/></div>
         <div className="field full"><label htmlFor="payment-note">Payment note</label><textarea id="payment-note" className="textarea" name="paymentNote" defaultValue={settings.payment_note} required/></div>
         <div className="field full"><label htmlFor="support-notice">Academic support notice</label><textarea id="support-notice" className="textarea" name="supportNotice" defaultValue={settings.support_notice} required/></div>
