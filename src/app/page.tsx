@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, CheckCircle2, Clock3, FileLock2, MessageSquareText, ShieldCheck, Smartphone, UploadCloud } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getPublicContent } from "@/lib/data";
+import { publicSiteUrl } from "@/lib/site-url";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,7 @@ const journey = [
 export default async function HomePage() {
   const { settings, portfolio, testimonials } = await getPublicContent();
   const whatsapp = String(settings.whatsapp_number || "").replace(/\D/g, "");
-  const siteUrl = (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "");
+  const siteUrl = publicSiteUrl();
 
   return <main className="page-shell home-page">
     <SiteHeader whatsapp={whatsapp} />
@@ -24,8 +25,8 @@ export default async function HomePage() {
       <div className="hero-orb hero-orb-two" />
       <div className="container studio-grid">
         <div className="studio-copy">
-          <div className="availability"><span className="availability-dot" /> A clearer way to request academic support</div>
-          <h1>Make progress<br />feel <em>possible.</em></h1>
+          <div className="availability"><span className="availability-dot" /> Assignment support for students in Sri Lanka</div>
+          <h1>Assignment support<br />that feels <em>possible.</em></h1>
           <p className="studio-lead">StHelp gives your assignment support one calm, private home — from the first brief to the final delivery.</p>
           <div className="hero-actions"><Link className="btn btn-coral" href="/place-assignment">Start a request <ArrowRight size={18} /></Link><Link className="text-action" href="/access" prefetch={false}>Open your portal <span>↗</span></Link></div>
           <div className="hero-proof"><span><CheckCircle2 size={16} /> Private by default</span><span><Smartphone size={16} /> Made for mobile</span><span><Clock3 size={16} /> Updates in one place</span></div>

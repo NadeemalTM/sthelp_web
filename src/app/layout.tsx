@@ -1,27 +1,28 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { publicSiteUrl } from "@/lib/site-url";
 
 export const metadata: Metadata = {
   title: {
-    default: "StHelp Assignment Support",
+    default: "Assignment Support in Sri Lanka",
     template: "%s | StHelp"
   },
-  description: "Submit requirements, track progress, review work, confirm payment and securely receive final files.",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
+  description: "StHelp offers online assignment support, research guidance, software project support and data-analysis help for students in Sri Lanka.",
+  metadataBase: new URL(publicSiteUrl()),
   alternates: { canonical: "/" },
-  keywords: ["assignment support", "academic support", "research guidance", "software development support", "data analysis support", "assignment tracking"],
+  keywords: ["assignment support Sri Lanka", "assignment help Sri Lanka", "academic support Sri Lanka", "research guidance", "software project support", "data analysis support", "assignment tracking"],
   authors: [{ name: "StHelp" }],
   robots: { index: true, follow: true },
   openGraph: {
-    title: "StHelp Assignment Support",
-    description: "A clear assignment support workflow from submission to final delivery.",
+    title: "Assignment Support in Sri Lanka | StHelp",
+    description: "Online academic support, research guidance, software project support and private assignment tracking.",
     url: "/",
     siteName: "StHelp",
     locale: "en_US",
     type: "website",
-    images: [{ url: "/og.svg", alt: "StHelp Assignment Support" }]
+    images: [{ url: "/og.svg", alt: "StHelp Assignment Support in Sri Lanka" }]
   },
-  twitter: { card: "summary_large_image", title: "StHelp Assignment Support", description: "A clear assignment support workflow from submission to final delivery.", images: ["/og.svg"] }
+  twitter: { card: "summary_large_image", title: "Assignment Support in Sri Lanka | StHelp", description: "Online academic support, research guidance and private assignment tracking.", images: ["/og.svg"] }
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

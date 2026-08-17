@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiError, apiRouteError, logApiError, optionalText } from "@/lib/api";
 import { requireAdminApi } from "@/lib/auth";
 import { getServiceSupabase } from "@/lib/supabase-server";
+import { publicSiteUrl } from "@/lib/site-url";
 
 export async function GET() {
   const session = await requireAdminApi();
@@ -35,8 +36,7 @@ export async function POST(request: NextRequest) {
       university: optionalText(body.university, 250)
     }).select("id, token").single();
     if (error || !data) throw error || new Error("Unable to create feedback link.");
-    const origin = process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin;
-    return NextResponse.json({ url: `${origin.replace(/\/$/, "")}/feedback/${data.token}` });
+    return NextResponse.json({ url: `${publicSiteUrl()}/feedback/${data.token}` });
   } catch (error) {
     logApiError(error);
     return apiRouteError(error, "Unable to create feedback link.", true);

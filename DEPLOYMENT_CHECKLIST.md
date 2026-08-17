@@ -6,10 +6,10 @@
 - [ ] Add all environment variables
 - [ ] Generate a strong bcrypt admin password hash
 - [ ] Use two different random application secrets
-- [ ] Set the real production URL in `NEXT_PUBLIC_APP_URL`
+- [ ] Set `NEXT_PUBLIC_APP_URL` to `https://www.sthelp.edu.lk` in Vercel Production
 - [ ] Confirm `/robots.txt` and `/sitemap.xml` load on the production domain
 - [ ] Verify the production domain in Google Search Console and submit `/sitemap.xml`
-- [ ] Request Google indexing for `/` and `/place-assignment`
+- [ ] Request Google indexing for `/`, `/assignment-support` and `/place-assignment`
 - [ ] Update WhatsApp and bank details in admin settings
 - [ ] Remove or replace sample portfolio/testimonials
 - [ ] Create a test client link

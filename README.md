@@ -141,21 +141,21 @@ Open:
 1. Put this project in a GitHub repository.
 2. Import the repository into Vercel.
 3. Add every variable from `.env.example` in **Project Settings → Environment Variables**.
-4. Change `NEXT_PUBLIC_APP_URL` to your real Vercel/custom-domain URL.
+4. Set `NEXT_PUBLIC_APP_URL` to `https://www.sthelp.edu.lk` (the preferred production URL).
 5. Deploy.
 
 Next.js is detected automatically. The project requires Node.js 22 or newer.
 
 ## 8. Google SEO after deployment
 
-The public home page and `/place-assignment` page include page metadata, canonical URLs, structured service data, a sitemap and robots rules. Private client portals, admin pages, access pages and API routes are excluded from crawling.
+The public home page, `/assignment-support` and `/place-assignment` include page metadata, canonical URLs, structured service data, a sitemap and robots rules. Private client portals, admin pages, access pages and API routes are excluded from crawling. The application standardises public URLs on `https://www.sthelp.edu.lk`, matching the live permanent redirect from the apex domain.
 
 After the production deployment:
 
-1. Confirm `NEXT_PUBLIC_APP_URL` is your final `https://` custom-domain URL (not a Vercel preview URL).
-2. Open `https://YOUR-DOMAIN/robots.txt` and `https://YOUR-DOMAIN/sitemap.xml` to confirm they use the same domain.
-3. Add the domain to Google Search Console, complete ownership verification, then submit `https://YOUR-DOMAIN/sitemap.xml`.
-4. Use Search Console’s URL Inspection tool to request indexing for `/` and `/place-assignment`.
+1. Confirm `NEXT_PUBLIC_APP_URL` is exactly `https://www.sthelp.edu.lk` in Vercel Production (not a preview URL or the non-`www` host).
+2. Open `https://www.sthelp.edu.lk/robots.txt` and `https://www.sthelp.edu.lk/sitemap.xml` to confirm they use the `www` domain.
+3. Add `https://www.sthelp.edu.lk/` as a URL-prefix property in Google Search Console, complete ownership verification, then submit `https://www.sthelp.edu.lk/sitemap.xml`.
+4. Use Search Console’s URL Inspection tool to request indexing for `/`, `/assignment-support` and `/place-assignment`.
 5. Replace demo portfolio items and testimonials with real, accurate content. Useful, original service pages and genuine reviews help search visibility over time; metadata alone cannot guarantee rankings.
 
 ### Vercel plan note
