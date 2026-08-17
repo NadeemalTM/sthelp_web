@@ -3,9 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiError, apiRouteError, logApiError } from "@/lib/api";
 import { createClientPin, hashClientPin } from "@/lib/security";
 import { getServiceSupabase } from "@/lib/supabase-server";
+import { isRateLimited } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
+    if (isRateLimited(request, "public-assignment", 8, 15 * 60 * 1000)) return apiError("Too many requests. Please try again in a few minutes.", 429);
     const body = await request.json();
     // A hidden field catches ordinary form bots without affecting real visitors.
     if (String(body.website || "").trim()) return apiError("Unable to start this request.");

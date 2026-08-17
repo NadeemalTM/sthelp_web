@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiError, apiRouteError, logApiError, optionalText, publicFile, requiredText } from "@/lib/api";
 import { getPublicContent } from "@/lib/data";
 import { getServiceSupabase } from "@/lib/supabase-server";
+import { recordAssignmentActivity } from "@/lib/assignment-activity";
 
 async function findLink(token: string) {
   const db = getServiceSupabase();
@@ -26,10 +27,11 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     const safeLink = { client_id: link.client_id, client_name: link.client_name, phone: link.phone, status: link.status };
     if (!assignment) return NextResponse.json({ link: safeLink, assignment: null, settings, portfolio, testimonials });
 
-    const [{ data: progress }, { data: comments }, { data: files }] = await Promise.all([
+    const [{ data: progress }, { data: comments }, { data: files }, { data: activity }] = await Promise.all([
       db.from("progress_updates").select("*").eq("assignment_id", assignment.id).order("created_at", { ascending: false }),
       db.from("comments").select("*").eq("assignment_id", assignment.id).order("created_at", { ascending: true }),
-      db.from("assignment_files").select("*").eq("assignment_id", assignment.id).order("created_at", { ascending: true })
+      db.from("assignment_files").select("*").eq("assignment_id", assignment.id).order("created_at", { ascending: true }),
+      db.from("assignment_activity").select("*").eq("assignment_id", assignment.id).in("visibility", ["client", "both"]).order("created_at", { ascending: false }).limit(20)
     ]);
 
     return NextResponse.json({
@@ -40,6 +42,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       testimonials,
       progress: progress || [],
       comments: comments || [],
+      activity: activity || [],
       files: (files || []).map(publicFile)
     });
   } catch (error) {
@@ -106,6 +109,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         if (fileError) throw fileError;
       }
       await db.from("client_links").update({ status: "submitted", client_name: body.studentName, phone: body.contactNumber }).eq("id", link.id);
+      await recordAssignmentActivity(db, { assignmentId: created.id, actor: "client", visibility: "admin", eventType: "request_submitted", summary: "A new assignment request was submitted." });
       return NextResponse.json({ ok: true });
     }
 
@@ -115,6 +119,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       const message = requiredText(body.message, "Comment", 1000);
       const { error } = await db.from("comments").insert({ assignment_id: assignment.id, author: "client", message });
       if (error) throw error;
+      await recordAssignmentActivity(db, { assignmentId: assignment.id, actor: "client", visibility: "admin", eventType: "client_message", summary: "The client sent a new message." });
       return NextResponse.json({ ok: true });
     }
 
@@ -143,6 +148,21 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         });
         if (fileError) throw fileError;
       }
+      await recordAssignmentActivity(db, { assignmentId: assignment.id, actor: "client", visibility: "admin", eventType: "payment_submitted", summary: "The client submitted payment details for verification." });
+      return NextResponse.json({ ok: true });
+    }
+
+    if (action === "quoteResponse") {
+      if (assignment.quote_status !== "sent") return apiError("There is no pending quote to respond to.", 409);
+      const accepted = Boolean(body.accepted);
+      const now = new Date().toISOString();
+      const update = accepted
+        ? { quote_status: "accepted", quote_responded_at: now, status: "accepted", accepted_at: assignment.accepted_at || now }
+        : { quote_status: "declined", quote_responded_at: now };
+      const { error } = await db.from("assignments").update(update).eq("id", assignment.id);
+      if (error) throw error;
+      if (accepted) await db.from("client_links").update({ status: "accepted" }).eq("id", link.id);
+      await recordAssignmentActivity(db, { assignmentId: assignment.id, actor: "client", visibility: "both", eventType: accepted ? "quote_accepted" : "quote_declined", summary: accepted ? "The client accepted the quote." : "The client declined the quote." });
       return NextResponse.json({ ok: true });
     }
 
@@ -162,6 +182,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       });
       if (error) throw error;
       await db.from("assignments").update({ feedback_submitted: true }).eq("id", assignment.id);
+      await recordAssignmentActivity(db, { assignmentId: assignment.id, actor: "client", visibility: "admin", eventType: "feedback_submitted", summary: "The client submitted feedback for review." });
       return NextResponse.json({ ok: true });
     }
 

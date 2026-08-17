@@ -1,6 +1,7 @@
 # Deployment Checklist
 
 - [ ] Run `supabase/schema.sql` successfully
+- [ ] For an existing Supabase project, run the updated `supabase/schema.sql` again to add quote and activity tables
 - [ ] Confirm `assignment-files` is private
 - [ ] Add all environment variables
 - [ ] Generate a strong bcrypt admin password hash
@@ -15,6 +16,7 @@
 - [ ] Submit a test public request at `/place-assignment` and confirm it opens a private portal
 - [ ] Submit a test assignment and supporting file
 - [ ] Accept it and publish a progress update
+- [ ] Set an owner/priority, send a quote and confirm quote approval works in the client portal
 - [ ] Upload a watermarked preview and a final file
 - [ ] Verify that the final file is locked before payment
 - [ ] Submit and verify a test payment reference

@@ -3,6 +3,7 @@ import { requireAdminApi } from "@/lib/auth";
 import { apiError, apiRouteError, logApiError, optionalText, requiredText } from "@/lib/api";
 import { STATUS_OPTIONS } from "@/lib/constants";
 import { getServiceSupabase } from "@/lib/supabase-server";
+import { recordAssignmentActivity } from "@/lib/assignment-activity";
 
 async function assignmentExists(id: string) {
   const db = getServiceSupabase();
@@ -19,14 +20,15 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     const db = getServiceSupabase();
     const assignment = await assignmentExists(id);
     if (!assignment) return apiError("Assignment not found.", 404);
-    const [{ data: link }, { data: progress }, { data: comments }, { data: files }, { data: settings }] = await Promise.all([
+    const [{ data: link }, { data: progress }, { data: comments }, { data: files }, { data: settings }, { data: activity }] = await Promise.all([
       db.from("client_links").select("id, token, client_id, client_name, phone, status, created_at").eq("id", assignment.client_link_id).maybeSingle(),
       db.from("progress_updates").select("*").eq("assignment_id", id).order("created_at", { ascending: false }),
       db.from("comments").select("*").eq("assignment_id", id).order("created_at", { ascending: true }),
       db.from("assignment_files").select("id, kind, original_name, mime_type, size_bytes, created_at").eq("assignment_id", id).order("created_at", { ascending: true }),
-      db.from("settings").select("*").eq("id", 1).maybeSingle()
+      db.from("settings").select("*").eq("id", 1).maybeSingle(),
+      db.from("assignment_activity").select("*").eq("assignment_id", id).order("created_at", { ascending: false }).limit(100)
     ]);
-    return NextResponse.json({ assignment, link, progress: progress || [], comments: comments || [], files: files || [], settings });
+    return NextResponse.json({ assignment, link, progress: progress || [], comments: comments || [], files: files || [], settings, activity: activity || [] });
   } catch (error) {
     logApiError(error);
     return apiRouteError(error, "Unable to load assignment.", true);
@@ -67,6 +69,21 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (body.currency !== undefined) update.currency = requiredText(body.currency, "Currency", 10).toUpperCase();
     if (body.finalMessage !== undefined) update.final_message = optionalText(body.finalMessage, 3000);
     if (body.downloadUnlocked !== undefined) update.download_unlocked = Boolean(body.downloadUnlocked);
+    if (body.priority !== undefined) {
+      const priority = String(body.priority);
+      if (!["low", "normal", "high", "urgent"].includes(priority)) return apiError("Invalid priority.");
+      update.priority = priority;
+    }
+    if (body.assignedTo !== undefined) update.assigned_to = optionalText(body.assignedTo, 120);
+    if (body.quoteNote !== undefined) update.quote_note = optionalText(body.quoteNote, 1500);
+
+    if (body.quoteAction === "send") {
+      const quotedAmount = update.quoted_amount === undefined ? assignment.quoted_amount : update.quoted_amount;
+      if (quotedAmount === null || quotedAmount === undefined || !Number.isFinite(Number(quotedAmount))) return apiError("Enter a quote amount before sending it.");
+      update.quote_status = "sent";
+      update.quote_sent_at = new Date().toISOString();
+      update.quote_responded_at = null;
+    } else if (body.quoteAction !== undefined) return apiError("Invalid quote action.");
 
     const { data: updated, error } = await db.from("assignments").update(update).eq("id", id).select("*").single();
     if (error) throw error;
@@ -74,6 +91,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       const linkStatus = update.status === "cancelled" || update.status === "delivered" ? "closed" : update.status === "submitted" ? "submitted" : "accepted";
       await db.from("client_links").update({ status: linkStatus }).eq("id", assignment.client_link_id);
     }
+    if (update.status && update.status !== assignment.status) await recordAssignmentActivity(db, { assignmentId: id, actor: "admin", visibility: "client", eventType: "status_changed", summary: `Assignment status changed to ${String(update.status).replace(/_/g, " ")}.` });
+    if (body.quoteAction === "send") await recordAssignmentActivity(db, { assignmentId: id, actor: "admin", visibility: "client", eventType: "quote_sent", summary: "A quote is ready for your review in the client portal." });
+    if (update.assigned_to !== undefined || update.priority !== undefined) await recordAssignmentActivity(db, { assignmentId: id, actor: "admin", visibility: "admin", eventType: "assignment_updated", summary: "Priority or assignment owner was updated." });
     return NextResponse.json({ assignment: updated });
   } catch (error) {
     logApiError(error);
@@ -103,6 +123,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       if (error) throw error;
       await db.from("assignments").update({ progress, status }).eq("id", id);
       if (status !== "submitted") await db.from("client_links").update({ status: "accepted" }).eq("id", assignment.client_link_id);
+      await recordAssignmentActivity(db, { assignmentId: id, actor: "admin", visibility: "client", eventType: "progress_update", summary: `Progress update: ${title}` });
       return NextResponse.json({ ok: true });
     }
 
@@ -110,6 +131,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       const message = requiredText(body.message, "Comment", 1000);
       const { error } = await db.from("comments").insert({ assignment_id: id, author: "admin", message });
       if (error) throw error;
+      await recordAssignmentActivity(db, { assignmentId: id, actor: "admin", visibility: "client", eventType: "admin_message", summary: "StHelp sent you a new message." });
       return NextResponse.json({ ok: true });
     }
 
@@ -129,6 +151,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         size_bytes: Number(file.sizeBytes)
       });
       if (error) throw error;
+      await recordAssignmentActivity(db, { assignmentId: id, actor: "admin", visibility: kind === "preview" ? "client" : "admin", eventType: "file_uploaded", summary: `${kind === "preview" ? "A protected preview" : "A final file"} was uploaded.` });
       return NextResponse.json({ ok: true });
     }
 
@@ -139,6 +162,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         download_unlocked: body.unlock !== false
       }).eq("id", id);
       if (error) throw error;
+      await recordAssignmentActivity(db, { assignmentId: id, actor: "admin", visibility: "client", eventType: "payment_verified", summary: "Your payment was verified. Final downloads are now available." });
       return NextResponse.json({ ok: true });
     }
 
@@ -146,6 +170,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       const { error } = await db.from("assignments").update({ payment_status: "rejected", download_unlocked: false }).eq("id", id);
       if (error) throw error;
       if (body.message) await db.from("comments").insert({ assignment_id: id, author: "admin", message: requiredText(body.message, "Message", 1000) });
+      await recordAssignmentActivity(db, { assignmentId: id, actor: "admin", visibility: "client", eventType: "payment_rejected", summary: "Payment details need your attention. Please check the message in your portal." });
       return NextResponse.json({ ok: true });
     }
 
@@ -156,6 +181,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       await db.storage.from("assignment-files").remove([file.storage_path]);
       const { error } = await db.from("assignment_files").delete().eq("id", fileId).eq("assignment_id", id);
       if (error) throw error;
+      await recordAssignmentActivity(db, { assignmentId: id, actor: "admin", visibility: "admin", eventType: "file_deleted", summary: "A stored assignment file was deleted." });
       return NextResponse.json({ ok: true });
     }
 

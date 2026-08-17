@@ -121,6 +121,25 @@ create table if not exists public.testimonials (
   updated_at timestamptz not null default now()
 );
 
+-- Assignment operations: quotes, ownership, priority and a permanent activity history.
+alter table public.assignments
+  add column if not exists priority text not null default 'normal' check (priority in ('low', 'normal', 'high', 'urgent')),
+  add column if not exists assigned_to text,
+  add column if not exists quote_status text not null default 'draft' check (quote_status in ('draft', 'sent', 'accepted', 'declined')),
+  add column if not exists quote_note text,
+  add column if not exists quote_sent_at timestamptz,
+  add column if not exists quote_responded_at timestamptz;
+
+create table if not exists public.assignment_activity (
+  id uuid primary key default gen_random_uuid(),
+  assignment_id uuid not null references public.assignments(id) on delete cascade,
+  actor text not null check (actor in ('client', 'admin', 'system')),
+  visibility text not null default 'admin' check (visibility in ('admin', 'client', 'both')),
+  event_type text not null,
+  summary text not null check (char_length(summary) between 1 and 1000),
+  created_at timestamptz not null default now()
+);
+
 -- One-time public review URLs for customers who do not have a client portal.
 create table if not exists public.feedback_links (
   id uuid primary key default gen_random_uuid(),
@@ -143,6 +162,7 @@ create index if not exists idx_assignment_files_assignment on public.assignment_
 create index if not exists idx_progress_assignment on public.progress_updates(assignment_id, created_at);
 create index if not exists idx_comments_assignment on public.comments(assignment_id, created_at);
 create index if not exists idx_feedback_links_token on public.feedback_links(token);
+create index if not exists idx_assignment_activity_assignment on public.assignment_activity(assignment_id, created_at desc);
 
 create or replace function public.set_updated_at()
 returns trigger language plpgsql as $$
@@ -174,6 +194,7 @@ alter table public.comments enable row level security;
 alter table public.portfolio_items enable row level security;
 alter table public.testimonials enable row level security;
 alter table public.feedback_links enable row level security;
+alter table public.assignment_activity enable row level security;
 
 insert into public.settings (id) values (1) on conflict (id) do nothing;
 

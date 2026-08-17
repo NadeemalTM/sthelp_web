@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiError, apiRouteError, logApiError } from "@/lib/api";
 import { hashClientPin } from "@/lib/security";
 import { getServiceSupabase } from "@/lib/supabase-server";
+import { isRateLimited } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
+    if (isRateLimited(request, "client-access", 10, 15 * 60 * 1000)) return apiError("Too many sign-in attempts. Please try again in a few minutes.", 429);
     const { clientId, pin } = await request.json();
     const id = String(clientId || "").trim();
     const enteredPin = String(pin || "").trim();

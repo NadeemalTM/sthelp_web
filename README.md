@@ -8,6 +8,9 @@ A mobile-responsive client and admin website for managing assignment-support req
 - Public assignment-request page that creates a private client portal automatically
 - Admin-generated client ID, 6-digit PIN and private direct link
 - Client assignment request form
+- Client quote approval inside the private portal
+- Priority and assignment-owner controls, activity history and dashboard search/filtering
+- Public privacy, support-terms and academic-integrity policy centre
 - One supporting document per request, limited to 5 MB
 - Assignment acceptance, quoted price and live progress percentage
 - Time-stamped progress updates
@@ -70,6 +73,10 @@ PIN_HASH_SECRET=ANOTHER_LONG_RANDOM_SECRET
 ```
 
 Never expose `SUPABASE_SECRET_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `ADMIN_PASSWORD_HASH`, `ADMIN_SESSION_SECRET` or `PIN_HASH_SECRET` in browser code. The legacy `NEXT_PUBLIC_SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` names remain supported for existing deployments.
+
+### Existing deployments: apply the database upgrade
+
+The current `supabase/schema.sql` is safe to run again in Supabase SQL Editor. It adds quote approval, priority/owner fields and assignment-activity history with `if not exists` migrations. Run it before deploying this version, otherwise the new admin and portal features cannot load their activity data.
 
 ## 3. Generate the admin password hash
 
@@ -182,10 +189,10 @@ The site is written as an academic-support, tutoring, editing, research-guidance
 
 ## Production recommendations
 
-Before handling a large number of paying clients, consider adding:
+The application includes a lightweight per-instance rate limit on public requests and sign-in routes. Before handling a large number of paying clients, also consider adding:
 
-- Rate limiting for login, PIN and upload-signing routes
-- Email/WhatsApp notifications through an approved provider
+- A shared edge-backed rate-limit store and CAPTCHA/Turnstile protection
+- Email/WhatsApp notifications through an approved provider (provider credentials are required)
 - Automated storage cleanup for abandoned uploads
 - Admin audit logs
 - Malware scanning for uploaded files

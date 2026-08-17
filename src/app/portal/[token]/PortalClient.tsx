@@ -201,6 +201,10 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
     setFeedback("");
   }
 
+  async function respondToQuote(accepted:boolean) {
+    await run(()=>post("quoteResponse", {accepted}), accepted ? "Quote accepted. StHelp will begin the next stage." : "Quote declined. You can leave a comment if you would like to discuss it.");
+  }
+
   return <div className="portal-grid">
     <div className="stack">
       <section className="panel">
@@ -208,6 +212,8 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
         <div className="progress-head"><span>Overall progress</span><span>{assignment.progress}%</span></div><div className="progress-track"><div className="progress-fill" style={{width:`${assignment.progress}%`}}/></div>
         {!accepted ? <div className="notice notice-info" style={{marginTop:18}}>Your request has been received. Progress and payment information will appear after admin accepts the task.</div> : null}
       </section>
+
+      {assignment.quote_status === "sent" ? <section className="panel quote-panel"><div className="panel-title"><div><span className="eyebrow">Quote ready</span><h3 style={{marginTop:6}}>Review your support quote</h3></div><Banknote/></div><div className="quote-amount">{formatMoney(assignment.quoted_amount, assignment.currency || data.settings.currency)}</div>{assignment.quote_note ? <p className="muted" style={{whiteSpace:"pre-wrap"}}>{assignment.quote_note}</p> : <p className="muted small">Please review the quote and confirm whether you would like StHelp to proceed.</p>}<div className="quote-actions"><button className="btn btn-primary" disabled={busy} onClick={()=>respondToQuote(true)}><CheckCircle2 size={17}/> Accept quote</button><button className="btn btn-soft" disabled={busy} onClick={()=>respondToQuote(false)}>Decline</button></div></section> : null}
 
       <section className="panel"><div className="panel-title"><h3>Progress updates</h3><RefreshCw size={18}/></div>{data.progress.length ? <div className="timeline">{data.progress.map((item:any)=><div className="timeline-item" key={item.id}><span className="timeline-dot"/><div><strong>{item.title}</strong><p className="muted small">{item.details}</p><span className="tiny muted">{item.progress}% · {formatDate(item.created_at)}</span></div></div>)}</div> : <div className="lock-box"><Clock3/><h3>Waiting for the first update</h3><p className="muted small">Updates will be added here as the work progresses.</p></div>}</section>
 
@@ -224,6 +230,7 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
     </div>
 
     <aside className="stack">
+      {data.activity?.length ? <section className="panel"><div className="panel-title"><h3>Latest updates</h3><Clock3 size={18}/></div><div className="activity-list">{data.activity.slice(0,5).map((item:any)=><div className="activity-item" key={item.id}><span className="activity-dot"/><div><p>{item.summary}</p><time>{formatDate(item.created_at)}</time></div></div>)}</div></section> : null}
       <section className="panel"><div className="panel-title"><h3>Assignment details</h3><FileText/></div><div className="detail-list"><div className="detail-row"><span>University</span><strong>{assignment.university}</strong></div><div className="detail-row"><span>Module</span><strong>{assignment.module_name || "—"}</strong></div><div className="detail-row"><span>Deadline</span><strong>{formatDate(assignment.deadline)}</strong></div><div className="detail-row"><span>Group</span><strong>{assignment.is_group ? `Yes · ${assignment.group_members} members` : "No"}</strong></div><div className="detail-row"><span>Submitted</span><strong>{formatDate(assignment.created_at)}</strong></div>{support.map((file:any)=><div className="detail-row" key={file.id}><span>Support file</span><strong>{file.original_name}</strong></div>)}</div></section>
 
       {accepted ? <section className="bank-box"><div className="panel-title"><h3>Payment details</h3><Banknote/></div><div className="amount">{formatMoney(assignment.quoted_amount, assignment.currency || data.settings.currency)}</div><div className="stack" style={{gap:14}}><div><div className="detail-list"><div className="detail-row"><span>Bank</span><strong>{data.settings.bank_name}</strong></div><div className="detail-row"><span>Account name</span><strong>{data.settings.account_name}</strong></div><div className="detail-row"><span>Account number</span><strong>{data.settings.account_number}</strong></div><div className="detail-row"><span>Branch</span><strong>{data.settings.bank_branch}</strong></div></div></div>{data.settings.bank_name_2 || data.settings.account_name_2 || data.settings.account_number_2 || data.settings.bank_branch_2 ? <div style={{paddingTop:14, borderTop:"1px solid rgba(255,255,255,.12)"}}><strong style={{display:"block", marginBottom:10, color:"#fff"}}>Second payment account</strong><div className="detail-list"><div className="detail-row"><span>Bank</span><strong>{data.settings.bank_name_2}</strong></div><div className="detail-row"><span>Account name</span><strong>{data.settings.account_name_2}</strong></div><div className="detail-row"><span>Account number</span><strong>{data.settings.account_number_2}</strong></div><div className="detail-row"><span>Branch</span><strong>{data.settings.bank_branch_2}</strong></div></div></div> : null}</div><p className="small" style={{color:"#c6d6e8", marginTop:14}}>{data.settings.payment_note}</p></section> : null}

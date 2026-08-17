@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ADMIN_COOKIE, createAdminSessionToken, verifyAdminCredentials } from "@/lib/auth";
 import { apiError } from "@/lib/api";
+import { isRateLimited } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
+    if (isRateLimited(request, "admin-login", 8, 15 * 60 * 1000)) return apiError("Too many sign-in attempts. Please try again in a few minutes.", 429);
     const { username, password } = await request.json();
     const normalizedUsername = String(username || "").trim().toLowerCase();
     const valid = await verifyAdminCredentials(normalizedUsername, String(password || ""));
