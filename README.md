@@ -5,6 +5,7 @@ A mobile-responsive client and admin website for managing assignment-support req
 ## What is included
 
 - Public landing page with previous work and customer feedback
+- Public assignment-request page that creates a private client portal automatically
 - Admin-generated client ID, 6-digit PIN and private direct link
 - Client assignment request form
 - One supporting document per request, limited to 5 MB
@@ -137,6 +138,18 @@ Open:
 5. Deploy.
 
 Next.js is detected automatically. The project requires Node.js 22 or newer.
+
+## 8. Google SEO after deployment
+
+The public home page and `/place-assignment` page include page metadata, canonical URLs, structured service data, a sitemap and robots rules. Private client portals, admin pages, access pages and API routes are excluded from crawling.
+
+After the production deployment:
+
+1. Confirm `NEXT_PUBLIC_APP_URL` is your final `https://` custom-domain URL (not a Vercel preview URL).
+2. Open `https://YOUR-DOMAIN/robots.txt` and `https://YOUR-DOMAIN/sitemap.xml` to confirm they use the same domain.
+3. Add the domain to Google Search Console, complete ownership verification, then submit `https://YOUR-DOMAIN/sitemap.xml`.
+4. Use Search Console’s URL Inspection tool to request indexing for `/` and `/place-assignment`.
+5. Replace demo portfolio items and testimonials with real, accurate content. Useful, original service pages and genuine reviews help search visibility over time; metadata alone cannot guarantee rankings.
 
 ### Vercel plan note
 

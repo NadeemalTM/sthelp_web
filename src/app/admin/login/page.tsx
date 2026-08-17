@@ -3,7 +3,7 @@ import Image from "next/image";
 import { getAdminSession } from "@/lib/auth";
 import { LoginForm } from "./LoginForm";
 
-export const metadata = { title: "Admin login" };
+export const metadata = { title: "Admin login", robots: { index: false, follow: false } };
 
 export default async function AdminLoginPage() {
   const session = await getAdminSession();

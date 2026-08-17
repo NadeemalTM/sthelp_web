@@ -11,6 +11,7 @@ export function SiteHeader({ whatsapp }: { whatsapp?: string }) {
           <span className="brand-copy">StHelp<small>Assignment Support</small></span>
         </Link>
         <nav className="nav-links" aria-label="Main navigation">
+          <Link href="/place-assignment">Place assignment</Link>
           <Link href="/#work">Previous work</Link>
           <Link href="/#feedback">Feedback</Link>
           <Link href="/access" prefetch={false}>Track assignment</Link>

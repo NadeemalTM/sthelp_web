@@ -6,9 +6,13 @@
 - [ ] Generate a strong bcrypt admin password hash
 - [ ] Use two different random application secrets
 - [ ] Set the real production URL in `NEXT_PUBLIC_APP_URL`
+- [ ] Confirm `/robots.txt` and `/sitemap.xml` load on the production domain
+- [ ] Verify the production domain in Google Search Console and submit `/sitemap.xml`
+- [ ] Request Google indexing for `/` and `/place-assignment`
 - [ ] Update WhatsApp and bank details in admin settings
 - [ ] Remove or replace sample portfolio/testimonials
 - [ ] Create a test client link
+- [ ] Submit a test public request at `/place-assignment` and confirm it opens a private portal
 - [ ] Submit a test assignment and supporting file
 - [ ] Accept it and publish a progress update
 - [ ] Upload a watermarked preview and a final file
