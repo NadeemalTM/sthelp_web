@@ -32,22 +32,28 @@ export function PortalClient({ token }: { token: string }) {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ type: "success" | "error" | "info"; text: string } | null>(null);
+  const [lastSynced, setLastSynced] = useState<Date | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (quiet = false) => {
+    if (!quiet) setLoading(true);
     try {
       const response = await fetch(`/api/client/${token}`, { cache: "no-store" });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || "This client link is unavailable.");
       setData(payload);
+      setLastSynced(new Date());
     } catch (error) {
       setNotice({ type: "error", text: error instanceof Error ? error.message : "Unable to load the portal." });
     } finally {
-      setLoading(false);
+      if (!quiet) setLoading(false);
     }
   }, [token]);
 
   useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    const refresh = window.setInterval(() => { void load(true); }, 45_000);
+    return () => window.clearInterval(refresh);
+  }, [load]);
 
   async function post(action: string, body: Record<string, unknown>) {
     const response = await fetch(`/api/client/${token}`, {
@@ -65,7 +71,7 @@ export function PortalClient({ token }: { token: string }) {
 
   return (
     <main className="page-shell">
-      <header className="portal-header"><div className="container portal-header-inner"><a className="brand" href="/"><Image className="brand-logo" src="/sthelp-mark.png" alt="" width={48} height={48}/><span className="brand-copy">StHelp<small>Private client portal</small></span></a><div className="small">Client ID: <strong>{data.link.client_id}</strong></div></div></header>
+      <header className="portal-header"><div className="container portal-header-inner"><a className="brand" href="/"><Image className="brand-logo" src="/sthelp-mark.png" alt="" width={48} height={48}/><span className="brand-copy">StHelp<small>Private client portal</small></span></a><div className="portal-sync"><span><i/> Live workspace</span><button type="button" onClick={() => void load(true)} disabled={busy} title="Refresh assignment updates"><RefreshCw size={15}/></button><small>Client ID: <strong>{data.link.client_id}</strong>{lastSynced ? ` · updated ${lastSynced.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : ""}</small></div></div></header>
       <div className="container portal-main">
         {notice ? <div className={`notice notice-${notice.type}`}>{notice.text}</div> : null}
         {!data.assignment ? (
@@ -207,10 +213,11 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
 
   return <div className="portal-grid">
     <div className="stack">
-      <section className="panel">
-        <div className="panel-title"><div><span className="eyebrow">{assignment.assignment_title}</span><h2 style={{fontSize:"1.85rem", marginTop:6}}>Assignment dashboard</h2></div><span className={`status-badge ${assignment.status === "delivered" ? "success" : ""}`}><Clock3 size={14}/>{statusLabel(assignment.status)}</span></div>
-        <div className="progress-head"><span>Overall progress</span><span>{assignment.progress}%</span></div><div className="progress-track"><div className="progress-fill" style={{width:`${assignment.progress}%`}}/></div>
-        {!accepted ? <div className="notice notice-info" style={{marginTop:18}}>Your request has been received. Progress and payment information will appear after admin accepts the task.</div> : null}
+      <section className="client-command-card">
+        <div className="client-command-top"><div><span className="eyebrow">Your workspace</span><h1>{assignment.assignment_title}</h1><p>{assignment.module_name || assignment.service_type} · Due {formatDate(assignment.deadline)}</p></div><span className={`status-badge ${assignment.status === "delivered" ? "success" : ""}`}><Clock3 size={14}/>{statusLabel(assignment.status)}</span></div>
+        <div className="client-progress-row"><div><div className="progress-head"><span>Assignment progress</span><strong>{assignment.progress}%</strong></div><div className="progress-track"><div className="progress-fill" style={{width:`${assignment.progress}%`}}/></div></div><div className="client-next-step"><span>What happens next</span><strong>{nextStep(assignment)}</strong></div></div>
+        <StageRail assignment={assignment}/>
+        {!accepted ? <div className="notice notice-info">Your request is safely received. Your quote, progress and payment details will appear as soon as the task is accepted.</div> : null}
       </section>
 
       {assignment.quote_status === "sent" ? <section className="panel quote-panel"><div className="panel-title"><div><span className="eyebrow">Quote ready</span><h3 style={{marginTop:6}}>Review your support quote</h3></div><Banknote/></div><div className="quote-amount">{formatMoney(assignment.quoted_amount, assignment.currency || data.settings.currency)}</div>{assignment.quote_note ? <p className="muted" style={{whiteSpace:"pre-wrap"}}>{assignment.quote_note}</p> : <p className="muted small">Please review the quote and confirm whether you would like StHelp to proceed.</p>}<div className="quote-actions"><button className="btn btn-primary" disabled={busy} onClick={()=>respondToQuote(true)}><CheckCircle2 size={17}/> Accept quote</button><button className="btn btn-soft" disabled={busy} onClick={()=>respondToQuote(false)}>Decline</button></div></section> : null}
@@ -240,6 +247,27 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
       {assignment.payment_status === "verified" ? <section className="panel"><div className="lock-box" style={{background:"#ebf8f2"}}><CheckCircle2 color="#15805d" size={34}/><h3>Payment verified</h3><p className="muted small">Final downloads are {assignment.download_unlocked ? "unlocked" : "waiting for admin release"}.</p></div></section> : null}
     </aside>
   </div>;
+}
+
+function nextStep(assignment: any) {
+  if (assignment.quote_status === "sent") return "Review your quote";
+  if (assignment.status === "submitted") return "We are reviewing your request";
+  if (assignment.payment_status === "submitted") return "We are verifying your payment";
+  if (assignment.payment_status !== "verified" && assignment.quoted_amount) return "Send your payment reference";
+  if (assignment.status === "client_review" || assignment.status === "revision") return "Review the update and leave comments";
+  if (assignment.status === "delivered") return assignment.download_unlocked ? "Your final files are ready" : "Final files are being released";
+  return "Check the latest project update";
+}
+
+function StageRail({ assignment }: { assignment: any }) {
+  const stages = [
+    { label: "Request", done: true },
+    { label: "Quote", done: assignment.quote_status === "accepted" || assignment.status !== "submitted", current: assignment.quote_status === "sent" },
+    { label: "In progress", done: ["client_review", "revision", "completed", "delivered"].includes(assignment.status), current: ["accepted", "in_progress"].includes(assignment.status) },
+    { label: "Review", done: ["completed", "delivered"].includes(assignment.status), current: ["client_review", "revision"].includes(assignment.status) },
+    { label: "Delivered", done: assignment.status === "delivered", current: assignment.status === "completed" }
+  ];
+  return <div className="stage-rail" aria-label="Assignment workflow">{stages.map((stage, index) => <div className={`stage ${stage.done ? "done" : ""} ${stage.current ? "current" : ""}`} key={stage.label}><span>{stage.done ? <CheckCircle2 size={14}/> : index + 1}</span><small>{stage.label}</small></div>)}</div>;
 }
 
 function Preview({ file, token }: { file:any; token:string }) {
