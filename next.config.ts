@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  outputFileTracingIncludes: {
+    "/pdf.worker.mjs": ["./node_modules/pdfjs-dist/build/pdf.worker.min.mjs"]
+  },
   experimental: {
     useTypeScriptCli: false
   },

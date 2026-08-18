@@ -225,7 +225,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     if (action === "feedback") {
-      if (!assignment.download_unlocked) return apiError("Feedback becomes available after final delivery.", 403);
+      if (assignment.payment_status !== "verified" || !assignment.download_unlocked) return apiError("Feedback becomes available after verified payment and final delivery.", 403);
       if (assignment.feedback_submitted) return apiError("Feedback has already been submitted.", 409);
       const rating = Number(body.rating);
       if (!Number.isInteger(rating) || rating < 1 || rating > 5) return apiError("Choose a rating from 1 to 5.");

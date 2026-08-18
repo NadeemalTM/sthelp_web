@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/auth";
 import { apiError, apiRouteError, logApiError, optionalText, requiredText } from "@/lib/api";
 import { STATUS_OPTIONS } from "@/lib/constants";
+import { storeProtectedPreview } from "@/lib/preview-watermark";
 import { getServiceSupabase } from "@/lib/supabase-server";
 import { recordAssignmentActivity } from "@/lib/assignment-activity";
 
@@ -68,7 +69,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
     if (body.currency !== undefined) update.currency = requiredText(body.currency, "Currency", 10).toUpperCase();
     if (body.finalMessage !== undefined) update.final_message = optionalText(body.finalMessage, 3000);
-    if (body.downloadUnlocked !== undefined) update.download_unlocked = Boolean(body.downloadUnlocked);
+    if (body.downloadUnlocked !== undefined) {
+      const requestedUnlock = Boolean(body.downloadUnlocked);
+      if (requestedUnlock && assignment.payment_status !== "verified") return apiError("Verify the payment before unlocking final downloads.", 409);
+      update.download_unlocked = requestedUnlock;
+    }
     if (body.priority !== undefined) {
       const priority = String(body.priority);
       if (!["low", "normal", "high", "urgent"].includes(priority)) return apiError("Invalid priority.");
@@ -142,27 +147,42 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       const path = String(file?.storagePath || "");
       const expected = `assignments/${id}/${kind}/`;
       if (!path.startsWith(expected)) return apiError("Invalid uploaded file path.");
+      let registeredFile = {
+        storagePath: path,
+        mimeType: requiredText(file.mimeType, "File type", 150),
+        sizeBytes: Number(file.sizeBytes)
+      };
+      if (kind === "preview") {
+        const { data: link } = await db.from("client_links").select("client_id").eq("id", assignment.client_link_id).maybeSingle();
+        registeredFile = await storeProtectedPreview(db, registeredFile, String(link?.client_id || "CLIENT"));
+      }
       const { error } = await db.from("assignment_files").insert({
         assignment_id: id,
         kind,
-        storage_path: path,
+        storage_path: registeredFile.storagePath,
         original_name: requiredText(file.originalName, "File name", 255),
-        mime_type: requiredText(file.mimeType, "File type", 150),
-        size_bytes: Number(file.sizeBytes)
+        mime_type: registeredFile.mimeType,
+        size_bytes: registeredFile.sizeBytes
       });
-      if (error) throw error;
+      if (error) {
+        if (kind === "preview" && registeredFile.storagePath !== path) await db.storage.from("assignment-files").remove([registeredFile.storagePath]);
+        throw error;
+      }
+      if (kind === "preview" && registeredFile.storagePath !== path) await db.storage.from("assignment-files").remove([path]);
       await recordAssignmentActivity(db, { assignmentId: id, actor: "admin", visibility: kind === "preview" ? "client" : "admin", eventType: "file_uploaded", summary: `${kind === "preview" ? "A protected preview" : "A final file"} was uploaded.` });
       return NextResponse.json({ ok: true });
     }
 
     if (action === "verifyPayment") {
+      if (!assignment.payment_reference) return apiError("The client must submit a payment reference before verification.", 409);
+      const unlock = body.unlock !== false;
       const { error } = await db.from("assignments").update({
         payment_status: "verified",
         payment_verified_at: new Date().toISOString(),
-        download_unlocked: body.unlock !== false
+        download_unlocked: unlock
       }).eq("id", id);
       if (error) throw error;
-      await recordAssignmentActivity(db, { assignmentId: id, actor: "admin", visibility: "client", eventType: "payment_verified", summary: "Your payment was verified. Final downloads are now available." });
+      await recordAssignmentActivity(db, { assignmentId: id, actor: "admin", visibility: "client", eventType: "payment_verified", summary: unlock ? "Your payment was verified. Final downloads are now available." : "Your payment was verified. Final files are awaiting release." });
       return NextResponse.json({ ok: true });
     }
 

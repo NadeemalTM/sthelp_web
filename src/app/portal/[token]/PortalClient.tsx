@@ -1,11 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import {
   AlertCircle,
   Banknote,
-  CalendarDays,
   CheckCircle2,
   Clock3,
   Download,
@@ -15,7 +14,6 @@ import {
   Loader2,
   LockKeyhole,
   MessageSquareText,
-  Maximize2,
   Pencil,
   RefreshCw,
   Save,
@@ -174,6 +172,8 @@ function SubmissionView({ token, data, busy, setBusy, onDone, setNotice }: any) 
 function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: any) {
   const assignment = data.assignment;
   const accepted = !["submitted", "cancelled"].includes(assignment.status);
+  const reviewPreviewAvailable = ["client_review", "revision", "completed", "delivered"].includes(assignment.status);
+  const canDownloadFinals = assignment.payment_status === "verified" && assignment.download_unlocked;
   const canEditDetails = !["completed", "delivered", "cancelled"].includes(assignment.status);
   const previews = data.files.filter((f:any)=>f.kind === "preview");
   const finals = data.files.filter((f:any)=>f.kind === "final");
@@ -255,11 +255,11 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
 
       <section className="panel"><div className="panel-title"><h3>Progress updates</h3><RefreshCw size={18}/></div>{data.progress.length ? <div className="timeline">{data.progress.map((item:any)=><div className="timeline-item" key={item.id}><span className="timeline-dot"/><div><strong>{item.title}</strong><p className="muted small">{item.details}</p><span className="tiny muted">{item.progress}% · {formatDate(item.created_at)}</span></div></div>)}</div> : <div className="lock-box"><Clock3/><h3>Waiting for the first update</h3><p className="muted small">Updates will be added here as the work progresses.</p></div>}</section>
 
-      {accepted && (previews.length || finals.length) ? <section className="panel"><div className="panel-title"><div><h3>Output preview and files</h3><p className="muted small">The protected preview is for checking and revision comments.</p></div><FileLock2/></div>
-        {previews.map((file:any)=><Preview key={file.id} file={file} token={token}/>) }
-        {!previews.length && finals.length && !assignment.download_unlocked ? <div className="lock-box"><LockKeyhole size={30}/><h3>Final output is ready</h3><p className="muted">A separate preview has not been uploaded. Ask admin to add a watermarked PDF or image preview.</p></div> : null}
-        <div style={{marginTop:18}}>{finals.map((file:any)=><div className="file-row" key={file.id}><div className="file-name"><strong>{file.original_name}</strong><span className="tiny muted">Final deliverable</span></div>{assignment.download_unlocked ? <a className="btn btn-blue btn-sm" href={`/api/client/${token}/download/${file.id}`}><Download size={15}/> Download</a> : <span className="status-badge warning"><LockKeyhole size={14}/> Locked</span>}</div>)}</div>
-        {!assignment.download_unlocked && finals.length ? <div className="notice notice-info"><ShieldCheck size={16} style={{verticalAlign:"middle", marginRight:6}}/>Downloads become available only after payment is verified by admin.</div> : null}
+      {accepted && ((reviewPreviewAvailable && previews.length) || finals.length) ? <section className="panel"><div className="panel-title"><div><h3>Revision preview and final files</h3><p className="muted small">The preview is permanently watermarked and provided only for checking and revision requests.</p></div><FileLock2/></div>
+        {reviewPreviewAvailable ? previews.map((file:any)=><Preview key={file.id} file={file} token={token}/>) : null}
+        {reviewPreviewAvailable && !previews.length && finals.length && !canDownloadFinals ? <div className="lock-box"><LockKeyhole size={30}/><h3>Final output is ready</h3><p className="muted">A revision preview has not been uploaded. Ask StHelp to provide a protected preview.</p></div> : null}
+        <div style={{marginTop:18}}>{finals.map((file:any)=><div className="file-row" key={file.id}><div className="file-name"><strong>{file.original_name}</strong><span className="tiny muted">Final deliverable</span></div>{canDownloadFinals ? <a className="btn btn-blue btn-sm" href={`/api/client/${token}/download/${file.id}`}><Download size={15}/> Download</a> : <span className="status-badge warning"><LockKeyhole size={14}/> Payment required</span>}</div>)}</div>
+        {!canDownloadFinals && finals.length ? <div className="notice notice-info"><ShieldCheck size={16} style={{verticalAlign:"middle", marginRight:6}}/>Final documents remain private until payment is verified and StHelp unlocks them.</div> : null}
       </section> : null}
 
       <section className="panel"><div className="panel-title"><h3>Comments and revision requests</h3><MessageSquareText/></div><div className="comment-list">{data.comments.length ? data.comments.map((item:any)=><div className={`comment ${item.author === "admin" ? "admin" : ""}`} key={item.id}>{item.message}<time>{item.author === "admin" ? "StHelp" : "You"} · {formatDate(item.created_at)}</time></div>) : <p className="muted small">No comments yet.</p>}</div><form className="form-inline" onSubmit={sendComment}><input className="input" value={comment} maxLength={1000} onChange={(e)=>setComment(e.target.value)} placeholder="Write a short comment or revision request…"/><button className="btn btn-blue" disabled={busy || !comment.trim()} aria-label="Send"><Send size={18}/></button></form></section>
@@ -269,7 +269,7 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
         {data.activity?.length ? <div className="client-history-list">{data.activity.map((item:any)=><article className="client-history-item" key={item.id}><span className="client-history-marker"/><div><div className="client-history-meta"><span className={`activity-actor ${item.actor || "system"}`}>{activityActor(item.actor)}</span><time>{formatDate(item.created_at)}</time></div><p>{activitySummary(item)}</p></div></article>)}</div> : <div className="lock-box"><Clock3/><h3>No activity yet</h3><p className="muted small">Your portal actions and StHelp updates will be recorded here.</p></div>}
       </section>
 
-      {assignment.download_unlocked && !assignment.feedback_submitted ? <section className="panel"><div className="panel-title"><div><h3>Share your feedback</h3><p className="muted small">Your feedback will appear publicly only after admin approval.</p></div><Star/></div><form className="stack" onSubmit={sendFeedback}><div className="field"><label>Rating</label><select className="select" value={rating} onChange={(e)=>setRating(Number(e.target.value))}>{[5,4,3,2,1].map(n=><option key={n} value={n}>{n} star{n>1?"s":""}</option>)}</select></div><div className="field"><label>Feedback</label><textarea className="textarea" value={feedback} onChange={(e)=>setFeedback(e.target.value)} required maxLength={1500}/></div><button className="btn btn-primary" disabled={busy}>Submit feedback</button></form></section> : null}
+      {canDownloadFinals && !assignment.feedback_submitted ? <section className="panel"><div className="panel-title"><div><h3>Share your feedback</h3><p className="muted small">Your feedback will appear publicly only after admin approval.</p></div><Star/></div><form className="stack" onSubmit={sendFeedback}><div className="field"><label>Rating</label><select className="select" value={rating} onChange={(e)=>setRating(Number(e.target.value))}>{[5,4,3,2,1].map(n=><option key={n} value={n}>{n} star{n>1?"s":""}</option>)}</select></div><div className="field"><label>Feedback</label><textarea className="textarea" value={feedback} onChange={(e)=>setFeedback(e.target.value)} required maxLength={1500}/></div><button className="btn btn-primary" disabled={busy}>Submit feedback</button></form></section> : null}
     </div>
 
     <aside className="stack">
@@ -422,7 +422,7 @@ function nextStep(assignment: any) {
   if (assignment.payment_status === "submitted") return "We are verifying your payment";
   if (assignment.payment_status !== "verified" && assignment.quoted_amount) return "Send your payment reference";
   if (assignment.status === "client_review" || assignment.status === "revision") return "Review the update and leave comments";
-  if (assignment.status === "delivered") return assignment.download_unlocked ? "Your final files are ready" : "Final files are being released";
+  if (assignment.status === "delivered") return assignment.payment_status === "verified" && assignment.download_unlocked ? "Your final files are ready" : "Final files are locked until verified payment";
   return "Check the latest project update";
 }
 
@@ -441,5 +441,83 @@ function Preview({ file, token }: { file:any; token:string }) {
   const source = `/api/client/${token}/preview/${file.id}`;
   const isImage = String(file.mime_type).startsWith("image/");
   const isPdf = file.mime_type === "application/pdf";
-  return <div style={{marginBottom:18}}><div className="file-row"><div className="file-name"><strong>{file.original_name}</strong><span className="tiny muted">Protected preview</span></div><span className="status-badge warning"><ShieldCheck size={14}/> Watermarked</span></div>{isImage || isPdf ? <><div className={`preview-shell ${isPdf ? "pdf-preview" : "image-preview"}`} onContextMenu={(e)=>e.preventDefault()}>{isImage ? <img src={source} alt="Assignment preview" draggable={false}/> : <iframe src={`${source}#toolbar=0&navpanes=0&scrollbar=1&view=FitH`} title={file.original_name} scrolling="yes" loading="lazy"/>}<div className="preview-watermark"/></div>{isPdf ? <div className="mobile-preview-action"><a className="btn btn-blue btn-sm" href={source} target="_blank" rel="noreferrer"><Maximize2 size={15}/> Open full-screen preview</a><span>Use this if your phone does not scroll the preview above.</span></div> : null}</> : <div className="notice notice-info">This preview format cannot be displayed inside the browser. Ask admin to upload a PDF or image preview.</div>}<p className="help" style={{marginTop:8}}>Copy controls are restricted and the preview is watermarked. No web system can completely prevent screenshots or advanced browser capture.</p></div>;
+  return <div style={{marginBottom:18}}><div className="file-row"><div className="file-name"><strong>{file.original_name}</strong><span className="tiny muted">Revision viewing only · no original-file download</span></div><span className="status-badge warning"><ShieldCheck size={14}/> Permanently watermarked</span></div>{isImage || isPdf ? <div className={`preview-shell ${isPdf ? "pdf-preview" : "image-preview"}`} onContextMenu={(e)=>e.preventDefault()}>{isImage ? <img src={source} alt="Protected assignment preview" draggable={false}/> : <PdfCanvasPreview source={source} title={file.original_name}/>}<div className="preview-watermark"/></div> : <div className="notice notice-info">This preview format cannot be displayed inside the browser. Ask admin to upload a PDF or image preview.</div>}<p className="help" style={{marginTop:8}}>Use this preview only to request revisions. The watermark is embedded into every page; final downloadable files are released only after verified payment.</p></div>;
+}
+
+function PdfCanvasPreview({ source, title }: { source: string; title: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [state, setState] = useState<"loading" | "ready" | "error">("loading");
+  const [renderedPages, setRenderedPages] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    let loadingTask: any = null;
+    let document: any = null;
+
+    async function renderDocument() {
+      const container = containerRef.current;
+      if (!container) return;
+      setState("loading");
+      setRenderedPages(0);
+      container.replaceChildren();
+
+      try {
+        const pdfjs = await import("pdfjs-dist");
+        pdfjs.GlobalWorkerOptions.workerSrc = `/pdf.worker.mjs?v=${pdfjs.version}`;
+        loadingTask = pdfjs.getDocument({ url: source });
+        document = await loadingTask.promise;
+        if (cancelled) return;
+        setTotalPages(document.numPages);
+
+        for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
+          if (cancelled) return;
+          const page = await document.getPage(pageNumber);
+          const initialViewport = page.getViewport({ scale: 1 });
+          const availableWidth = Math.max(260, Math.min(container.clientWidth - 22, 980));
+          const cssScale = availableWidth / initialViewport.width;
+          const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.6);
+          const viewport = page.getViewport({ scale: cssScale * pixelRatio });
+          const canvas = window.document.createElement("canvas");
+          const pageElement = window.document.createElement("div");
+          const pageLabel = window.document.createElement("span");
+          const context = canvas.getContext("2d", { alpha: false });
+          if (!context) throw new Error("Canvas rendering is not available.");
+
+          canvas.width = Math.floor(viewport.width);
+          canvas.height = Math.floor(viewport.height);
+          canvas.style.width = `${Math.floor(viewport.width / pixelRatio)}px`;
+          canvas.style.height = `${Math.floor(viewport.height / pixelRatio)}px`;
+          canvas.setAttribute("aria-label", `${title}, page ${pageNumber}`);
+          canvas.setAttribute("draggable", "false");
+          pageElement.className = "pdf-preview-page";
+          pageLabel.className = "pdf-preview-page-number";
+          pageLabel.textContent = `Page ${pageNumber} of ${document.numPages}`;
+          pageElement.append(canvas, pageLabel);
+          container.append(pageElement);
+          await page.render({ canvas, canvasContext: context, viewport }).promise;
+          page.cleanup();
+          if (!cancelled) setRenderedPages(pageNumber);
+        }
+        if (!cancelled) setState("ready");
+      } catch (error) {
+        console.error(error);
+        if (!cancelled) setState("error");
+      }
+    }
+
+    void renderDocument();
+    return () => {
+      cancelled = true;
+      containerRef.current?.replaceChildren();
+      void loadingTask?.destroy?.();
+      void document?.destroy?.();
+    };
+  }, [source, title]);
+
+  return <div className="pdf-canvas-viewer" aria-label={`Protected PDF preview: ${title}`}>
+    {state === "loading" ? <div className="pdf-preview-status"><Loader2 className="spinner" size={22}/><span>Preparing protected pages… {totalPages ? `${renderedPages}/${totalPages}` : ""}</span></div> : null}
+    {state === "error" ? <div className="notice notice-error">This preview could not be displayed. Refresh the page or ask StHelp to upload the preview again.</div> : null}
+    <div className="pdf-preview-pages" ref={containerRef}/>
+  </div>;
 }
