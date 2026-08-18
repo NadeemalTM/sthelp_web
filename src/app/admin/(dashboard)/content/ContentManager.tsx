@@ -166,7 +166,7 @@ export function ContentManager({ supabaseConfigured }: { supabaseConfigured: boo
   }
 
   if (!supabaseConfigured) {
-    return <main className="admin-content stack">
+    return <main className="admin-content admin-settings-page stack">
       <div><span className="eyebrow">Website management</span><h2 style={{ marginTop: 7 }}>Content and settings</h2><p className="muted">Update WhatsApp, bank details, public work examples and customer feedback.</p></div>
       <div className="notice notice-info">Supabase setup is required before website content can be edited.</div>
       <section className="panel stack">
@@ -180,7 +180,7 @@ export function ContentManager({ supabaseConfigured }: { supabaseConfigured: boo
     </main>;
   }
 
-  return <main className="admin-content stack">
+  return <main className="admin-content admin-settings-page stack">
     <div><span className="eyebrow">Website management</span><h2 style={{ marginTop: 7 }}>Content and settings</h2><p className="muted">Update WhatsApp, bank details, public work examples and customer feedback.</p></div>
     {notice ? <div className={`notice notice-${notice.type}`}>{notice.text}</div> : null}
 
