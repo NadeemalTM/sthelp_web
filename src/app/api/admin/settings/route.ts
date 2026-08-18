@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/auth";
-import { apiError, apiRouteError, logApiError, requiredText } from "@/lib/api";
+import { apiError, apiRouteError, logApiError, optionalText, requiredText } from "@/lib/api";
 import { getServiceSupabase } from "@/lib/supabase-server";
+
+function isMissingSecondBankColumns(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+  const details = error as { code?: unknown; message?: unknown; details?: unknown };
+  const text = `${String(details.message || "")} ${String(details.details || "")}`.toLowerCase();
+  return details.code === "PGRST204" || details.code === "42703" || text.includes("bank_name_2");
+}
 
 export async function GET() {
   const session = await requireAdminApi();
@@ -29,16 +36,23 @@ export async function PATCH(request: NextRequest) {
       account_name: requiredText(body.accountName, "Account name", 150),
       account_number: requiredText(body.accountNumber, "Account number", 100),
       bank_branch: requiredText(body.bankBranch, "Bank branch", 150),
-      bank_name_2: requiredText(body.bankName2, "Second bank name", 150),
-      account_name_2: requiredText(body.accountName2, "Second account name", 150),
-      account_number_2: requiredText(body.accountNumber2, "Second account number", 100),
-      bank_branch_2: requiredText(body.bankBranch2, "Second bank branch", 150),
+      bank_name_2: optionalText(body.bankName2, 150),
+      account_name_2: optionalText(body.accountName2, 150),
+      account_number_2: optionalText(body.accountNumber2, 100),
+      bank_branch_2: optionalText(body.bankBranch2, 150),
       payment_note: requiredText(body.paymentNote, "Payment note", 1000),
       currency: requiredText(body.currency, "Currency", 10).toUpperCase(),
       support_notice: requiredText(body.supportNotice, "Support notice", 2000)
     };
     const db = getServiceSupabase();
     const { data, error } = await db.from("settings").update(update).eq("id", 1).select("*").single();
+    if (error && isMissingSecondBankColumns(error)) {
+      logApiError(error);
+      return apiError(
+        "The database needs the second-bank migration. Run supabase/migrations/20260818_add_second_bank_account.sql in the Supabase SQL Editor, then save again.",
+        503
+      );
+    }
     if (error) throw error;
     return NextResponse.json({ settings: data });
   } catch (error) {

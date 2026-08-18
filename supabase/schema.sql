@@ -21,6 +21,14 @@ create table if not exists public.settings (
   updated_at timestamptz not null default now()
 );
 
+-- Keep existing installations in sync. CREATE TABLE IF NOT EXISTS does not add
+-- columns when the settings table was created by an older schema version.
+alter table public.settings
+  add column if not exists bank_name_2 text,
+  add column if not exists account_name_2 text,
+  add column if not exists account_number_2 text,
+  add column if not exists bank_branch_2 text;
+
 create table if not exists public.client_links (
   id uuid primary key default gen_random_uuid(),
   token uuid not null unique default gen_random_uuid(),
