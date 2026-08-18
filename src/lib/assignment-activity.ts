@@ -17,5 +17,12 @@ export async function recordAssignmentActivity(db: Database, input: ActivityInpu
     event_type: input.eventType,
     summary: input.summary
   });
-  if (error) throw error;
+  if (error) {
+    // Audit logging must never break client downloads, previews, payments, or messages.
+    // The migration creates this table for existing installations; logging resumes
+    // automatically after it is applied.
+    console.error("Unable to record assignment activity:", error.message);
+    return false;
+  }
+  return true;
 }

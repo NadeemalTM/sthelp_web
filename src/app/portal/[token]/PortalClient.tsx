@@ -449,6 +449,7 @@ function PdfCanvasPreview({ source, title }: { source: string; title: string }) 
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [renderedPages, setRenderedPages] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -474,7 +475,7 @@ function PdfCanvasPreview({ source, title }: { source: string; title: string }) 
           if (cancelled) return;
           const page = await document.getPage(pageNumber);
           const initialViewport = page.getViewport({ scale: 1 });
-          const availableWidth = Math.max(260, Math.min(container.clientWidth - 22, 980));
+          const availableWidth = Math.max(180, Math.min(container.clientWidth - 16, 980));
           const cssScale = availableWidth / initialViewport.width;
           const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.6);
           const viewport = page.getViewport({ scale: cssScale * pixelRatio });
@@ -513,11 +514,11 @@ function PdfCanvasPreview({ source, title }: { source: string; title: string }) 
       void loadingTask?.destroy?.();
       void document?.destroy?.();
     };
-  }, [source, title]);
+  }, [source, title, retryCount]);
 
   return <div className="pdf-canvas-viewer" aria-label={`Protected PDF preview: ${title}`}>
     {state === "loading" ? <div className="pdf-preview-status"><Loader2 className="spinner" size={22}/><span>Preparing protected pages… {totalPages ? `${renderedPages}/${totalPages}` : ""}</span></div> : null}
-    {state === "error" ? <div className="notice notice-error">This preview could not be displayed. Refresh the page or ask StHelp to upload the preview again.</div> : null}
+    {state === "error" ? <div className="pdf-preview-error"><div className="notice notice-error">This preview could not be displayed. Please try loading it again.</div><button type="button" className="btn btn-soft btn-sm" onClick={()=>setRetryCount((count)=>count+1)}><RefreshCw size={15}/> Retry preview</button></div> : null}
     <div className="pdf-preview-pages" ref={containerRef}/>
   </div>;
 }

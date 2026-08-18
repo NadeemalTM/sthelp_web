@@ -575,9 +575,13 @@ h3 { font-size: 1.12rem; line-height: 1.3; margin-bottom: 8px; }
 .file-name strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .preview-shell { position: relative; overflow: hidden; border-radius: 16px; border: 1px solid var(--line); background: #dfe6ef; user-select: none; }
 .preview-shell img { width: 100%; display: block; }
+.pdf-preview, .pdf-canvas-viewer, .pdf-preview-pages, .pdf-preview-page { width: 100%; min-width: 0; box-sizing: border-box; }
 .pdf-canvas-viewer { min-height: 180px; background: #dbe3ea; }
 .pdf-preview-status { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 150px; color: #516172; font-size: .82rem; }
 .pdf-preview-status .spinner { width: 24px; height: 24px; }
+.pdf-preview-error { display: grid; gap: 10px; padding: 10px; }
+.pdf-preview-error .notice { margin: 0; }
+.pdf-preview-error .btn { justify-self: start; }
 .pdf-preview-pages { display: grid; gap: 14px; justify-items: center; padding: 12px; touch-action: pan-y pinch-zoom; }
 .pdf-preview-page { position: relative; max-width: 100%; overflow: hidden; background: #fff; box-shadow: 0 5px 16px rgba(16,41,69,.15); }
 .pdf-preview-page canvas { display: block; max-width: 100%; height: auto !important; pointer-events: none; }
@@ -694,6 +698,8 @@ th { color: #66748a; font-size: .72rem; text-transform: uppercase; letter-spacin
   .access-card { padding: 22px; }
   .access-logo img { width: 220px; }
   .detail-row, .file-row { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .file-row, .file-name { width: 100%; max-width: 100%; overflow: hidden; }
+  .file-row .status-badge { max-width: 100%; white-space: normal; }
   .detail-row strong { text-align: left; }
   .submitted-document { align-items: flex-start; flex-direction: column; }
   .submitted-document .btn { width: 100%; }
