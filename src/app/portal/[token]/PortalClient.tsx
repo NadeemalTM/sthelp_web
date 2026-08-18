@@ -15,11 +15,14 @@ import {
   Loader2,
   LockKeyhole,
   MessageSquareText,
+  Pencil,
   RefreshCw,
+  Save,
   Send,
   ShieldCheck,
   Star,
-  UploadCloud
+  UploadCloud,
+  X
 } from "lucide-react";
 import { SERVICE_TYPES, FIVE_MB } from "@/lib/constants";
 import { formatDate, formatMoney, statusLabel } from "@/lib/format";
@@ -117,7 +120,7 @@ function SubmissionView({ token, data, busy, setBusy, onDone, setNotice }: any) 
           assignmentTitle: form.get("assignmentTitle"),
           serviceType: form.get("serviceType"),
           academicLevel: form.get("academicLevel"),
-          deadline: form.get("deadline"),
+          deadline: new Date(String(form.get("deadline"))).toISOString(),
           isGroup,
           groupMembers: isGroup ? Number(form.get("groupMembers")) : null,
           description: form.get("description"),
@@ -170,15 +173,19 @@ function SubmissionView({ token, data, busy, setBusy, onDone, setNotice }: any) 
 function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: any) {
   const assignment = data.assignment;
   const accepted = !["submitted", "cancelled"].includes(assignment.status);
+  const canEditDetails = !["completed", "delivered", "cancelled"].includes(assignment.status);
   const previews = data.files.filter((f:any)=>f.kind === "preview");
   const finals = data.files.filter((f:any)=>f.kind === "final");
   const support = data.files.filter((f:any)=>f.kind === "support");
+  const paymentProofs = data.files.filter((f:any)=>f.kind === "payment_proof");
+  const submittedDocuments = [...support, ...paymentProofs];
   const [comment, setComment] = useState("");
   const [paymentRef, setPaymentRef] = useState(assignment.payment_reference || "");
   const [paymentNote, setPaymentNote] = useState("");
   const [proof, setProof] = useState<File | null>(null);
   const [feedback, setFeedback] = useState("");
   const [rating, setRating] = useState(5);
+  const [editingDetails, setEditingDetails] = useState(false);
   const hasSecondAccount = [
     data.settings.bank_name_2,
     data.settings.account_name_2,
@@ -188,14 +195,14 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
 
   async function run(task: () => Promise<any>, success: string) {
     setBusy(true); setNotice(null);
-    try { await task(); setNotice({type:"success", text:success}); await reload(); }
-    catch (error) { setNotice({type:"error", text:error instanceof Error ? error.message : "Request failed."}); }
+    try { await task(); setNotice({type:"success", text:success}); await reload(); return true; }
+    catch (error) { setNotice({type:"error", text:error instanceof Error ? error.message : "Request failed."}); return false; }
     finally { setBusy(false); }
   }
 
   async function sendComment(e:React.FormEvent) {
     e.preventDefault(); if (!comment.trim()) return;
-    await run(()=>post("comment", {message:comment}), "Comment sent."); setComment("");
+    if (await run(()=>post("comment", {message:comment}), "Comment sent.")) setComment("");
   }
 
   async function sendPayment(e:React.FormEvent) {
@@ -209,12 +216,29 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
 
   async function sendFeedback(e:React.FormEvent) {
     e.preventDefault();
-    await run(()=>post("feedback", {rating, feedback}), "Thank you. Your feedback was submitted for review.");
-    setFeedback("");
+    if (await run(()=>post("feedback", {rating, feedback}), "Thank you. Your feedback was submitted for review.")) setFeedback("");
   }
 
   async function respondToQuote(accepted:boolean) {
     await run(()=>post("quoteResponse", {accepted}), accepted ? "Quote accepted. StHelp will begin the next stage." : "Quote declined. You can leave a comment if you would like to discuss it.");
+  }
+
+  async function updateDetails(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const saved = await run(() => post("updateDetails", {
+      studentName: form.get("studentName"),
+      contactNumber: form.get("contactNumber"),
+      email: form.get("email"),
+      university: form.get("university"),
+      programme: form.get("programme"),
+      moduleName: form.get("moduleName"),
+      assignmentTitle: form.get("assignmentTitle"),
+      deadline: new Date(String(form.get("deadline"))).toISOString(),
+      description: form.get("description"),
+      specialInstructions: form.get("specialInstructions")
+    }), "Your assignment details were updated.");
+    if (saved) setEditingDetails(false);
   }
 
   return <div className="portal-grid">
@@ -239,12 +263,33 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
 
       <section className="panel"><div className="panel-title"><h3>Comments and revision requests</h3><MessageSquareText/></div><div className="comment-list">{data.comments.length ? data.comments.map((item:any)=><div className={`comment ${item.author === "admin" ? "admin" : ""}`} key={item.id}>{item.message}<time>{item.author === "admin" ? "StHelp" : "You"} · {formatDate(item.created_at)}</time></div>) : <p className="muted small">No comments yet.</p>}</div><form className="form-inline" onSubmit={sendComment}><input className="input" value={comment} maxLength={1000} onChange={(e)=>setComment(e.target.value)} placeholder="Write a short comment or revision request…"/><button className="btn btn-blue" disabled={busy || !comment.trim()} aria-label="Send"><Send size={18}/></button></form></section>
 
+      <section className="panel client-history">
+        <div className="panel-title"><div><h3>Activity history</h3><p className="muted small">A complete record of your actions and assignment updates.</p></div><Clock3 size={19}/></div>
+        {data.activity?.length ? <div className="client-history-list">{data.activity.map((item:any)=><article className="client-history-item" key={item.id}><span className="client-history-marker"/><div><div className="client-history-meta"><span className={`activity-actor ${item.actor || "system"}`}>{activityActor(item.actor)}</span><time>{formatDate(item.created_at)}</time></div><p>{activitySummary(item)}</p></div></article>)}</div> : <div className="lock-box"><Clock3/><h3>No activity yet</h3><p className="muted small">Your portal actions and StHelp updates will be recorded here.</p></div>}
+      </section>
+
       {assignment.download_unlocked && !assignment.feedback_submitted ? <section className="panel"><div className="panel-title"><div><h3>Share your feedback</h3><p className="muted small">Your feedback will appear publicly only after admin approval.</p></div><Star/></div><form className="stack" onSubmit={sendFeedback}><div className="field"><label>Rating</label><select className="select" value={rating} onChange={(e)=>setRating(Number(e.target.value))}>{[5,4,3,2,1].map(n=><option key={n} value={n}>{n} star{n>1?"s":""}</option>)}</select></div><div className="field"><label>Feedback</label><textarea className="textarea" value={feedback} onChange={(e)=>setFeedback(e.target.value)} required maxLength={1500}/></div><button className="btn btn-primary" disabled={busy}>Submit feedback</button></form></section> : null}
     </div>
 
     <aside className="stack">
-      {data.activity?.length ? <section className="panel"><div className="panel-title"><h3>Latest updates</h3><Clock3 size={18}/></div><div className="activity-list">{data.activity.slice(0,5).map((item:any)=><div className="activity-item" key={item.id}><span className="activity-dot"/><div><p>{item.summary}</p><time>{formatDate(item.created_at)}</time></div></div>)}</div></section> : null}
-      <section className="panel"><div className="panel-title"><h3>Assignment details</h3><FileText/></div><div className="detail-list"><div className="detail-row"><span>University</span><strong>{assignment.university}</strong></div><div className="detail-row"><span>Module</span><strong>{assignment.module_name || "—"}</strong></div><div className="detail-row"><span>Deadline</span><strong>{formatDate(assignment.deadline)}</strong></div><div className="detail-row"><span>Group</span><strong>{assignment.is_group ? `Yes · ${assignment.group_members} members` : "No"}</strong></div><div className="detail-row"><span>Submitted</span><strong>{formatDate(assignment.created_at)}</strong></div>{support.map((file:any)=><div className="detail-row" key={file.id}><span>Support file</span><strong>{file.original_name}</strong></div>)}</div></section>
+      <section className="panel client-details-panel">
+        <div className="panel-title"><div><h3>Assignment details</h3><p className="muted small">Keep your contact and requirement details accurate.</p></div>{canEditDetails && !editingDetails ? <button type="button" className="btn btn-soft btn-sm" onClick={()=>setEditingDetails(true)}><Pencil size={14}/> Edit</button> : <FileText/>}</div>
+        {editingDetails ? <form className="client-edit-form" onSubmit={updateDetails}>
+          <div className="field"><label>Full name *</label><input className="input" name="studentName" defaultValue={assignment.student_name || ""} required/></div>
+          <div className="field"><label>Contact number *</label><input className="input" name="contactNumber" defaultValue={assignment.contact_number || ""} required/></div>
+          <div className="field"><label>Email</label><input className="input" name="email" type="email" defaultValue={assignment.email || ""}/></div>
+          <div className="field"><label>University / institute *</label><input className="input" name="university" defaultValue={assignment.university || ""} required/></div>
+          <div className="field"><label>Degree / programme</label><input className="input" name="programme" defaultValue={assignment.programme || ""}/></div>
+          <div className="field"><label>Module / subject</label><input className="input" name="moduleName" defaultValue={assignment.module_name || ""}/></div>
+          <div className="field"><label>Assignment / project title *</label><input className="input" name="assignmentTitle" defaultValue={assignment.assignment_title || ""} required/></div>
+          <div className="field"><label>Deadline *</label><input className="input" name="deadline" type="datetime-local" defaultValue={dateTimeLocalValue(assignment.deadline)} required/></div>
+          <div className="field"><label>Task description *</label><textarea className="textarea" name="description" defaultValue={assignment.description || ""} required/></div>
+          <div className="field"><label>Special instructions</label><textarea className="textarea" name="specialInstructions" defaultValue={assignment.special_instructions || ""}/></div>
+          <div className="client-edit-actions"><button className="btn btn-primary btn-sm" disabled={busy}><Save size={15}/> Save details</button><button type="button" className="btn btn-soft btn-sm" disabled={busy} onClick={()=>setEditingDetails(false)}><X size={15}/> Cancel</button></div>
+        </form> : <div className="detail-list"><div className="detail-row"><span>Student</span><strong>{assignment.student_name}</strong></div><div className="detail-row"><span>Contact</span><strong>{assignment.contact_number}</strong></div><div className="detail-row"><span>Email</span><strong>{assignment.email || "—"}</strong></div><div className="detail-row"><span>University</span><strong>{assignment.university}</strong></div><div className="detail-row"><span>Programme</span><strong>{assignment.programme || "—"}</strong></div><div className="detail-row"><span>Module</span><strong>{assignment.module_name || "—"}</strong></div><div className="detail-row"><span>Deadline</span><strong>{formatDate(assignment.deadline)}</strong></div><div className="detail-row"><span>Group</span><strong>{assignment.is_group ? `Yes · ${assignment.group_members} members` : "No"}</strong></div><div className="detail-row"><span>Submitted</span><strong>{formatDate(assignment.created_at)}</strong></div></div>}
+
+        {submittedDocuments.length ? <div className="submitted-documents"><div className="submitted-documents-heading"><strong>Your submitted documents</strong><span>You can download a copy at any time.</span></div>{submittedDocuments.map((file:any)=><div className="submitted-document" key={file.id}><div className="file-name"><strong>{file.original_name}</strong><span className="tiny muted">{file.kind === "payment_proof" ? "Payment proof" : "Support document"} · {formatFileSize(file.size_bytes)}</span></div><a className="btn btn-soft btn-sm" href={`/api/client/${token}/download/${file.id}`}><Download size={14}/> Download</a></div>)}</div> : null}
+      </section>
 
       {accepted ? (
         <section className="payment-card">
@@ -332,6 +377,42 @@ function PaymentAccount({
       </dl>
     </article>
   );
+}
+
+function dateTimeLocalValue(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 16);
+}
+
+function formatFileSize(value: number | string | null) {
+  const bytes = Number(value || 0);
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+}
+
+function activityActor(actor: string) {
+  if (actor === "client") return "You";
+  if (actor === "admin") return "StHelp";
+  return "System";
+}
+
+function activitySummary(item: any) {
+  const clientLabels: Record<string, string> = {
+    request_submitted: "You submitted the assignment requirements.",
+    client_message: "You sent a message to StHelp.",
+    payment_submitted: "You submitted payment details for verification.",
+    quote_accepted: "You accepted the quote.",
+    quote_declined: "You declined the quote.",
+    feedback_submitted: "You submitted feedback for review."
+  };
+  if (item.actor === "client" && clientLabels[item.event_type]) return clientLabels[item.event_type];
+  if (item.actor === "client" && String(item.summary).startsWith("The client ")) {
+    return `You ${String(item.summary).slice("The client ".length)}`;
+  }
+  return item.summary;
 }
 
 function nextStep(assignment: any) {

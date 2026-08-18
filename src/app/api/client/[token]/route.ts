@@ -31,7 +31,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       db.from("progress_updates").select("*").eq("assignment_id", assignment.id).order("created_at", { ascending: false }),
       db.from("comments").select("*").eq("assignment_id", assignment.id).order("created_at", { ascending: true }),
       db.from("assignment_files").select("*").eq("assignment_id", assignment.id).order("created_at", { ascending: true }),
-      db.from("assignment_activity").select("*").eq("assignment_id", assignment.id).in("visibility", ["client", "both"]).order("created_at", { ascending: false }).limit(20)
+      db.from("assignment_activity").select("*").eq("assignment_id", assignment.id).or("visibility.eq.client,visibility.eq.both,actor.eq.client").order("created_at", { ascending: false })
     ]);
 
     return NextResponse.json({
@@ -109,17 +109,74 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         if (fileError) throw fileError;
       }
       await db.from("client_links").update({ status: "submitted", client_name: body.studentName, phone: body.contactNumber }).eq("id", link.id);
-      await recordAssignmentActivity(db, { assignmentId: created.id, actor: "client", visibility: "admin", eventType: "request_submitted", summary: "A new assignment request was submitted." });
+      await recordAssignmentActivity(db, { assignmentId: created.id, actor: "client", visibility: "both", eventType: "request_submitted", summary: "You submitted the assignment requirements." });
+      if (supportFiles.length) {
+        await recordAssignmentActivity(db, {
+          assignmentId: created.id,
+          actor: "client",
+          visibility: "both",
+          eventType: "support_files_submitted",
+          summary: `You submitted ${supportFiles.length} support document${supportFiles.length === 1 ? "" : "s"}.`
+        });
+      }
       return NextResponse.json({ ok: true });
     }
 
     if (!assignment) return apiError("Submit your assignment requirements first.", 404);
 
+    if (action === "updateDetails") {
+      if (["completed", "delivered", "cancelled"].includes(assignment.status)) {
+        return apiError("These details can no longer be edited at the current assignment stage.", 409);
+      }
+
+      const deadline = new Date(String(body.deadline || ""));
+      if (Number.isNaN(deadline.getTime())) return apiError("Enter a valid deadline.");
+      const email = optionalText(body.email, 200);
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return apiError("Enter a valid email address.");
+
+      const fields: Array<[string, string | null, string]> = [
+        ["student_name", requiredText(body.studentName, "Full name", 150), "name"],
+        ["contact_number", requiredText(body.contactNumber, "Contact number", 50), "contact number"],
+        ["email", email, "email"],
+        ["university", requiredText(body.university, "University", 250), "university"],
+        ["programme", optionalText(body.programme, 250), "programme"],
+        ["module_name", optionalText(body.moduleName, 250), "module"],
+        ["assignment_title", requiredText(body.assignmentTitle, "Assignment title", 300), "assignment title"],
+        ["deadline", deadline.toISOString(), "deadline"],
+        ["description", requiredText(body.description, "Task description", 10000), "task description"],
+        ["special_instructions", optionalText(body.specialInstructions, 5000), "special instructions"]
+      ];
+      const changed = fields
+        .filter(([key, value]) => key === "deadline"
+          ? new Date(String(assignment[key])).getTime() !== new Date(String(value)).getTime()
+          : String(assignment[key] ?? "") !== String(value ?? ""))
+        .map(([, , label]) => label);
+
+      if (!changed.length) return NextResponse.json({ ok: true, unchanged: true });
+
+      const update = Object.fromEntries(fields.map(([key, value]) => [key, value]));
+      const { error } = await db.from("assignments").update(update).eq("id", assignment.id);
+      if (error) throw error;
+      const { error: linkError } = await db.from("client_links").update({
+        client_name: update.student_name,
+        phone: update.contact_number
+      }).eq("id", link.id);
+      if (linkError) throw linkError;
+      await recordAssignmentActivity(db, {
+        assignmentId: assignment.id,
+        actor: "client",
+        visibility: "both",
+        eventType: "client_details_updated",
+        summary: `You updated: ${changed.join(", ")}.`
+      });
+      return NextResponse.json({ ok: true });
+    }
+
     if (action === "comment") {
       const message = requiredText(body.message, "Comment", 1000);
       const { error } = await db.from("comments").insert({ assignment_id: assignment.id, author: "client", message });
       if (error) throw error;
-      await recordAssignmentActivity(db, { assignmentId: assignment.id, actor: "client", visibility: "admin", eventType: "client_message", summary: "The client sent a new message." });
+      await recordAssignmentActivity(db, { assignmentId: assignment.id, actor: "client", visibility: "both", eventType: "client_message", summary: "You sent a message to StHelp." });
       return NextResponse.json({ ok: true });
     }
 
@@ -148,7 +205,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         });
         if (fileError) throw fileError;
       }
-      await recordAssignmentActivity(db, { assignmentId: assignment.id, actor: "client", visibility: "admin", eventType: "payment_submitted", summary: "The client submitted payment details for verification." });
+      await recordAssignmentActivity(db, { assignmentId: assignment.id, actor: "client", visibility: "both", eventType: "payment_submitted", summary: "You submitted payment details for verification." });
+      if (file) await recordAssignmentActivity(db, { assignmentId: assignment.id, actor: "client", visibility: "both", eventType: "payment_proof_submitted", summary: "You uploaded a payment proof document." });
       return NextResponse.json({ ok: true });
     }
 
@@ -182,7 +240,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       });
       if (error) throw error;
       await db.from("assignments").update({ feedback_submitted: true }).eq("id", assignment.id);
-      await recordAssignmentActivity(db, { assignmentId: assignment.id, actor: "client", visibility: "admin", eventType: "feedback_submitted", summary: "The client submitted feedback for review." });
+      await recordAssignmentActivity(db, { assignmentId: assignment.id, actor: "client", visibility: "both", eventType: "feedback_submitted", summary: "You submitted feedback for review." });
       return NextResponse.json({ ok: true });
     }
 
