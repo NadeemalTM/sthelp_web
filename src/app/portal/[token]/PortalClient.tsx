@@ -179,6 +179,12 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
   const [proof, setProof] = useState<File | null>(null);
   const [feedback, setFeedback] = useState("");
   const [rating, setRating] = useState(5);
+  const hasSecondAccount = [
+    data.settings.bank_name_2,
+    data.settings.account_name_2,
+    data.settings.account_number_2,
+    data.settings.bank_branch_2
+  ].some(Boolean);
 
   async function run(task: () => Promise<any>, success: string) {
     setBusy(true); setNotice(null);
@@ -240,13 +246,92 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
       {data.activity?.length ? <section className="panel"><div className="panel-title"><h3>Latest updates</h3><Clock3 size={18}/></div><div className="activity-list">{data.activity.slice(0,5).map((item:any)=><div className="activity-item" key={item.id}><span className="activity-dot"/><div><p>{item.summary}</p><time>{formatDate(item.created_at)}</time></div></div>)}</div></section> : null}
       <section className="panel"><div className="panel-title"><h3>Assignment details</h3><FileText/></div><div className="detail-list"><div className="detail-row"><span>University</span><strong>{assignment.university}</strong></div><div className="detail-row"><span>Module</span><strong>{assignment.module_name || "—"}</strong></div><div className="detail-row"><span>Deadline</span><strong>{formatDate(assignment.deadline)}</strong></div><div className="detail-row"><span>Group</span><strong>{assignment.is_group ? `Yes · ${assignment.group_members} members` : "No"}</strong></div><div className="detail-row"><span>Submitted</span><strong>{formatDate(assignment.created_at)}</strong></div>{support.map((file:any)=><div className="detail-row" key={file.id}><span>Support file</span><strong>{file.original_name}</strong></div>)}</div></section>
 
-      {accepted ? <section className="bank-box"><div className="panel-title"><h3>Payment details</h3><Banknote/></div><div className="amount">{formatMoney(assignment.quoted_amount, assignment.currency || data.settings.currency)}</div><div className="stack" style={{gap:14}}><div><div className="detail-list"><div className="detail-row"><span>Bank</span><strong>{data.settings.bank_name}</strong></div><div className="detail-row"><span>Account name</span><strong>{data.settings.account_name}</strong></div><div className="detail-row"><span>Account number</span><strong>{data.settings.account_number}</strong></div><div className="detail-row"><span>Branch</span><strong>{data.settings.bank_branch}</strong></div></div></div>{data.settings.bank_name_2 || data.settings.account_name_2 || data.settings.account_number_2 || data.settings.bank_branch_2 ? <div style={{paddingTop:14, borderTop:"1px solid rgba(255,255,255,.12)"}}><strong style={{display:"block", marginBottom:10, color:"#fff"}}>Second payment account</strong><div className="detail-list"><div className="detail-row"><span>Bank</span><strong>{data.settings.bank_name_2}</strong></div><div className="detail-row"><span>Account name</span><strong>{data.settings.account_name_2}</strong></div><div className="detail-row"><span>Account number</span><strong>{data.settings.account_number_2}</strong></div><div className="detail-row"><span>Branch</span><strong>{data.settings.bank_branch_2}</strong></div></div></div> : null}</div><p className="small" style={{color:"#c6d6e8", marginTop:14}}>{data.settings.payment_note}</p></section> : null}
+      {accepted ? (
+        <section className="payment-card">
+          <div className="payment-card-header">
+            <div><span className="eyebrow">Payment</span><h3>Bank transfer details</h3></div>
+            <span className="payment-card-icon"><Banknote size={19}/></span>
+          </div>
+          <div className="payment-total">
+            <span>Amount to pay</span>
+            <strong>{formatMoney(assignment.quoted_amount, assignment.currency || data.settings.currency)}</strong>
+          </div>
+          <div className="payment-choice">
+            <CheckCircle2 size={20}/>
+            <div>
+              <strong>{hasSecondAccount ? "Choose either account" : "Use the account below"}</strong>
+              <span>{hasSecondAccount ? "You can pay the full amount to any one of the accounts below." : "Transfer the full amount using the account details below."}</span>
+            </div>
+          </div>
+          <div className="payment-accounts">
+            <PaymentAccount
+              option="Account option 1"
+              bank={data.settings.bank_name}
+              accountName={data.settings.account_name}
+              accountNumber={data.settings.account_number}
+              branch={data.settings.bank_branch}
+            />
+            {hasSecondAccount ? (
+              <PaymentAccount
+                option="Account option 2"
+                bank={data.settings.bank_name_2}
+                accountName={data.settings.account_name_2}
+                accountNumber={data.settings.account_number_2}
+                branch={data.settings.bank_branch_2}
+              />
+            ) : null}
+          </div>
+          {data.settings.payment_note ? (
+            <div className="payment-note">
+              <strong>Payment note</strong>
+              <p>{data.settings.payment_note}</p>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
 
       {accepted && assignment.payment_status !== "verified" ? <section className="panel"><div className="panel-title"><h3>Submit payment reference</h3><FileCheck2/></div><form className="stack" onSubmit={sendPayment}><div className="field"><label>Reference / transaction ID *</label><input className="input" value={paymentRef} onChange={(e)=>setPaymentRef(e.target.value)} required/></div><div className="field"><label>Note</label><textarea className="textarea" value={paymentNote} onChange={(e)=>setPaymentNote(e.target.value)} placeholder="Payment date, sender name or anything admin should know."/></div><div className="field"><label>Payment proof (optional, maximum 5 MB)</label><input className="input" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" onChange={(e)=>setProof(e.target.files?.[0] || null)}/></div><button className="btn btn-primary" disabled={busy}>{busy ? "Submitting…" : "Send for verification"}</button></form>{assignment.payment_status === "submitted" ? <div className="notice notice-info">A payment reference is already awaiting verification. You may resubmit corrected details.</div> : null}</section> : null}
 
       {assignment.payment_status === "verified" ? <section className="panel"><div className="lock-box" style={{background:"#ebf8f2"}}><CheckCircle2 color="#15805d" size={34}/><h3>Payment verified</h3><p className="muted small">Final downloads are {assignment.download_unlocked ? "unlocked" : "waiting for admin release"}.</p></div></section> : null}
     </aside>
   </div>;
+}
+
+function PaymentAccount({
+  option,
+  bank,
+  accountName,
+  accountNumber,
+  branch
+}: {
+  option: string;
+  bank: string;
+  accountName: string;
+  accountNumber: string;
+  branch: string;
+}) {
+  return (
+    <article className="payment-account">
+      <div className="payment-account-heading">
+        <span>{option}</span>
+        <strong>{bank || "Bank account"}</strong>
+      </div>
+      <dl>
+        <div className="payment-account-number">
+          <dt>Account number</dt>
+          <dd>{accountNumber || "—"}</dd>
+        </div>
+        <div>
+          <dt>Account name</dt>
+          <dd>{accountName || "—"}</dd>
+        </div>
+        <div>
+          <dt>Branch</dt>
+          <dd>{branch || "—"}</dd>
+        </div>
+      </dl>
+    </article>
+  );
 }
 
 function nextStep(assignment: any) {
