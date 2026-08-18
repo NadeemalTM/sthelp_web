@@ -10,7 +10,7 @@
     "hash-password": "node scripts/hash-password.mjs"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": "24.x"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.112.1",
