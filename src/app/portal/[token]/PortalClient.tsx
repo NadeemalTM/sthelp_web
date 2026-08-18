@@ -15,6 +15,7 @@ import {
   Loader2,
   LockKeyhole,
   MessageSquareText,
+  Maximize2,
   Pencil,
   RefreshCw,
   Save,
@@ -440,5 +441,5 @@ function Preview({ file, token }: { file:any; token:string }) {
   const source = `/api/client/${token}/preview/${file.id}`;
   const isImage = String(file.mime_type).startsWith("image/");
   const isPdf = file.mime_type === "application/pdf";
-  return <div style={{marginBottom:18}}><div className="file-row"><div className="file-name"><strong>{file.original_name}</strong><span className="tiny muted">Protected preview</span></div><span className="status-badge warning"><ShieldCheck size={14}/> Watermarked</span></div>{isImage || isPdf ? <div className="preview-shell" onContextMenu={(e)=>e.preventDefault()}>{isImage ? <img src={source} alt="Assignment preview" draggable={false}/> : <iframe src={`${source}#toolbar=0&navpanes=0&scrollbar=1`} title={file.original_name}/>}<div className="preview-watermark"/></div> : <div className="notice notice-info">This preview format cannot be displayed inside the browser. Ask admin to upload a PDF or image preview.</div>}<p className="help" style={{marginTop:8}}>Copy controls are restricted and the preview is watermarked. No web system can completely prevent screenshots or advanced browser capture.</p></div>;
+  return <div style={{marginBottom:18}}><div className="file-row"><div className="file-name"><strong>{file.original_name}</strong><span className="tiny muted">Protected preview</span></div><span className="status-badge warning"><ShieldCheck size={14}/> Watermarked</span></div>{isImage || isPdf ? <><div className={`preview-shell ${isPdf ? "pdf-preview" : "image-preview"}`} onContextMenu={(e)=>e.preventDefault()}>{isImage ? <img src={source} alt="Assignment preview" draggable={false}/> : <iframe src={`${source}#toolbar=0&navpanes=0&scrollbar=1&view=FitH`} title={file.original_name} scrolling="yes" loading="lazy"/>}<div className="preview-watermark"/></div>{isPdf ? <div className="mobile-preview-action"><a className="btn btn-blue btn-sm" href={source} target="_blank" rel="noreferrer"><Maximize2 size={15}/> Open full-screen preview</a><span>Use this if your phone does not scroll the preview above.</span></div> : null}</> : <div className="notice notice-info">This preview format cannot be displayed inside the browser. Ask admin to upload a PDF or image preview.</div>}<p className="help" style={{marginTop:8}}>Copy controls are restricted and the preview is watermarked. No web system can completely prevent screenshots or advanced browser capture.</p></div>;
 }
