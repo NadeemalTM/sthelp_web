@@ -1,5 +1,14 @@
 import Link from "next/link";
 import Image from "next/image";
+import { Menu } from "lucide-react";
+
+const navigation = [
+  { href: "/assignment-support", label: "Assignment support" },
+  { href: "/place-assignment", label: "Place assignment" },
+  { href: "/#work", label: "Previous work" },
+  { href: "/#feedback", label: "Feedback" },
+  { href: "/access", label: "Track assignment", prefetch: false }
+];
 
 export function SiteHeader({ whatsapp }: { whatsapp?: string }) {
   const wa = (whatsapp || "").replace(/\D/g, "");
@@ -11,13 +20,16 @@ export function SiteHeader({ whatsapp }: { whatsapp?: string }) {
           <span className="brand-copy">StHelp<small>Assignment Support</small></span>
         </Link>
         <nav className="nav-links" aria-label="Main navigation">
-          <Link href="/assignment-support">Assignment support</Link>
-          <Link href="/place-assignment">Place assignment</Link>
-          <Link href="/#work">Previous work</Link>
-          <Link href="/#feedback">Feedback</Link>
-          <Link href="/access" prefetch={false}>Track assignment</Link>
+          {navigation.map((item) => <Link href={item.href} prefetch={item.prefetch} key={item.href}>{item.label}</Link>)}
           {wa ? <a className="btn btn-primary btn-sm" href={`https://wa.me/${wa}`} target="_blank" rel="noreferrer">WhatsApp</a> : null}
         </nav>
+        <details className="mobile-nav">
+          <summary><Menu size={19} /><span>Menu</span></summary>
+          <nav className="mobile-nav-panel" aria-label="Mobile navigation">
+            {navigation.map((item) => <Link href={item.href} prefetch={item.prefetch} key={item.href}>{item.label}</Link>)}
+            {wa ? <a className="mobile-nav-whatsapp" href={`https://wa.me/${wa}`} target="_blank" rel="noreferrer">Chat on WhatsApp</a> : null}
+          </nav>
+        </details>
       </div>
     </header>
   );

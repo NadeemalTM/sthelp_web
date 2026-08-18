@@ -450,6 +450,24 @@ function PdfCanvasPreview({ source, title }: { source: string; title: string }) 
   const [renderedPages, setRenderedPages] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [retryCount, setRetryCount] = useState(0);
+  const [viewerWidth, setViewerWidth] = useState(0);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    let frame = 0;
+    const measure = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => setViewerWidth(Math.floor(container.getBoundingClientRect().width)));
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(container);
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -458,7 +476,7 @@ function PdfCanvasPreview({ source, title }: { source: string; title: string }) 
 
     async function renderDocument() {
       const container = containerRef.current;
-      if (!container) return;
+      if (!container || viewerWidth <= 0) return;
       setState("loading");
       setRenderedPages(0);
       container.replaceChildren();
@@ -475,7 +493,7 @@ function PdfCanvasPreview({ source, title }: { source: string; title: string }) 
           if (cancelled) return;
           const page = await document.getPage(pageNumber);
           const initialViewport = page.getViewport({ scale: 1 });
-          const availableWidth = Math.max(180, Math.min(container.clientWidth - 16, 980));
+          const availableWidth = Math.max(1, Math.min(viewerWidth - 16, 980));
           const cssScale = availableWidth / initialViewport.width;
           const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.6);
           const viewport = page.getViewport({ scale: cssScale * pixelRatio });
@@ -514,7 +532,7 @@ function PdfCanvasPreview({ source, title }: { source: string; title: string }) 
       void loadingTask?.destroy?.();
       void document?.destroy?.();
     };
-  }, [source, title, retryCount]);
+  }, [source, title, retryCount, viewerWidth]);
 
   return <div className="pdf-canvas-viewer" aria-label={`Protected PDF preview: ${title}`}>
     {state === "loading" ? <div className="pdf-preview-status"><Loader2 className="spinner" size={22}/><span>Preparing protected pages… {totalPages ? `${renderedPages}/${totalPages}` : ""}</span></div> : null}

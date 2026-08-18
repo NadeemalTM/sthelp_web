@@ -40,20 +40,20 @@ export function AdminNav() {
         {navigation.map(({ href, label, icon: Icon, match }) => {
           const isActive = match(pathname);
           return (
-            <Link href={href} className={isActive ? "active" : undefined} key={href}>
+            <Link href={href} className={isActive ? "active" : undefined} key={href} title={label} aria-current={isActive ? "page" : undefined}>
               <Icon size={18} />
               <span>{label}</span>
             </Link>
           );
         })}
-        <Link href="/" target="_blank">
+        <Link href="/" target="_blank" title="View website">
           <ExternalLink size={18} />
           <span>View website</span>
         </Link>
       </nav>
 
       <div className="admin-sidebar-footer">
-        <button className="admin-logout" onClick={logout}>
+        <button type="button" className="admin-logout" onClick={logout} title="Sign out">
           <LogOut size={17} />
           <span>Sign out</span>
         </button>
