@@ -3,8 +3,9 @@ import "./globals.css";
 import { publicSiteUrl } from "@/lib/site-url";
 
 export const metadata: Metadata = {
+  applicationName: "StHelp",
   title: {
-    default: "Assignment Support in Sri Lanka",
+    default: "StHelp | Assignment Support in Sri Lanka",
     template: "%s | StHelp"
   },
   description: "StHelp offers online assignment support, research guidance, software project support and data-analysis help for students in Sri Lanka.",
@@ -12,6 +13,14 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
   keywords: ["assignment support Sri Lanka", "assignment help Sri Lanka", "academic support Sri Lanka", "research guidance", "software project support", "data analysis support", "assignment tracking"],
   authors: [{ name: "StHelp" }],
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "96x96" },
+      { url: "/icon.png", type: "image/png", sizes: "192x192" }
+    ],
+    shortcut: "/favicon.ico",
+    apple: [{ url: "/apple-icon.png", type: "image/png", sizes: "180x180" }]
+  },
   robots: { index: true, follow: true },
   openGraph: {
     title: "Assignment Support in Sri Lanka | StHelp",
