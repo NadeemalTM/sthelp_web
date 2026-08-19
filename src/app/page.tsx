@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, Clock3, FileLock2, MessageSquareText, ShieldCheck, Smartphone, UploadCloud } from "lucide-react";
+import { ArrowRight, BarChart3, BookOpenCheck, CheckCircle2, Clock3, Code2, FileLock2, MessageSquareText, ShieldCheck, Smartphone, UploadCloud } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getPublicContent } from "@/lib/data";
 import { publicSiteUrl } from "@/lib/site-url";
@@ -40,6 +40,8 @@ export default async function HomePage() {
     </section>
 
     <section className="signal-strip" aria-label="StHelp service highlights"><div className="signal-track"><span>Guided requests</span><i>✦</i><span>Private workspaces</span><i>✦</i><span>Clear progress updates</span><i>✦</i><span>Feedback that stays connected</span><i>✦</i><span>Guided requests</span><i>✦</i><span>Private workspaces</span><i>✦</i></div></section>
+
+    <section className="resource-home-teaser"><div className="container resource-home-teaser-inner"><div className="resource-home-copy"><span className="eyebrow">Free student toolkit</span><h2>Not every study problem needs paid support.</h2><p>Explore useful research, citation, writing, coding and data tools selected for Sri Lankan university students.</p><Link className="btn btn-dark" href="/student-resources">Browse student resources <ArrowRight size={17}/></Link></div><div className="resource-home-topics"><span><BookOpenCheck size={20}/><strong>Research & references</strong><small>Find papers and build cleaner citations.</small></span><span><BarChart3 size={20}/><strong>Data & surveys</strong><small>Collect, analyse and present evidence.</small></span><span><Code2 size={20}/><strong>Coding & productivity</strong><small>Build projects and organize group work.</small></span></div></div></section>
 
     <section className="section process-section"><div className="container"><div className="process-heading"><div><span className="eyebrow">A simpler rhythm</span><h2>One request. One workspace.<br /><em>Nothing gets lost.</em></h2></div><p>Designed to make the process feel transparent from the moment you send your brief.</p></div><div className="journey-grid">{journey.map(({ number, title, copy, icon: Icon }) => <article className="journey-card" key={number}><div className="journey-top"><span>{number}</span><Icon size={23} strokeWidth={1.8} /></div><h3>{title}</h3><p>{copy}</p><div className="journey-line" /></article>)}</div></div></section>
 

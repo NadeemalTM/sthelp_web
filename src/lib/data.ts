@@ -1,4 +1,5 @@
 import { getServiceSupabase, isSupabaseConfigured } from "@/lib/supabase-server";
+import { defaultStudentResources, mergeStudentResources } from "@/lib/student-resources";
 
 export const demoPortfolio = [
   {
@@ -75,4 +76,17 @@ export async function getPublicContent() {
     portfolio: portfolio?.length ? portfolio : demoPortfolio,
     testimonials: testimonials?.length ? testimonials : demoTestimonials
   };
+}
+
+export async function getStudentResources() {
+  if (!isSupabaseConfigured()) return defaultStudentResources;
+
+  const db = getServiceSupabase();
+  const { data, error } = await db.from("student_resources").select("*").order("sort_order");
+  if (error) {
+    console.error("Unable to load student resource overrides:", error.message);
+    return defaultStudentResources;
+  }
+
+  return mergeStudentResources(data || []).filter((resource) => resource.is_published);
 }

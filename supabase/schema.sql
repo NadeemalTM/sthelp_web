@@ -129,6 +129,24 @@ create table if not exists public.testimonials (
   updated_at timestamptz not null default now()
 );
 
+-- Public student-resource directory. Built-in resources live in the application;
+-- this table stores admin edits, visibility changes and custom additions.
+create table if not exists public.student_resources (
+  resource_key text primary key,
+  title text not null check (char_length(title) between 1 and 200),
+  category text not null check (char_length(category) between 1 and 100),
+  description text not null check (char_length(description) between 1 and 2000),
+  url text not null check (char_length(url) between 1 and 1500),
+  thumbnail_url text,
+  access_type text not null default 'free' check (access_type in ('free', 'freemium', 'university', 'paid', 'varies')),
+  is_featured boolean not null default false,
+  is_published boolean not null default true,
+  is_deleted boolean not null default false,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 -- Assignment operations: quotes, ownership, priority and a permanent activity history.
 alter table public.assignments
   add column if not exists priority text not null default 'normal' check (priority in ('low', 'normal', 'high', 'urgent')),
@@ -171,6 +189,7 @@ create index if not exists idx_progress_assignment on public.progress_updates(as
 create index if not exists idx_comments_assignment on public.comments(assignment_id, created_at);
 create index if not exists idx_feedback_links_token on public.feedback_links(token);
 create index if not exists idx_assignment_activity_assignment on public.assignment_activity(assignment_id, created_at desc);
+create index if not exists idx_student_resources_public on public.student_resources(is_published, is_deleted, sort_order);
 
 create or replace function public.set_updated_at()
 returns trigger language plpgsql as $$
@@ -190,6 +209,8 @@ drop trigger if exists portfolio_updated_at on public.portfolio_items;
 create trigger portfolio_updated_at before update on public.portfolio_items for each row execute function public.set_updated_at();
 drop trigger if exists testimonials_updated_at on public.testimonials;
 create trigger testimonials_updated_at before update on public.testimonials for each row execute function public.set_updated_at();
+drop trigger if exists student_resources_updated_at on public.student_resources;
+create trigger student_resources_updated_at before update on public.student_resources for each row execute function public.set_updated_at();
 
 -- The application uses the service-role key only in server routes. No public table
 -- policies are created, so browser users cannot query these tables directly.
@@ -203,6 +224,7 @@ alter table public.portfolio_items enable row level security;
 alter table public.testimonials enable row level security;
 alter table public.feedback_links enable row level security;
 alter table public.assignment_activity enable row level security;
+alter table public.student_resources enable row level security;
 
 insert into public.settings (id) values (1) on conflict (id) do nothing;
 

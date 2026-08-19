@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Eye, EyeOff, Plus, Save, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ExternalLink, Eye, EyeOff, Pencil, Plus, Save, Search, Trash2, X } from "lucide-react";
 import { uploadPublicImage } from "@/lib/upload-client";
+import { RESOURCE_ACCESS_LABELS, RESOURCE_ACCESS_TYPES, RESOURCE_CATEGORIES, resourceFavicon } from "@/lib/student-resources";
 
 type Notice = { type: "success" | "error" | "info"; text: string };
 
@@ -14,11 +15,20 @@ async function responseJson(response: Response) {
 
 export function ContentManager({ supabaseConfigured }: { supabaseConfigured: boolean }) {
   const [settings, setSettings] = useState<any>(null);
-  const [content, setContent] = useState<any>({ portfolio: [], testimonials: [] });
+  const [content, setContent] = useState<any>({ portfolio: [], testimonials: [], resources: [] });
   const [loading, setLoading] = useState(supabaseConfigured);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [portfolioImage, setPortfolioImage] = useState<File | null>(null);
+  const [resourceImage, setResourceImage] = useState<File | null>(null);
+  const [editingResource, setEditingResource] = useState<any>(null);
+  const [resourceSearch, setResourceSearch] = useState("");
+
+  const filteredResources = useMemo(() => {
+    const query = resourceSearch.trim().toLowerCase();
+    if (!query) return content.resources || [];
+    return (content.resources || []).filter((item: any) => `${item.title} ${item.category} ${item.description}`.toLowerCase().includes(query));
+  }, [content.resources, resourceSearch]);
 
   const load = useCallback(async () => {
     if (!supabaseConfigured) {
@@ -150,6 +160,49 @@ export function ContentManager({ supabaseConfigured }: { supabaseConfigured: boo
     if (saved) formElement.reset();
   }
 
+  async function saveResource(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
+    const saved = await run(async () => {
+      let thumbnailUrl = String(form.get("thumbnailUrl") || "").trim() || null;
+      if (resourceImage) {
+        const uploaded = await uploadPublicImage({ file: resourceImage, folder: "resources" });
+        thumbnailUrl = uploaded.imageUrl;
+      }
+      const response = await fetch("/api/admin/content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: editingResource ? "update" : "create",
+          type: "resource",
+          id: editingResource?.id,
+          title: form.get("title"),
+          category: form.get("category"),
+          description: form.get("description"),
+          url: form.get("url"),
+          thumbnailUrl,
+          accessType: form.get("accessType"),
+          sortOrder: Number(form.get("sortOrder")),
+          isFeatured: form.get("isFeatured") === "on",
+          isPublished: form.get("isPublished") === "on"
+        })
+      });
+      await responseJson(response);
+    }, editingResource ? "Student resource updated." : "Student resource added.");
+    if (saved) {
+      formElement.reset();
+      setEditingResource(null);
+      setResourceImage(null);
+    }
+  }
+
+  function editResource(item: any) {
+    setEditingResource(item);
+    setResourceImage(null);
+    document.getElementById("resource-editor")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   async function contentAction(body: Record<string, unknown>, message: string) {
     await run(async () => {
       const response = await fetch("/api/admin/content", {
@@ -181,7 +234,7 @@ export function ContentManager({ supabaseConfigured }: { supabaseConfigured: boo
   }
 
   return <main className="admin-content admin-settings-page stack">
-    <div><span className="eyebrow">Website management</span><h2 style={{ marginTop: 7 }}>Content and settings</h2><p className="muted">Update WhatsApp, bank details, public work examples and customer feedback.</p></div>
+    <div><span className="eyebrow">Website management</span><h2 style={{ marginTop: 7 }}>Content and settings</h2><p className="muted">Manage business details, student resources, public work examples and customer feedback.</p></div>
     {notice ? <div className={`notice notice-${notice.type}`}>{notice.text}</div> : null}
 
     {settings ? <section className="panel">
@@ -203,6 +256,42 @@ export function ContentManager({ supabaseConfigured }: { supabaseConfigured: boo
         <div className="field full"><button className="btn btn-blue" disabled={busy}><Save size={17}/> Save settings</button></div>
       </form>
     </section> : <div className="notice notice-error">The settings record is missing. Run the latest Supabase schema and refresh this page.</div>}
+
+    <section className="panel resource-admin-panel" id="student-resources">
+      <div className="panel-title"><div><span className="eyebrow">Public discovery page</span><h3>Student resources</h3><p className="muted small">Add, edit, order, feature or hide tools shown at /student-resources.</p></div><a className="btn btn-soft btn-sm" href="/student-resources" target="_blank"><ExternalLink size={15}/> View page</a></div>
+      {content.resourceSetupRequired ? <div className="notice notice-info">Run <strong>supabase/migrations/20260819_add_student_resources.sql</strong> before saving resource changes. The public page already uses the built-in starter directory.</div> : null}
+      <div className="resource-admin-grid">
+        <form className="stack resource-editor" id="resource-editor" key={editingResource?.id || "new-resource"} onSubmit={saveResource}>
+          <div className="resource-editor-heading"><div><strong>{editingResource ? "Edit resource" : "Add a resource"}</strong><span>{editingResource ? "Update the selected card and save your changes." : "Create a new link for the public directory."}</span></div>{editingResource ? <button type="button" className="btn btn-soft btn-sm" onClick={() => { setEditingResource(null); setResourceImage(null); }}><X size={14}/> Cancel</button> : <Plus size={18}/>}</div>
+          <div className="form-grid">
+            <div className="field"><label htmlFor="resource-title">Resource title</label><input id="resource-title" className="input" name="title" defaultValue={editingResource?.title || ""} required/></div>
+            <div className="field"><label htmlFor="resource-category">Category</label><select id="resource-category" className="select" name="category" defaultValue={editingResource?.category || RESOURCE_CATEGORIES[0]}>{editingResource?.category && !RESOURCE_CATEGORIES.includes(editingResource.category) ? <option>{editingResource.category}</option> : null}{RESOURCE_CATEGORIES.map((item) => <option key={item}>{item}</option>)}</select></div>
+            <div className="field full"><label htmlFor="resource-description">Short description</label><textarea id="resource-description" className="textarea" name="description" defaultValue={editingResource?.description || ""} maxLength={2000} required/></div>
+            <div className="field full"><label htmlFor="resource-url">Website link</label><input id="resource-url" className="input" name="url" type="url" defaultValue={editingResource?.url || ""} placeholder="https://example.com/" required/></div>
+            <div className="field"><label htmlFor="resource-access">Access</label><select id="resource-access" className="select" name="accessType" defaultValue={editingResource?.access_type || "free"}>{RESOURCE_ACCESS_TYPES.map((item) => <option value={item} key={item}>{RESOURCE_ACCESS_LABELS[item]}</option>)}</select></div>
+            <div className="field"><label htmlFor="resource-order">Sort order</label><input id="resource-order" className="input" name="sortOrder" type="number" defaultValue={editingResource?.sort_order ?? 0}/></div>
+            <div className="field full"><label htmlFor="resource-thumbnail-url">Thumbnail URL <span className="muted">(optional)</span></label><input id="resource-thumbnail-url" className="input" name="thumbnailUrl" type="url" defaultValue={editingResource?.thumbnail_url || ""} placeholder="https://..."/><span className="help">Leave empty to use the website&apos;s branded icon automatically.</span></div>
+            <div className="field full"><label htmlFor="resource-thumbnail-file">Upload thumbnail <span className="muted">(optional)</span></label><input id="resource-thumbnail-file" className="input" type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(event) => setResourceImage(event.target.files?.[0] || null)}/></div>
+            <label className="checkbox-row field"><input type="checkbox" name="isFeatured" defaultChecked={Boolean(editingResource?.is_featured)}/><span>Show in starter kit</span></label>
+            <label className="checkbox-row field"><input type="checkbox" name="isPublished" defaultChecked={editingResource ? Boolean(editingResource.is_published) : true}/><span>Publish this resource</span></label>
+          </div>
+          <button className="btn btn-primary" disabled={busy}>{editingResource ? <><Save size={17}/> Save resource</> : <><Plus size={17}/> Add resource</>}</button>
+        </form>
+
+        <div className="resource-admin-library">
+          <label className="search-field"><Search size={17}/><span className="sr-only">Search student resources</span><input value={resourceSearch} onChange={(event) => setResourceSearch(event.target.value)} placeholder="Search resources"/></label>
+          <div className="resource-admin-count"><strong>{filteredResources.length}</strong> of {content.resources?.length || 0} resources</div>
+          <div className="resource-admin-list">
+            {filteredResources.map((item: any) => <article className="resource-admin-row" key={item.id}>
+              <div className="resource-admin-thumb"><span>{item.title.slice(0, 1)}</span><img src={item.thumbnail_url || resourceFavicon(item.url)} alt="" width="38" height="38" loading="lazy" referrerPolicy="no-referrer"/></div>
+              <div className="resource-admin-copy"><strong>{item.title}</strong><span>{item.category} · {RESOURCE_ACCESS_LABELS[item.access_type as keyof typeof RESOURCE_ACCESS_LABELS]} · {item.is_published ? "Published" : "Hidden"}{item.is_featured ? " · Featured" : ""}</span></div>
+              <div className="resource-admin-actions"><button className="btn btn-soft btn-sm" type="button" title="Edit resource" onClick={() => editResource(item)}><Pencil size={14}/></button><a className="btn btn-soft btn-sm" href={item.url} target="_blank" title="Open website"><ExternalLink size={14}/></a><button className="btn btn-soft btn-sm" type="button" title={item.is_published ? "Hide resource" : "Publish resource"} onClick={() => contentAction({ action: "toggle", type: "resource", id: item.id, isPublished: !item.is_published }, item.is_published ? "Resource hidden." : "Resource published.")}>{item.is_published ? <EyeOff size={14}/> : <Eye size={14}/>}</button><button className="btn btn-danger btn-sm" type="button" title="Delete resource" onClick={() => window.confirm(`Delete ${item.title}?`) && contentAction({ action: "delete", type: "resource", id: item.id }, "Resource deleted.")}><Trash2 size={14}/></button></div>
+            </article>)}
+            {!filteredResources.length ? <p className="muted small">No resources match this search.</p> : null}
+          </div>
+        </div>
+      </div>
+    </section>
 
     <section className="admin-grid">
       <div className="panel">

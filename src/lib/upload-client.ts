@@ -48,12 +48,12 @@ export async function uploadPrivateFile({
   };
 }
 
-export async function uploadPublicImage({ file }: { file: File }) {
+export async function uploadPublicImage({ file, folder = "portfolio" }: { file: File; folder?: "portfolio" | "resources" }) {
   const response = await fetch("/api/upload/sign", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      scope: "portfolio-image",
+      scope: folder === "resources" ? "resource-image" : "portfolio-image",
       name: file.name,
       mimeType: file.type || "application/octet-stream",
       size: file.size

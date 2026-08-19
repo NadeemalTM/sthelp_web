@@ -71,13 +71,13 @@ export async function POST(request: NextRequest) {
       limit = TWENTY_FIVE_MB;
       allowed = scope === "admin-preview" ? previewTypes : ACCEPTED_SUPPORT_TYPES;
       path = `assignments/${assignment.id}/${scope === "admin-preview" ? "preview" : "final"}/${randomPathSegment()}-${name}`;
-    } else if (scope === "portfolio-image") {
+    } else if (scope === "portfolio-image" || scope === "resource-image") {
       const session = await requireAdminApi();
       if (!session) return apiError("Admin login required.", 401);
       limit = FIVE_MB;
       allowed = portfolioImageTypes;
       bucket = "portfolio-images";
-      path = `portfolio/${randomPathSegment()}-${name}`;
+      path = `${scope === "resource-image" ? "resources" : "portfolio"}/${randomPathSegment()}-${name}`;
     } else {
       return apiError("Unknown upload scope.");
     }

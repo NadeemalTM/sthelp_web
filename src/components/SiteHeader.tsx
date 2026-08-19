@@ -4,6 +4,7 @@ import { Menu } from "lucide-react";
 
 const navigation = [
   { href: "/assignment-support", label: "Assignment support" },
+  { href: "/student-resources", label: "Student resources" },
   { href: "/place-assignment", label: "Place assignment" },
   { href: "/#work", label: "Previous work" },
   { href: "/#feedback", label: "Feedback" },
