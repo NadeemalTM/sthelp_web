@@ -34,7 +34,6 @@ export function SiteHeader({ whatsapp }: { whatsapp?: string }) {
         <nav className="nav-links" aria-label="Main navigation">
           {navigation.map((item) => <Link href={item.href} prefetch={item.prefetch} key={item.href}>{item.label}</Link>)}
         </nav>
-        {wa ? <a className="header-whatsapp" href={`https://wa.me/${wa}`} target="_blank" rel="noreferrer" aria-label={`Chat with StHelp on WhatsApp at ${displayedWhatsapp}`} title={`WhatsApp ${displayedWhatsapp}`}><WhatsAppIcon/></a> : null}
         <details className="mobile-nav">
           <summary><Menu size={19} /><span>Menu</span></summary>
           <nav className="mobile-nav-panel" aria-label="Mobile navigation">
