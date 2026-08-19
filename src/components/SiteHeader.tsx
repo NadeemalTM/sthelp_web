@@ -24,7 +24,7 @@ const navigation = [
 export function SiteHeader({ whatsapp }: { whatsapp?: string }) {
   const wa = (whatsapp || "").replace(/\D/g, "");
   const displayedWhatsapp = wa ? displayPhoneNumber(wa) : "";
-  return (
+  return <>
     <header className="site-header">
       <div className="container header-inner">
         <Link href="/" className="brand">
@@ -33,16 +33,16 @@ export function SiteHeader({ whatsapp }: { whatsapp?: string }) {
         </Link>
         <nav className="nav-links" aria-label="Main navigation">
           {navigation.map((item) => <Link href={item.href} prefetch={item.prefetch} key={item.href}>{item.label}</Link>)}
-          {wa ? <a className="btn btn-sm whatsapp-link" href={`https://wa.me/${wa}`} target="_blank" rel="noreferrer" aria-label={`Chat with StHelp on WhatsApp at ${displayedWhatsapp}`}><WhatsAppIcon/><span>WhatsApp<small>{displayedWhatsapp}</small></span></a> : null}
         </nav>
+        {wa ? <a className="header-whatsapp" href={`https://wa.me/${wa}`} target="_blank" rel="noreferrer" aria-label={`Chat with StHelp on WhatsApp at ${displayedWhatsapp}`} title={`WhatsApp ${displayedWhatsapp}`}><WhatsAppIcon/></a> : null}
         <details className="mobile-nav">
           <summary><Menu size={19} /><span>Menu</span></summary>
           <nav className="mobile-nav-panel" aria-label="Mobile navigation">
             {navigation.map((item) => <Link href={item.href} prefetch={item.prefetch} key={item.href}>{item.label}</Link>)}
-            {wa ? <a className="mobile-nav-whatsapp" href={`https://wa.me/${wa}`} target="_blank" rel="noreferrer" aria-label={`Chat with StHelp on WhatsApp at ${displayedWhatsapp}`}><WhatsAppIcon/><span>WhatsApp<small>{displayedWhatsapp}</small></span></a> : null}
           </nav>
         </details>
       </div>
     </header>
-  );
+    {wa ? <a className="floating-whatsapp" href={`https://wa.me/${wa}`} target="_blank" rel="noreferrer" aria-label={`Chat with StHelp on WhatsApp at ${displayedWhatsapp}`} title={`WhatsApp ${displayedWhatsapp}`}><WhatsAppIcon/><span className="sr-only">WhatsApp {displayedWhatsapp}</span></a> : null}
+  </>;
 }
