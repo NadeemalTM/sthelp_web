@@ -86,7 +86,7 @@ export function PortalClient({ token }: { token: string }) {
   if (!data) return <main className="access-page"><div className="access-card"><AlertCircle/><h2>Portal unavailable</h2><p className="muted">{notice?.text || "Please request a new link from StHelp."}</p></div></main>;
 
   return (
-    <main className="page-shell">
+    <main className="page-shell client-portal-page">
       <header className="portal-header"><div className="container portal-header-inner"><a className="brand" href="/"><Image className="brand-logo" src="/sthelp-mark.png" alt="" width={48} height={48}/><span className="brand-copy">StHelp<small>Private client portal</small></span></a><div className="portal-sync"><span><i/> Live workspace</span><button type="button" onClick={() => void load(true)} disabled={busy} title="Refresh assignment updates"><RefreshCw size={15}/></button><small>Client ID: <strong>{data.link.client_id}</strong>{lastSynced ? ` · updated ${lastSynced.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : ""}</small></div></div></header>
       <div className="container portal-main">
         {notice ? <div className={`notice notice-${notice.type}`}>{notice.text}</div> : null}
@@ -151,14 +151,14 @@ function SubmissionView({ token, data, busy, setBusy, onDone, setNotice }: any) 
     }
   }
 
-  return <div className="stack">
-    <section className="panel" style={{background:"linear-gradient(135deg,#0b1f3a,#174b75)", color:"white"}}><span className="eyebrow" style={{color:"#ffc95d"}}>Welcome to StHelp</span><h1 style={{fontSize:"clamp(2rem,6vw,3.8rem)", marginTop:8}}>Tell us exactly what support you need.</h1><p className="lead">This private link will become your progress dashboard after submission. You can return to it at any time.</p></section>
+  return <div className="stack submission-flow">
+    <section className="panel submission-intro" style={{background:"linear-gradient(135deg,#0b1f3a,#174b75)", color:"white"}}><span className="eyebrow" style={{color:"#ffc95d"}}>Welcome to StHelp</span><h1 style={{fontSize:"clamp(2rem,6vw,3.8rem)", marginTop:8}}>Tell us exactly what support you need.</h1><p className="lead">This private link will become your progress dashboard after submission. You can return to it at any time.</p></section>
 
-    <section><div className="section-title"><span className="eyebrow">Previous work</span><h2 style={{fontSize:"1.9rem"}}>Examples of supported work</h2></div><div className="portfolio-grid">{data.portfolio.map((item: any) => <article className="card portfolio-card" key={item.id}><div className="portfolio-visual">{item.image_url ? <img src={item.image_url} alt=""/> : <FileText size={44}/>}</div><span className="tag">{item.category}</span><h3>{item.title}</h3><p className="muted">{item.description}</p></article>)}</div></section>
+    <section className="submission-portfolio"><div className="section-title"><span className="eyebrow">Previous work</span><h2 style={{fontSize:"1.9rem"}}>Examples of supported work</h2></div><div className="portfolio-grid">{data.portfolio.map((item: any) => <article className="card portfolio-card" key={item.id}><div className="portfolio-visual">{item.image_url ? <img src={item.image_url} alt=""/> : <FileText size={44}/>}</div><span className="tag">{item.category}</span><h3>{item.title}</h3><p className="muted">{item.description}</p></article>)}</div></section>
 
-    <section><div className="section-title"><span className="eyebrow">Client feedback</span><h2 style={{fontSize:"1.9rem"}}>Recent experiences</h2></div><div className="testimonial-grid">{data.testimonials.slice(0,3).map((item:any) => <article className="card testimonial-card" key={item.id}><div className="stars">{"★".repeat(item.rating)}</div><p>“{item.feedback}”</p><div className="customer"><strong>{item.customer_name}</strong>{item.university ? ` · ${item.university}` : ""}</div></article>)}</div></section>
+    <section className="submission-feedback"><div className="section-title"><span className="eyebrow">Client feedback</span><h2 style={{fontSize:"1.9rem"}}>Recent experiences</h2></div><div className="testimonial-grid">{data.testimonials.slice(0,3).map((item:any) => <article className="card testimonial-card" key={item.id}><div className="stars">{"★".repeat(item.rating)}</div><p>“{item.feedback}”</p><div className="customer"><strong>{item.customer_name}</strong>{item.university ? ` · ${item.university}` : ""}</div></article>)}</div></section>
 
-    <form className="form-card" onSubmit={submit}>
+    <form className="form-card submission-form" onSubmit={submit}>
       <div className="section-title"><span className="eyebrow">Assignment request</span><h2 style={{fontSize:"2rem"}}>Your details and requirements</h2><p className="muted">Fields marked with * are required. Add as much detail as possible to avoid delays.</p></div>
       <div className="form-grid">
         <div className="field"><label>Full name *</label><input className="input" name="studentName" defaultValue={data.link.client_name || ""} required /></div>
@@ -311,11 +311,6 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
 
       <section className="panel"><div className="panel-title"><h3>Comments and revision requests</h3><MessageSquareText/></div><div className="comment-list">{data.comments.length ? data.comments.map((item:any)=><div className={`comment ${item.author === "admin" ? "admin" : ""}`} key={item.id}>{item.message}<time>{item.author === "admin" ? "StHelp" : "You"} · {formatDate(item.created_at)}</time></div>) : <p className="muted small">No comments yet.</p>}</div><form className="form-inline" onSubmit={sendComment}><input className="input" value={comment} maxLength={1000} onChange={(e)=>setComment(e.target.value)} placeholder="Write a short comment or revision request…"/><button className="btn btn-blue" disabled={busy || !comment.trim()} aria-label="Send"><Send size={18}/></button></form></section>
 
-      <section className="panel client-history">
-        <div className="panel-title"><div><h3>Activity history</h3><p className="muted small">A complete record of your actions and assignment updates.</p></div><Clock3 size={19}/></div>
-        {data.activity?.length ? <div className="client-history-list">{data.activity.map((item:any)=><article className="client-history-item" key={item.id}><span className="client-history-marker"/><div><div className="client-history-meta"><span className={`activity-actor ${item.actor || "system"}`}>{activityActor(item.actor)}</span><time>{formatDate(item.created_at)}</time></div><p>{activitySummary(item)}</p></div></article>)}</div> : <div className="lock-box"><Clock3/><h3>No activity yet</h3><p className="muted small">Your portal actions and StHelp updates will be recorded here.</p></div>}
-      </section>
-
       {canDownloadFinals && !assignment.feedback_submitted ? <section className="panel"><div className="panel-title"><div><h3>Share your feedback</h3><p className="muted small">Your feedback will appear publicly only after admin approval.</p></div><Star/></div><form className="stack" onSubmit={sendFeedback}><div className="field"><label>Rating</label><select className="select" value={rating} onChange={(e)=>setRating(Number(e.target.value))}>{[5,4,3,2,1].map(n=><option key={n} value={n}>{n} star{n>1?"s":""}</option>)}</select></div><div className="field"><label>Feedback</label><textarea className="textarea" value={feedback} onChange={(e)=>setFeedback(e.target.value)} required maxLength={1500}/></div><button className="btn btn-primary" disabled={busy}>Submit feedback</button></form></section> : null}
     </div>
 
@@ -456,28 +451,6 @@ function formatFileSize(value: number | string | null) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
-}
-
-function activityActor(actor: string) {
-  if (actor === "client") return "You";
-  if (actor === "admin") return "StHelp";
-  return "System";
-}
-
-function activitySummary(item: any) {
-  const clientLabels: Record<string, string> = {
-    request_submitted: "You submitted the assignment requirements.",
-    client_message: "You sent a message to StHelp.",
-    payment_submitted: "You submitted payment details for verification.",
-    quote_accepted: "You accepted the quote.",
-    quote_declined: "You declined the quote.",
-    feedback_submitted: "You submitted feedback for review."
-  };
-  if (item.actor === "client" && clientLabels[item.event_type]) return clientLabels[item.event_type];
-  if (item.actor === "client" && String(item.summary).startsWith("The client ")) {
-    return `You ${String(item.summary).slice("The client ".length)}`;
-  }
-  return item.summary;
 }
 
 function nextStep(assignment: any) {

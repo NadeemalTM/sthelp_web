@@ -28,11 +28,10 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     const safeLink = { client_id: link.client_id, client_name: link.client_name, phone: link.phone, status: link.status };
     if (!assignment) return NextResponse.json({ link: safeLink, assignment: null, settings, portfolio, testimonials });
 
-    const [{ data: progress }, { data: comments }, { data: files }, { data: activity }] = await Promise.all([
+    const [{ data: progress }, { data: comments }, { data: files }] = await Promise.all([
       db.from("progress_updates").select("*").eq("assignment_id", assignment.id).order("created_at", { ascending: false }),
       db.from("comments").select("*").eq("assignment_id", assignment.id).order("created_at", { ascending: true }),
-      db.from("assignment_files").select("*").eq("assignment_id", assignment.id).order("created_at", { ascending: true }),
-      db.from("assignment_activity").select("*").eq("assignment_id", assignment.id).or("visibility.eq.client,visibility.eq.both,actor.eq.client").order("created_at", { ascending: false })
+      db.from("assignment_files").select("*").eq("assignment_id", assignment.id).order("created_at", { ascending: true })
     ]);
 
     return NextResponse.json({
@@ -44,7 +43,6 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       testimonials,
       progress: progress || [],
       comments: comments || [],
-      activity: activity || [],
       files: (files || []).map(publicFile)
     });
   } catch (error) {
