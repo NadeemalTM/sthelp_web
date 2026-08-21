@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, FileText, MessageSquareText, ShieldCheck } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter } from "@/components/SiteFooter";
 import { getPublicContent } from "@/lib/data";
 import { publicSiteUrl } from "@/lib/site-url";
 
@@ -38,6 +39,7 @@ export default async function AssignmentSupportPage() {
     <section className="section support-flow"><div className="container"><div className="support-flow-title"><span className="eyebrow">How StHelp works</span><h2>Clear from brief to delivery.</h2></div><ol><li><span>01</span><div><strong>Send your requirements</strong><p>Tell us the subject, task, deadline and the kind of support you need.</p></div></li><li><span>02</span><div><strong>Review your quote</strong><p>We confirm the scope and price in your client portal before moving forward.</p></div></li><li><span>03</span><div><strong>Stay connected</strong><p>Track progress, exchange messages and access files through one private link.</p></div></li></ol></div></section>
     <section className="section support-faq"><div className="container"><div className="section-title"><span className="eyebrow">Common questions</span><h2>Assignment support FAQs</h2></div><div className="faq-grid">{questions.map(([question, answer])=><details key={question}><summary>{question}</summary><p>{answer}</p></details>)}</div></div></section>
     <section className="support-closing"><div className="container"><div><ShieldCheck size={28}/><h2>Start with the brief you already have.</h2><p>We’ll give it a private, organised place to move forward.</p></div><Link className="btn btn-light" href="/place-assignment">Place an assignment request <ArrowRight size={18}/></Link></div></section>
+    <SiteFooter settings={settings}/>
     <script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify({"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList",itemListElement:[{"@type":"ListItem",position:1,name:"Home",item:`${siteUrl}/`},{"@type":"ListItem",position:2,name:"Assignment Help & Student Support",item:`${siteUrl}/assignment-support`}]},{"@type":"Service",name:"Assignment Help and Student Support in Sri Lanka",url:`${siteUrl}/assignment-support`,areaServed:{"@type":"Country",name:"Sri Lanka"},audience:{"@type":"EducationalAudience",educationalRole:"student"},provider:{"@id":`${siteUrl}/#organization`},serviceType:["Assignment support","University assignment guidance","Report writing support","Research guidance","Software project support","Data analysis support"]},{"@type":"FAQPage",mainEntity:questions.map(([name,text])=>({"@type":"Question",name,acceptedAnswer:{"@type":"Answer",text}}))}]})}} />
   </main>;
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, BarChart3, BookOpenCheck, CheckCircle2, Clock3, Code2, FileLock2, MessageSquareText, ShieldCheck, Smartphone, UploadCloud } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter } from "@/components/SiteFooter";
 import { getPublicContent } from "@/lib/data";
 import { publicSiteUrl } from "@/lib/site-url";
 
@@ -55,7 +56,7 @@ export default async function HomePage() {
 
     <section className="closing-section"><div className="container closing-inner"><div><span className="eyebrow" style={{ color: "#ffad9f" }}>A good place to begin</span><h2>Your next step<br />doesn’t have to be <em>messy.</em></h2><p>Send your assignment details when you’re ready. We’ll give the work a clear place to move forward.</p></div><div className="closing-actions"><Link className="btn btn-light" href="/place-assignment">Place an assignment <ArrowRight size={18} /></Link>{whatsapp ? <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noreferrer">Prefer WhatsApp? <span>↗</span></a> : null}</div></div></section>
 
-    <footer className="site-footer home-footer"><div className="container footer-inner"><div><strong>{settings.business_name}</strong><div className="small">Assignment guidance, technical support and learning assistance.</div><Link className="footer-policy" href="/policies">Privacy, service terms & academic integrity</Link></div><div className="small">© {new Date().getFullYear()} StHelp · {settings.support_notice}</div></div></footer>
+    <SiteFooter settings={settings}/>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@graph": [
       { "@type": "WebSite", "@id": websiteId, url: `${siteUrl}/`, name: "StHelp", alternateName: "StHelp Assignment Support", publisher: { "@id": organizationId } },
       { "@type": "Organization", "@id": organizationId, name: "StHelp", alternateName: settings.business_name && settings.business_name !== "StHelp" ? settings.business_name : undefined, url: `${siteUrl}/`, logo: { "@type": "ImageObject", url: `${siteUrl}/sthelp-logo.png`, contentUrl: `${siteUrl}/sthelp-logo.png`, width: 1254, height: 1254 } },

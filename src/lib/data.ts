@@ -45,6 +45,9 @@ export const demoTestimonials = [
 export const demoSettings = {
   business_name: "StHelp Assignment Service",
   whatsapp_number: "94782067550",
+  business_phone: "94782067550",
+  business_email: "",
+  business_address: "",
   bank_name: "Your Bank",
   account_name: "StHelp",
   account_number: "0000000000",

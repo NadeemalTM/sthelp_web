@@ -7,6 +7,7 @@ import {
   Banknote,
   CheckCircle2,
   Clock3,
+  CreditCard,
   Download,
   FileCheck2,
   FileLock2,
@@ -56,6 +57,19 @@ export function PortalClient({ token }: { token: string }) {
     const refresh = window.setInterval(() => { void load(true); }, 45_000);
     return () => window.clearInterval(refresh);
   }, [load]);
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const payment = url.searchParams.get("payment");
+    if (payment === "returned") {
+      setNotice({ type: "info", text: "You returned from PayHere. Payment is confirmed only after PayHere sends its secure verification; this page will update automatically." });
+    } else if (payment === "cancelled") {
+      setNotice({ type: "info", text: "Online payment was cancelled. No payment status was changed, and you can try again or use bank transfer." });
+    }
+    if (payment) {
+      url.searchParams.delete("payment");
+      window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+    }
+  }, []);
 
   async function post(action: string, body: Record<string, unknown>) {
     const response = await fetch(`/api/client/${token}`, {
@@ -184,6 +198,8 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
   const [paymentRef, setPaymentRef] = useState(assignment.payment_reference || "");
   const [paymentNote, setPaymentNote] = useState("");
   const [proof, setProof] = useState<File | null>(null);
+  const [billingAddress, setBillingAddress] = useState("");
+  const [billingCity, setBillingCity] = useState("");
   const [feedback, setFeedback] = useState("");
   const [rating, setRating] = useState(5);
   const [editingDetails, setEditingDetails] = useState(false);
@@ -218,6 +234,37 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
   async function sendFeedback(e:React.FormEvent) {
     e.preventDefault();
     if (await run(()=>post("feedback", {rating, feedback}), "Thank you. Your feedback was submitted for review.")) setFeedback("");
+  }
+
+  async function startPayHere(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setNotice(null);
+    try {
+      const response = await fetch(`/api/client/${token}/payhere`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: billingAddress, city: billingCity })
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Unable to start PayHere checkout.");
+
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = payload.checkoutUrl;
+      for (const [name, value] of Object.entries(payload.fields as Record<string, string>)) {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = name;
+        input.value = String(value);
+        form.append(input);
+      }
+      document.body.append(form);
+      form.submit();
+    } catch (error) {
+      setNotice({ type: "error", text: error instanceof Error ? error.message : "Unable to start PayHere checkout." });
+      setBusy(false);
+    }
   }
 
   async function respondToQuote(accepted:boolean) {
@@ -295,13 +342,30 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
       {accepted ? (
         <section className="payment-card">
           <div className="payment-card-header">
-            <div><span className="eyebrow">Payment</span><h3>Bank transfer details</h3></div>
+            <div><span className="eyebrow">Payment</span><h3>Choose how to pay</h3></div>
             <span className="payment-card-icon"><Banknote size={19}/></span>
           </div>
           <div className="payment-total">
             <span>Amount to pay</span>
             <strong>{formatMoney(assignment.quoted_amount, assignment.currency || data.settings.currency)}</strong>
           </div>
+          {data.paymentOptions?.payHere && assignment.payment_status !== "verified" ? (
+            <div className="payhere-option">
+              <div className="payhere-option-heading">
+                <span className="payhere-option-icon"><CreditCard size={19}/></span>
+                <div><strong>Pay online securely with PayHere</strong><span>Card details are entered on PayHere and are not stored by StHelp.</span></div>
+              </div>
+              {assignment.email ? (
+                <form className="payhere-form" onSubmit={startPayHere}>
+                  <div className="field"><label>Billing address *</label><input className="input" value={billingAddress} onChange={(event)=>setBillingAddress(event.target.value)} maxLength={300} autoComplete="street-address" required/></div>
+                  <div className="field"><label>City *</label><input className="input" value={billingCity} onChange={(event)=>setBillingCity(event.target.value)} maxLength={100} autoComplete="address-level2" required/></div>
+                  <button className="btn payhere-button" disabled={busy}><CreditCard size={17}/>{busy ? "Opening PayHere…" : "Continue to PayHere"}</button>
+                  <p className="help">By continuing, you agree to the <a href="/terms-and-conditions" target="_blank" rel="noreferrer">Terms</a>, <a href="/privacy-policy" target="_blank" rel="noreferrer">Privacy Policy</a> and <a href="/refund-policy" target="_blank" rel="noreferrer">Refund Policy</a>.</p>
+                </form>
+              ) : <div className="notice notice-info">Add your email address in Assignment details before using PayHere.</div>}
+            </div>
+          ) : null}
+          <div className="payment-method-divider"><span>Bank transfer</span></div>
           <div className="payment-choice">
             <CheckCircle2 size={20}/>
             <div>
@@ -336,7 +400,7 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
         </section>
       ) : null}
 
-      {accepted && assignment.payment_status !== "verified" ? <section className="panel"><div className="panel-title"><h3>Submit payment reference</h3><FileCheck2/></div><form className="stack" onSubmit={sendPayment}><div className="field"><label>Reference / transaction ID *</label><input className="input" value={paymentRef} onChange={(e)=>setPaymentRef(e.target.value)} required/></div><div className="field"><label>Note</label><textarea className="textarea" value={paymentNote} onChange={(e)=>setPaymentNote(e.target.value)} placeholder="Payment date, sender name or anything admin should know."/></div><div className="field"><label>Payment proof (optional, maximum 5 MB)</label><input className="input" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" onChange={(e)=>setProof(e.target.files?.[0] || null)}/></div><button className="btn btn-primary" disabled={busy}>{busy ? "Submitting…" : "Send for verification"}</button></form>{assignment.payment_status === "submitted" ? <div className="notice notice-info">A payment reference is already awaiting verification. You may resubmit corrected details.</div> : null}</section> : null}
+      {accepted && assignment.payment_status !== "verified" ? <section className="panel"><div className="panel-title"><div><h3>Bank transfer verification</h3><p className="muted small">Use this after paying to one of the bank accounts above.</p></div><FileCheck2/></div><form className="stack" onSubmit={sendPayment}><div className="field"><label>Reference / transaction ID *</label><input className="input" value={paymentRef} onChange={(e)=>setPaymentRef(e.target.value)} required/></div><div className="field"><label>Note</label><textarea className="textarea" value={paymentNote} onChange={(e)=>setPaymentNote(e.target.value)} placeholder="Payment date, sender name or anything admin should know."/></div><div className="field"><label>Payment slip (optional, maximum 5 MB)</label><input className="input" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" onChange={(e)=>setProof(e.target.files?.[0] || null)}/></div><button className="btn btn-primary" disabled={busy}>{busy ? "Submitting…" : "Send for verification"}</button></form>{assignment.payment_status === "submitted" ? <div className="notice notice-info">A payment reference is already awaiting verification. You may resubmit corrected details.</div> : null}</section> : null}
 
       {assignment.payment_status === "verified" ? <section className="panel"><div className="lock-box" style={{background:"#ebf8f2"}}><CheckCircle2 color="#15805d" size={34}/><h3>Payment verified</h3><p className="muted small">Final downloads are {assignment.download_unlocked ? "unlocked" : "waiting for admin release"}.</p></div></section> : null}
     </aside>

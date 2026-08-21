@@ -88,6 +88,9 @@ export function ContentManager({ supabaseConfigured }: { supabaseConfigured: boo
         body: JSON.stringify({
           businessName: form.get("businessName"),
           whatsappNumber: form.get("whatsappNumber"),
+          businessPhone: form.get("businessPhone"),
+          businessEmail: form.get("businessEmail"),
+          businessAddress: form.get("businessAddress"),
           bankName: form.get("bankName"),
           accountName: form.get("accountName"),
           accountNumber: form.get("accountNumber"),
@@ -242,6 +245,9 @@ export function ContentManager({ supabaseConfigured }: { supabaseConfigured: boo
       <form className="form-grid" onSubmit={saveSettings}>
         <div className="field"><label htmlFor="business-name">Business name</label><input id="business-name" className="input" name="businessName" autoComplete="organization" defaultValue={settings.business_name} required/></div>
         <div className="field"><label htmlFor="whatsapp-number">WhatsApp number</label><input id="whatsapp-number" className="input" name="whatsappNumber" type="tel" inputMode="tel" autoComplete="tel" defaultValue={settings.whatsapp_number} placeholder="94782067550" required/></div>
+        <div className="field"><label htmlFor="business-phone">Registered business phone</label><input id="business-phone" className="input" name="businessPhone" type="tel" inputMode="tel" autoComplete="tel" defaultValue={settings.business_phone || settings.whatsapp_number || ""} placeholder="+94 78 206 7550" required/></div>
+        <div className="field"><label htmlFor="business-email">Business email</label><input id="business-email" className="input" name="businessEmail" type="email" autoComplete="email" defaultValue={settings.business_email || ""} placeholder="support@sthelp.edu.lk" required/></div>
+        <div className="field full"><label htmlFor="business-address">Registered postal address</label><textarea id="business-address" className="textarea" name="businessAddress" autoComplete="street-address" defaultValue={settings.business_address || ""} placeholder="Enter the complete address used in your PayHere application" required/></div>
         <div className="field"><label htmlFor="bank-name">Bank name</label><input id="bank-name" className="input" name="bankName" autoComplete="off" defaultValue={settings.bank_name} required/></div>
         <div className="field"><label htmlFor="account-name">Account name</label><input id="account-name" className="input" name="accountName" autoComplete="name" defaultValue={settings.account_name} required/></div>
         <div className="field"><label htmlFor="account-number">Account number</label><input id="account-number" className="input" name="accountNumber" inputMode="numeric" autoComplete="off" defaultValue={settings.account_number} required/></div>

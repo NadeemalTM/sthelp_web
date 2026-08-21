@@ -3,6 +3,7 @@ import { apiError, apiRouteError, logApiError, optionalText, publicFile, require
 import { getPublicContent } from "@/lib/data";
 import { getServiceSupabase } from "@/lib/supabase-server";
 import { recordAssignmentActivity } from "@/lib/assignment-activity";
+import { isPayHereEnabled } from "@/lib/payhere";
 
 async function findLink(token: string) {
   const db = getServiceSupabase();
@@ -37,6 +38,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({
       link: safeLink,
       assignment,
+      paymentOptions: { payHere: isPayHereEnabled() },
       settings,
       portfolio,
       testimonials,
@@ -181,6 +183,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     if (action === "payment") {
+      if (assignment.payment_status === "verified") return apiError("This payment has already been verified.", 409);
       const reference = requiredText(body.reference, "Payment reference", 250);
       const update = {
         payment_reference: reference,

@@ -5,8 +5,11 @@ create extension if not exists pgcrypto;
 
 create table if not exists public.settings (
   id integer primary key default 1 check (id = 1),
-  business_name text not null default 'StHelp Assignment Service',
-  whatsapp_number text not null default '94782067550',
+    business_name text not null default 'StHelp Assignment Service',
+    whatsapp_number text not null default '94782067550',
+    business_phone text,
+    business_email text,
+    business_address text,
   bank_name text not null default 'Your Bank',
   account_name text not null default 'StHelp',
   account_number text not null default '0000000000',
@@ -23,8 +26,11 @@ create table if not exists public.settings (
 
 -- Keep existing installations in sync. CREATE TABLE IF NOT EXISTS does not add
 -- columns when the settings table was created by an older schema version.
-alter table public.settings
-  add column if not exists bank_name_2 text,
+  alter table public.settings
+    add column if not exists business_phone text,
+    add column if not exists business_email text,
+    add column if not exists business_address text,
+    add column if not exists bank_name_2 text,
   add column if not exists account_name_2 text,
   add column if not exists account_number_2 text,
   add column if not exists bank_branch_2 text;

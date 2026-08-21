@@ -381,6 +381,17 @@ h3 { font-size: 1.12rem; line-height: 1.3; margin-bottom: 8px; }
 .home-footer { padding: 37px 0; color: rgba(255,255,255,.58); background: #19231f; }
 .home-footer strong { color: #fff; }
 .footer-policy { display: inline-block; margin-top: 9px; color: #bde8d4; font-size: .76rem; text-decoration: underline; text-underline-offset: 3px; }
+.public-footer { padding: 46px 0 18px; color: rgba(255,255,255,.68); background: #19231f; }
+.public-footer-grid { display: grid; grid-template-columns: 1.15fr 1fr .8fr; gap: 45px; }
+.public-footer-grid > div > strong, .public-footer-grid nav > strong { display: block; margin-bottom: 13px; color: #fff; font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; }
+.public-footer-brand > strong { display: block; color: #fff; font-family: Georgia, "Times New Roman", serif; font-size: 1.45rem; }
+.public-footer-brand p { max-width: 390px; margin: 8px 0 9px; font-size: .83rem; }
+.public-footer-brand a, .public-footer-policies a { color: #bde8d4; font-size: .8rem; text-decoration: underline; text-underline-offset: 3px; }
+.public-footer-contact address { display: grid; gap: 9px; font-style: normal; }
+.public-footer-contact address > a, .public-footer-contact address > span { display: grid; grid-template-columns: 18px minmax(0,1fr); gap: 8px; align-items: start; font-size: .8rem; overflow-wrap: anywhere; }
+.public-footer-contact svg { margin-top: 2px; color: #bde8d4; }
+.public-footer-policies { display: grid; align-content: start; justify-items: start; gap: 8px; }
+.public-footer-bottom { display: flex; justify-content: space-between; gap: 20px; margin-top: 31px; padding-top: 17px; border-top: 1px solid rgba(255,255,255,.1); font-size: .7rem; }
 .quote-panel { border-color: #b9ead7; background: linear-gradient(135deg, #f4fcf7, #fff); }
 .quote-amount { margin: 15px 0 10px; color: #167152; font-family: Georgia, "Times New Roman", serif; font-size: clamp(2rem, 4vw, 2.8rem); letter-spacing: -.05em; }
 .quote-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
@@ -410,6 +421,7 @@ h3 { font-size: 1.12rem; line-height: 1.3; margin-bottom: 8px; }
 .policy-hero h1 { margin: 13px 0 17px; font-family: Georgia, "Times New Roman", serif; font-size: clamp(3rem, 6vw, 5.4rem); font-weight: 500; line-height: .9; letter-spacing: -.06em; }
 .policy-hero h1 em { color: #bde8d4; font-weight: 400; }
 .policy-hero p { max-width: 590px; margin: 0; color: rgba(255,255,255,.72); font-size: 1.04rem; }
+.policy-updated { display: inline-block; margin-top: 18px; color: rgba(255,255,255,.54); font-size: .74rem; letter-spacing: .04em; }
 .policy-layout { display: grid; grid-template-columns: 235px minmax(0, 1fr); gap: 75px; padding-top: 48px; }
 .policy-nav { position: sticky; top: 105px; align-self: start; display: grid; gap: 10px; padding: 20px 0; border-top: 1px solid #cbd1c7; border-bottom: 1px solid #cbd1c7; }
 .policy-nav strong { margin-bottom: 5px; font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; }
@@ -421,6 +433,13 @@ h3 { font-size: 1.12rem; line-height: 1.3; margin-bottom: 8px; }
 .policy-content h2 { margin: 0 0 14px; font-family: Georgia, "Times New Roman", serif; font-size: clamp(1.9rem, 3vw, 2.55rem); font-weight: 500; letter-spacing: -.05em; }
 .policy-content p { color: #56665d; line-height: 1.72; }
 .policy-content p:last-child { margin-bottom: 0; }
+.policy-content ul { display: grid; gap: 9px; margin: 0 0 17px; padding-left: 20px; color: #56665d; line-height: 1.65; }
+.policy-content a { color: #26745d; text-decoration: underline; text-underline-offset: 3px; }
+.policy-note { padding: 15px 17px; border-left: 3px solid #df5c49; border-radius: 0 10px 10px 0; color: #4f5e56; background: #f0e9df; }
+.policy-centre-grid article { display: grid; align-content: start; }
+.policy-centre-grid article > svg { color: #26745d; }
+.policy-centre-grid h2 { margin: 17px 0 9px; font-size: 1.7rem; }
+.policy-centre-grid a { display: inline-flex; align-items: center; gap: 7px; margin-top: 8px; color: #26745d; font-size: .82rem; font-weight: 800; }
 .policy-cta { display: flex; justify-content: space-between; gap: 22px; align-items: center; padding: 26px; border-radius: 14px; color: #fff; background: #244338; }
 .policy-cta strong, .policy-cta span { display: block; }
 .policy-cta strong { margin-bottom: 4px; font-family: Georgia, "Times New Roman", serif; font-size: 1.45rem; font-weight: 500; }
@@ -592,6 +611,57 @@ h3 { font-size: 1.12rem; line-height: 1.3; margin-bottom: 8px; }
 .payment-total { display: grid; gap: 2px; margin: 17px 0 14px; }
 .payment-total span { color: #6c7d74; font-size: .7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
 .payment-total strong { color: #1e4f3b; font-size: 1.8rem; line-height: 1.15; letter-spacing: -.04em; }
+.payhere-option {
+  margin: 16px 0;
+  padding: 14px;
+  border: 1px solid #cbd8eb;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(14, 42, 82, .06);
+}
+.payhere-option-heading {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+.payhere-option-heading > div { display: grid; gap: 2px; }
+.payhere-option-heading strong { color: #142f54; font-size: .82rem; }
+.payhere-option-heading span { color: #66778d; font-size: .69rem; line-height: 1.45; }
+.payhere-option-icon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  color: #132f56 !important;
+  background: #ffd65a;
+}
+.payhere-form { display: grid; gap: 11px; margin-top: 14px; }
+.payhere-form .field { gap: 5px; }
+.payhere-form .input { min-height: 42px; padding: 9px 11px; }
+.payhere-form .help { margin: 0; line-height: 1.5; }
+.payhere-form .help a { color: #245d98; text-decoration: underline; text-underline-offset: 2px; }
+.payhere-button {
+  width: 100%;
+  color: #fff;
+  background: #183d6b;
+  box-shadow: 0 8px 20px rgba(24, 61, 107, .18);
+}
+.payhere-button:hover { color: #132f56; background: #ffd65a; }
+.payment-method-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0 11px;
+  color: #6c7d74;
+  font-size: .65rem;
+  font-weight: 850;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+.payment-method-divider::before,
+.payment-method-divider::after { content: ""; height: 1px; flex: 1; background: #d5e2d9; }
 .payment-choice {
   display: grid;
   grid-template-columns: 20px minmax(0, 1fr);
@@ -1396,6 +1466,8 @@ th { color: #66748a; font-size: .72rem; text-transform: uppercase; letter-spacin
 @media (max-width: 1080px) {
   .site-header .nav-links { display: none; }
   .mobile-nav { display: block; }
+  .public-footer-grid { grid-template-columns: 1fr; gap: 28px; }
+  .public-footer-bottom { display: grid; gap: 5px; }
   .floating-assignment-cta { left: max(12px, env(safe-area-inset-left)); bottom: max(14px, env(safe-area-inset-bottom)); width: min(255px, calc(100vw - 94px)); min-width: 0; min-height: 56px; padding-left: 14px; border-radius: 16px; }
   .floating-assignment-cta strong { font-size: .82rem; }
   .floating-assignment-cta small { font-size: .61rem; }

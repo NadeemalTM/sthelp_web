@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowDown, BookOpenCheck, LibraryBig, SearchCheck } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter } from "@/components/SiteFooter";
 import { getPublicContent, getStudentResources } from "@/lib/data";
 import { publicSiteUrl } from "@/lib/site-url";
 import { ResourcesExplorer } from "./ResourcesExplorer";
@@ -35,7 +36,7 @@ export default async function StudentResourcesPage() {
       </div>
     </section>
     <ResourcesExplorer resources={resources}/>
-    <footer className="site-footer resources-footer"><div className="container footer-inner"><div><strong>{settings.business_name}</strong><div className="small">Practical academic guidance and useful tools in one place.</div></div><div className="small">External services have their own terms and privacy policies.</div></div></footer>
+    <SiteFooter settings={settings} note="Practical academic guidance and useful tools in one place."/>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "CollectionPage", name: "Student assignment resources", url: `${siteUrl}/student-resources`, mainEntity: { "@type": "ItemList", numberOfItems: resources.length, itemListElement: resources.slice(0, 50).map((resource, index) => ({ "@type": "ListItem", position: index + 1, name: resource.title, url: resource.url })) } }) }}/>
   </main>;
 }
