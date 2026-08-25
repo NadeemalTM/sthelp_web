@@ -229,6 +229,9 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
   const urgentWhatsAppHref = whatsapp
     ? `https://wa.me/${whatsapp}?text=${encodeURIComponent(urgentMessage)}`
     : null;
+  const showUrgentWhatsApp = Boolean(urgentWhatsAppHref)
+    && assignment.quote_status !== "accepted"
+    && assignment.status !== "cancelled";
 
   async function run(task: () => Promise<any>, success: string) {
     setBusy(true); setNotice(null);
@@ -313,11 +316,12 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
   }
 
   return <>
-    {urgentWhatsAppHref ? <section className="portal-urgent-contact">
+    {showUrgentWhatsApp ? <section className="portal-urgent-contact" aria-label="Urgent WhatsApp contact">
       <span className="portal-urgent-symbol"><Zap size={20} /></span>
       <div><span className="eyebrow">Quick action · urgent work</span><strong>Is your deadline very close?</strong><p>Use WhatsApp only when you need a faster response for urgent work. Keep normal updates, files and revision requests inside this portal.</p></div>
-      <a className="btn portal-urgent-button" href={urgentWhatsAppHref} target="_blank" rel="noreferrer"><WhatsAppIcon size={20} /> Message urgent request</a>
+      <a className="btn portal-urgent-button" href={urgentWhatsAppHref!} target="_blank" rel="noreferrer"><WhatsAppIcon size={20} /> Message urgent request</a>
     </section> : null}
+    <PortalSnapshot assignment={assignment} previewCount={previews.length} finalCount={finals.length} />
     <div className="portal-grid">
     <div className="stack">
       <section className="client-command-card">
@@ -327,26 +331,26 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
         {assignment.quote_status === "draft" ? <div className="notice notice-info">Your request is safely received. StHelp is reviewing the requirements and will send the final quotation here before any payment is due.</div> : null}
       </section>
 
-      {assignment.quote_status === "draft" && assignment.starting_price_snapshot ? <section className="panel quote-panel"><div className="panel-title"><div><span className="eyebrow">Starting estimate</span><h3 style={{marginTop:6}}>Final quotation under review</h3></div><Clock3/></div><div className="quote-amount">From {formatMoney(assignment.starting_price_snapshot, assignment.starting_currency_snapshot || assignment.currency || data.settings.currency)}</div><p className="muted small">This is the public starting price saved when you ordered. StHelp will review the scope and send the final amount for your approval before payment.</p></section> : null}
-      {assignment.quote_status === "sent" && assignment.status !== "cancelled" ? <section className="panel quote-panel"><div className="panel-title"><div><span className="eyebrow">Quote ready</span><h3 style={{marginTop:6}}>Review your support quote</h3></div><Banknote/></div><div className="quote-amount">{formatMoney(assignment.quoted_amount, assignment.currency || data.settings.currency)}</div>{assignment.quote_note ? <p className="muted" style={{whiteSpace:"pre-wrap"}}>{assignment.quote_note}</p> : <p className="muted small">Please review the quote and confirm whether you would like StHelp to proceed.</p>}<div className="quote-actions"><button className="btn btn-primary" disabled={busy} onClick={()=>respondToQuote(true)}><CheckCircle2 size={17}/> Accept quote</button><button className="btn btn-soft" disabled={busy} onClick={()=>respondToQuote(false)}>Decline</button></div></section> : null}
+      {assignment.quote_status === "draft" && assignment.starting_price_snapshot ? <section className="panel quote-panel" id="portal-quote"><div className="panel-title"><div><span className="eyebrow">Starting estimate</span><h3 style={{marginTop:6}}>Final quotation under review</h3></div><Clock3/></div><div className="quote-amount">From {formatMoney(assignment.starting_price_snapshot, assignment.starting_currency_snapshot || assignment.currency || data.settings.currency)}</div><p className="muted small">This is the public starting price saved when you ordered. StHelp will review the scope and send the final amount for your approval before payment.</p></section> : null}
+      {assignment.quote_status === "sent" && assignment.status !== "cancelled" ? <section className="panel quote-panel" id="portal-quote"><div className="panel-title"><div><span className="eyebrow">Quote ready</span><h3 style={{marginTop:6}}>Review your support quote</h3></div><Banknote/></div><div className="quote-amount">{formatMoney(assignment.quoted_amount, assignment.currency || data.settings.currency)}</div>{assignment.quote_note ? <p className="muted" style={{whiteSpace:"pre-wrap"}}>{assignment.quote_note}</p> : <p className="muted small">Please review the quote and confirm whether you would like StHelp to proceed.</p>}<div className="quote-actions"><button className="btn btn-primary" disabled={busy} onClick={()=>respondToQuote(true)}><CheckCircle2 size={17}/> Accept quote</button><button className="btn btn-soft" disabled={busy} onClick={()=>respondToQuote(false)}>Decline</button></div></section> : null}
       {assignment.status === "cancelled" ? <div className="notice notice-info">This assignment request was cancelled. No new quotation or payment can be submitted for it.</div> : assignment.quote_status === "declined" ? <div className="notice notice-info">You declined the latest quote. Send StHelp a message if you would like to discuss the scope or receive a revised quotation.</div> : null}
 
-      <section className="panel"><div className="panel-title"><h3>Progress updates</h3><RefreshCw size={18}/></div>{data.progress.length ? <div className="timeline">{data.progress.map((item:any)=><div className="timeline-item" key={item.id}><span className="timeline-dot"/><div><strong>{item.title}</strong><p className="muted small">{item.details}</p><span className="tiny muted">{item.progress}% · {formatDate(item.created_at)}</span></div></div>)}</div> : <div className="lock-box"><Clock3/><h3>Waiting for the first update</h3><p className="muted small">Updates will be added here as the work progresses.</p></div>}</section>
+      <section className="panel portal-section-card portal-progress-card" id="portal-progress"><div className="panel-title"><h3>Progress updates</h3><RefreshCw size={18}/></div>{data.progress.length ? <div className="timeline">{data.progress.map((item:any)=><div className="timeline-item" key={item.id}><span className="timeline-dot"/><div><strong>{item.title}</strong><p className="muted small">{item.details}</p><span className="tiny muted">{item.progress}% · {formatDate(item.created_at)}</span></div></div>)}</div> : <div className="lock-box"><Clock3/><h3>Waiting for the first update</h3><p className="muted small">Updates will be added here as the work progresses.</p></div>}</section>
 
-      {quoteAccepted && ((reviewPreviewAvailable && previews.length) || finals.length) ? <section className="panel"><div className="panel-title"><div><h3>Revision preview and final files</h3><p className="muted small">The preview is permanently watermarked and provided only for checking and revision requests.</p></div><FileLock2/></div>
+      {quoteAccepted && ((reviewPreviewAvailable && previews.length) || finals.length) ? <section className="panel portal-section-card portal-files-card" id="portal-files"><div className="panel-title"><div><h3>Revision preview and final files</h3><p className="muted small">The preview is permanently watermarked and provided only for checking and revision requests.</p></div><FileLock2/></div>
         {reviewPreviewAvailable ? previews.map((file:any)=><Preview key={file.id} file={file} token={token}/>) : null}
         {reviewPreviewAvailable && !previews.length && finals.length && !canDownloadFinals ? <div className="lock-box"><LockKeyhole size={30}/><h3>Final output is ready</h3><p className="muted">A revision preview has not been uploaded. Ask StHelp to provide a protected preview.</p></div> : null}
         <div style={{marginTop:18}}>{finals.map((file:any)=><div className="file-row" key={file.id}><div className="file-name"><strong>{file.original_name}</strong><span className="tiny muted">Final deliverable</span></div>{canDownloadFinals ? <a className="btn btn-blue btn-sm" href={`/api/client/${token}/download/${file.id}`}><Download size={15}/> Download</a> : <span className="status-badge warning"><LockKeyhole size={14}/> Payment required</span>}</div>)}</div>
         {!canDownloadFinals && finals.length ? <div className="notice notice-info"><ShieldCheck size={16} style={{verticalAlign:"middle", marginRight:6}}/>Final documents remain private until payment is verified and StHelp unlocks them.</div> : null}
       </section> : null}
 
-      <section className="panel"><div className="panel-title"><h3>Comments and revision requests</h3><MessageSquareText/></div><div className="comment-list">{data.comments.length ? data.comments.map((item:any)=><div className={`comment ${item.author === "admin" ? "admin" : ""}`} key={item.id}>{item.message}<time>{item.author === "admin" ? "StHelp" : "You"} · {formatDate(item.created_at)}</time></div>) : <p className="muted small">No comments yet.</p>}</div><form className="form-inline" onSubmit={sendComment}><label className="sr-only" htmlFor="client-comment">Comment or revision request</label><input id="client-comment" className="input" value={comment} maxLength={1000} onChange={(e)=>setComment(e.target.value)} placeholder="Write a short comment or revision request…"/><button className="btn btn-blue" disabled={busy || !comment.trim()} aria-label="Send"><Send size={18}/></button></form></section>
+      <section className="panel portal-section-card portal-comments-card" id="portal-comments"><div className="panel-title"><h3>Comments and revision requests</h3><MessageSquareText/></div><div className="comment-list">{data.comments.length ? data.comments.map((item:any)=><div className={`comment ${item.author === "admin" ? "admin" : ""}`} key={item.id}>{item.message}<time>{item.author === "admin" ? "StHelp" : "You"} · {formatDate(item.created_at)}</time></div>) : <p className="muted small">No comments yet.</p>}</div><form className="form-inline" onSubmit={sendComment}><label className="sr-only" htmlFor="client-comment">Comment or revision request</label><input id="client-comment" className="input" value={comment} maxLength={1000} onChange={(e)=>setComment(e.target.value)} placeholder="Write a short comment or revision request…"/><button className="btn btn-blue" disabled={busy || !comment.trim()} aria-label="Send"><Send size={18}/></button></form></section>
 
       {canDownloadFinals && !assignment.feedback_submitted ? <section className="panel"><div className="panel-title"><div><h3>Share your feedback</h3><p className="muted small">Your feedback will appear publicly only after admin approval.</p></div><Star/></div><form className="stack" onSubmit={sendFeedback}><div className="field"><label>Rating</label><select className="select" value={rating} onChange={(e)=>setRating(Number(e.target.value))}>{[5,4,3,2,1].map(n=><option key={n} value={n}>{n} star{n>1?"s":""}</option>)}</select></div><div className="field"><label>Feedback</label><textarea className="textarea" value={feedback} onChange={(e)=>setFeedback(e.target.value)} required maxLength={1500}/></div><button className="btn btn-primary" disabled={busy}>Submit feedback</button></form></section> : null}
     </div>
 
     <aside className="stack">
-      <section className="panel client-details-panel">
+      <section className="panel client-details-panel portal-section-card" id="portal-details">
         <div className="panel-title"><div><h3>Assignment details</h3><p className="muted small">Keep your contact and requirement details accurate.</p></div>{canEditDetails && !editingDetails ? <button type="button" className="btn btn-soft btn-sm" onClick={()=>setEditingDetails(true)}><Pencil size={14}/> Edit</button> : <FileText/>}</div>
         {editingDetails ? <form className="client-edit-form" onSubmit={updateDetails}>
           <div className="field"><label>Full name *</label><input className="input" name="studentName" defaultValue={assignment.student_name || ""} required/></div>
@@ -433,6 +437,45 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
     </aside>
     </div>
   </>;
+}
+
+function PortalSnapshot({ assignment, previewCount, finalCount }: { assignment: any; previewCount: number; finalCount: number }) {
+  const quoteLabels: Record<string, string> = {
+    draft: "Under review",
+    sent: "Ready to review",
+    accepted: "Accepted",
+    declined: "Declined"
+  };
+  const quoteLabel = assignment.status === "cancelled" ? "Closed" : quoteLabels[assignment.quote_status] || "Pending";
+  const quoteTone = assignment.quote_status === "accepted" ? "success" : assignment.quote_status === "sent" ? "attention" : "neutral";
+  const paymentLabel = assignment.payment_status === "verified"
+    ? "Verified"
+    : assignment.payment_status === "submitted"
+      ? "Under verification"
+      : assignment.payment_status === "rejected"
+        ? "Action required"
+        : assignment.quote_status === "accepted"
+          ? "Ready to pay"
+          : "After quote approval";
+  const paymentTone = assignment.payment_status === "verified"
+    ? "success"
+    : assignment.payment_status === "rejected"
+      ? "danger"
+      : assignment.quote_status === "accepted"
+        ? "attention"
+        : "neutral";
+  const documentLabel = finalCount
+    ? `${finalCount} final file${finalCount === 1 ? "" : "s"}`
+    : previewCount
+      ? `${previewCount} preview${previewCount === 1 ? "" : "s"} ready`
+      : "Waiting for upload";
+
+  return <section className="portal-snapshot" aria-label="Assignment status overview">
+    <div className={`portal-snapshot-item ${quoteTone}`}><span className="portal-snapshot-icon"><Banknote size={18}/></span><div><small>Quotation</small><strong>{quoteLabel}</strong></div></div>
+    <div className={`portal-snapshot-item ${paymentTone}`}><span className="portal-snapshot-icon"><CreditCard size={18}/></span><div><small>Payment</small><strong>{paymentLabel}</strong></div></div>
+    <div className={`portal-snapshot-item ${finalCount || previewCount ? "success" : "neutral"}`}><span className="portal-snapshot-icon"><FileText size={18}/></span><div><small>Documents</small><strong>{documentLabel}</strong></div></div>
+    <div className="portal-snapshot-item next"><span className="portal-snapshot-icon"><Clock3 size={18}/></span><div><small>Next action</small><strong>{nextStep(assignment)}</strong></div></div>
+  </section>;
 }
 
 function PaymentAccount({
