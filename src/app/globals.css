@@ -2711,7 +2711,8 @@ th { color: #66748a; font-size: .72rem; text-transform: uppercase; letter-spacin
 }
 
 @media (max-width: 680px) {
-  .client-portal-page .portal-header { padding: 8px 0; }
+  .client-portal-page .container { width: calc(100% - 16px); }
+  .client-portal-page .portal-header { position: relative; top: auto; padding: 8px 0; }
   .client-portal-page .portal-header-inner { min-height: 49px; gap: 7px; }
   .client-portal-page .portal-header .brand { min-width: 0; gap: 7px; }
   .client-portal-page .portal-header .brand-logo { width: 37px; height: 37px; }
@@ -2724,7 +2725,7 @@ th { color: #66748a; font-size: .72rem; text-transform: uppercase; letter-spacin
   .portal-client-identity strong { grid-row: auto; grid-column: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .63rem; }
   .portal-client-identity small { display: none; }
   .portal-refresh { width: 37px; height: 37px; border-radius: 10px; }
-  .client-portal-page .portal-main { padding: 14px 0 45px; }
+  .client-portal-page .portal-main { padding: 9px 0 42px; }
   .portal-loading-card { grid-template-columns: 52px minmax(0, 1fr); padding: 18px; }
   .portal-loading-card img { width: 52px; height: 52px; }
   .portal-loading-spinner { display: none; }
@@ -2735,44 +2736,69 @@ th { color: #66748a; font-size: .72rem; text-transform: uppercase; letter-spacin
   .submission-intro-steps { grid-template-columns: 1fr; gap: 7px; }
   .client-portal-page .submission-form { padding: 18px; border-radius: 19px; }
   .client-portal-page .portal-urgent-contact { margin-bottom: 11px; }
-  .client-portal-page .portal-snapshot { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 11px; }
-  .client-portal-page .portal-snapshot-item { min-height: 76px; padding: 10px 9px; border-left-width: 3px; }
-  .portal-section-nav { top: 65px; gap: 3px; margin-inline: -3px; margin-bottom: 14px; padding: 5px; border-radius: 13px; }
-  .portal-section-nav a { min-height: 42px; padding: 8px 10px; font-size: .69rem; }
-  .client-portal-page :is(#portal-overview, #portal-quote, #portal-payment, #portal-files, #portal-progress, #portal-comments, #portal-details) { scroll-margin-top: 125px; }
-  .client-command-card { padding: 20px 17px; border-radius: 20px; }
-  .client-command-card h1 { margin-top: 8px; font-size: clamp(2.05rem, 11vw, 2.8rem); line-height: .96; }
-  .client-command-top { grid-template-columns: 1fr; gap: 13px; }
+  .client-portal-page .portal-snapshot { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-bottom: 8px; }
+  .client-portal-page .portal-snapshot-item { grid-template-columns: 30px minmax(0, 1fr); gap: 7px; min-height: 65px; padding: 8px; border-left-width: 3px; border-radius: 10px; box-shadow: 0 5px 14px rgba(19,51,38,.055); }
+  .client-portal-page .portal-snapshot-icon { width: 30px; height: 30px; border-radius: 8px; }
+  .client-portal-page .portal-snapshot-icon svg { width: 14px; height: 14px; }
+  .client-portal-page .portal-snapshot-item small { margin-bottom: 2px; font-size: .57rem; letter-spacing: .07em; }
+  .client-portal-page .portal-snapshot-item strong { font-size: .72rem; line-height: 1.25; }
+  .portal-section-nav { top: 0; gap: 2px; margin-inline: 0; margin-bottom: 9px; padding: 3px; border-radius: 10px; }
+  .portal-section-nav a { min-height: 40px; gap: 5px; padding: 6px 8px; border-radius: 8px; font-size: .65rem; }
+  .portal-section-nav svg { width: 13px; height: 13px; }
+  .client-portal-page :is(#portal-overview, #portal-quote, #portal-payment, #portal-files, #portal-progress, #portal-comments, #portal-details) { scroll-margin-top: 55px; }
+  .client-command-card { padding: 16px 13px; border-radius: 15px; }
+  .client-command-card h1 { margin: 6px 0 5px; font-size: clamp(1.85rem, 10vw, 2.45rem); line-height: .96; }
+  .client-command-card .eyebrow { font-size: .61rem; }
+  .client-command-card p { font-size: .72rem; }
+  .client-command-top { grid-template-columns: 1fr; gap: 9px; }
   .client-command-top .status-badge { justify-self: start; }
-  .client-command-body { grid-template-columns: minmax(0, 1fr) 88px; gap: 13px; margin: 20px 0 16px; }
-  .client-command-body .client-next-step { min-height: 98px; padding: 14px; }
-  .client-command-body .client-next-step strong { font-size: .88rem; }
+  .client-command-card .status-badge { padding: 5px 8px; font-size: .63rem; }
+  .client-command-body { grid-template-columns: 1fr; gap: 0; margin: 13px 0 12px; }
+  .client-command-body .client-next-step { min-height: 70px; padding: 12px; border-radius: 10px; }
+  .client-command-body .client-next-step span { font-size: .58rem; }
+  .client-command-body .client-next-step strong { font-size: .78rem; }
   .client-command-body .client-next-step p { display: none; }
-  .client-progress-dial { width: 88px; height: 88px; }
-  .client-progress-dial > span { width: 66px; height: 66px; }
-  .client-progress-dial strong { font-size: 1.08rem; }
-  .client-progress-dial small { font-size: .49rem; }
-  .client-progress-line { margin-bottom: 18px; }
-  .client-command-card .stage-rail { display: flex; grid-template-columns: none; gap: 7px; padding: 15px 1px 4px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; }
-  .client-command-card .stage-rail::-webkit-scrollbar { display: none; }
-  .client-command-card .stage { min-width: 102px; grid-template-columns: 26px minmax(0, 1fr); scroll-snap-align: start; }
+  .client-progress-dial { display: none; }
+  .client-progress-line { margin-bottom: 13px; }
+  .client-progress-line .progress-head { margin-bottom: 6px; font-size: .62rem; }
+  .client-progress-line .progress-head strong { display: none; }
+  .client-progress-line .progress-track { height: 5px; }
+  .client-command-card .stage-rail { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px; padding: 11px 0 2px; overflow: visible; }
+  .client-command-card .stage { min-width: 0; display: grid; grid-template-columns: 1fr; justify-items: center; gap: 4px; text-align: center; }
   .client-command-card .stage:last-child { grid-column: auto; }
-  .client-command-card .stage small { font-size: .64rem; }
-  .client-portal-page .panel, .client-portal-page .payment-card { padding: 17px; border-radius: 17px; }
-  .client-portal-page .panel-title { gap: 9px; margin-bottom: 15px; }
-  .client-portal-page .panel-title h3 { font-size: 1rem; }
-  .client-portal-page .portal-section-card .panel-title > svg { width: 17px; height: 17px; padding: 7px; }
-  .client-portal-page .detail-row { display: grid; gap: 4px; padding: 10px; }
+  .client-command-card .stage > span { width: 22px; height: 22px; font-size: .58rem; }
+  .client-command-card .stage small { max-width: 100%; overflow: hidden; font-size: .55rem; line-height: 1.15; text-overflow: ellipsis; white-space: nowrap; }
+  .client-command-card .stage:not(:last-child)::after { width: calc(50% + 1px); left: calc(50% + 12px); top: 10px; }
+  .client-command-card .notice { margin-top: 11px; padding: 8px 9px; font-size: .65rem; }
+  .client-portal-page .panel, .client-portal-page .payment-card { padding: 13px; border-radius: 12px; }
+  .client-portal-page .panel-title { gap: 7px; margin-bottom: 11px; }
+  .client-portal-page .panel-title h3 { font-size: .86rem; }
+  .client-portal-page .panel-title p { font-size: .67rem; }
+  .client-portal-page .portal-section-card { border-top-width: 3px; }
+  .client-portal-page .portal-section-card .panel-title > svg { width: 14px; height: 14px; padding: 6px; border-radius: 8px; }
+  .client-portal-page .detail-list { border-radius: 9px; }
+  .client-portal-page .detail-row { display: grid; gap: 3px; padding: 8px; }
+  .client-portal-page .detail-row span:first-child { font-size: .63rem; }
+  .client-portal-page .detail-row strong { font-size: .72rem; }
   .client-portal-page .detail-row strong { width: auto; text-align: left; overflow-wrap: anywhere; }
   .client-portal-page .submitted-document { align-items: stretch; padding: 10px; }
-  .client-portal-page .portal-comments-card .form-inline { grid-template-columns: minmax(0, 1fr) 49px; }
-  .client-portal-page .portal-comments-card .form-inline .btn { width: 49px; }
-  .client-portal-page .quote-panel .quote-amount { font-size: 1.75rem; }
+  .client-portal-page .portal-progress-card .lock-box { min-height: 130px; padding: 22px 12px; border: 1px dashed #cedbe4; border-radius: 9px; background: #f5f8fb; }
+  .client-portal-page .portal-progress-card .lock-box svg { width: 20px; height: 20px; }
+  .client-portal-page .portal-progress-card .lock-box h3 { font-size: .82rem; }
+  .client-portal-page .portal-progress-card .lock-box p { font-size: .65rem; }
+  .client-portal-page .portal-comments-card .form-inline { grid-template-columns: minmax(0, 1fr) 42px; margin-top: 10px; padding-top: 10px; }
+  .client-portal-page .portal-comments-card .form-inline .input { min-height: 42px; padding: 8px 10px; font-size: 16px; }
+  .client-portal-page .portal-comments-card .form-inline .btn { width: 42px; min-width: 42px; min-height: 42px; border-radius: 10px; }
+  .client-portal-page .comment-list > .muted { margin: 2px 0 10px; font-size: .68rem; }
+  .client-portal-page .payment-card-header h3 { font-size: .86rem; }
+  .client-portal-page .payment-card-icon { width: 30px; height: 30px; border-radius: 8px; }
+  .client-portal-page .payment-total { margin: 11px 0; padding: 10px; border-radius: 9px; }
+  .client-portal-page .payment-total span { font-size: .6rem; }
+  .client-portal-page .payment-total strong { font-size: 1.35rem; }
+  .client-portal-page .quote-panel .quote-amount { font-size: 1.45rem; }
 }
 
 @media (max-width: 360px) {
   .portal-client-identity { max-width: 112px; }
-  .client-portal-page .portal-snapshot { grid-template-columns: 1fr; }
-  .client-command-body { grid-template-columns: 1fr; }
-  .client-progress-dial { justify-self: start; }
+  .client-portal-page .portal-snapshot { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
