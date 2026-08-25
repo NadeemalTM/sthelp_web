@@ -24,7 +24,7 @@ import {
   UploadCloud,
   X
 } from "lucide-react";
-import { SERVICE_TYPES, FIVE_MB } from "@/lib/constants";
+import { FIVE_MB } from "@/lib/constants";
 import { formatDate, formatMoney, statusLabel } from "@/lib/format";
 import { uploadPrivateFile } from "@/lib/upload-client";
 
@@ -63,7 +63,7 @@ export function PortalClient({ token }: { token: string }) {
     if (payment === "returned") {
       setNotice({ type: "info", text: "You returned from PayHere. Payment is confirmed only after PayHere sends its secure verification; this page will update automatically." });
     } else if (payment === "cancelled") {
-      setNotice({ type: "info", text: "Online payment was cancelled. No payment status was changed, and you can try again or use bank transfer." });
+      setNotice({ type: "info", text: "Online payment was not verified. You can retry PayHere, or contact StHelp if you want to switch to bank transfer." });
     }
     if (payment) {
       url.searchParams.delete("payment");
@@ -89,7 +89,7 @@ export function PortalClient({ token }: { token: string }) {
     <main className="page-shell client-portal-page">
       <header className="portal-header"><div className="container portal-header-inner"><a className="brand" href="/"><Image className="brand-logo" src="/sthelp-mark.png" alt="" width={48} height={48}/><span className="brand-copy">StHelp<small>Private client portal</small></span></a><div className="portal-sync"><span><i/> Live workspace</span><button type="button" onClick={() => void load(true)} disabled={busy} title="Refresh assignment updates"><RefreshCw size={15}/></button><small>Client ID: <strong>{data.link.client_id}</strong>{lastSynced ? ` · updated ${lastSynced.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : ""}</small></div></div></header>
       <div className="container portal-main">
-        {notice ? <div className={`notice notice-${notice.type}`}>{notice.text}</div> : null}
+        {notice ? <div className={`notice notice-${notice.type}`} role={notice.type === "error" ? "alert" : "status"} aria-live="polite">{notice.text}</div> : null}
         {!data.assignment ? (
           <SubmissionView token={token} data={data} setBusy={setBusy} busy={busy} onDone={async () => { setNotice({type:"success", text:"Your requirements were submitted successfully."}); await load(); }} setNotice={setNotice}/>
         ) : (
@@ -103,6 +103,7 @@ export function PortalClient({ token }: { token: string }) {
 function SubmissionView({ token, data, busy, setBusy, onDone, setNotice }: any) {
   const [supportFiles, setSupportFiles] = useState<File[]>([]);
   const [isGroup, setIsGroup] = useState(false);
+  const pricingServices = Array.isArray(data.pricingServices) ? data.pricingServices : [];
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -131,7 +132,7 @@ function SubmissionView({ token, data, busy, setBusy, onDone, setNotice }: any) 
           programme: form.get("programme"),
           moduleName: form.get("moduleName"),
           assignmentTitle: form.get("assignmentTitle"),
-          serviceType: form.get("serviceType"),
+          pricingServiceSlug: form.get("pricingServiceSlug"),
           academicLevel: form.get("academicLevel"),
           deadline: new Date(String(form.get("deadline"))).toISOString(),
           isGroup,
@@ -160,6 +161,7 @@ function SubmissionView({ token, data, busy, setBusy, onDone, setNotice }: any) 
 
     <form className="form-card submission-form" onSubmit={submit}>
       <div className="section-title"><span className="eyebrow">Assignment request</span><h2 style={{fontSize:"2rem"}}>Your details and requirements</h2><p className="muted">Fields marked with * are required. Add as much detail as possible to avoid delays.</p></div>
+      {!pricingServices.length ? <div className="notice notice-error" role="alert">Online ordering is temporarily unavailable because no services are published. Please contact StHelp and try again shortly.</div> : null}
       <div className="form-grid">
         <div className="field"><label>Full name *</label><input className="input" name="studentName" defaultValue={data.link.client_name || ""} required /></div>
         <div className="field"><label>Contact number *</label><input className="input" name="contactNumber" defaultValue={data.link.phone || data.link.client_id || ""} required /></div>
@@ -168,7 +170,7 @@ function SubmissionView({ token, data, busy, setBusy, onDone, setNotice }: any) 
         <div className="field"><label>Degree / programme</label><input className="input" name="programme" /></div>
         <div className="field"><label>Module / subject</label><input className="input" name="moduleName" /></div>
         <div className="field full"><label>Assignment / project title *</label><input className="input" name="assignmentTitle" required /></div>
-        <div className="field"><label>Type of support *</label><select className="select" name="serviceType" required><option value="">Select</option>{SERVICE_TYPES.map((type) => <option key={type}>{type}</option>)}</select></div>
+        <div className="field"><label>Type of support *</label><select className="select" name="pricingServiceSlug" disabled={!pricingServices.length} required><option value="">Select</option>{pricingServices.map((service:any) => <option value={service.slug} key={service.slug}>{service.name}{Number(service.starting_price)>0?` — from ${formatMoney(service.starting_price,service.currency||"LKR")}`:" — custom quote"}</option>)}</select></div>
         <div className="field"><label>Academic level</label><select className="select" name="academicLevel"><option value="">Select</option><option>Foundation</option><option>Diploma</option><option>Undergraduate</option><option>Postgraduate</option><option>Other</option></select></div>
         <div className="field"><label>Deadline *</label><input className="input" name="deadline" type="datetime-local" required /></div>
         <div className="field"><label>Group assignment?</label><select className="select" value={isGroup ? "yes" : "no"} onChange={(e)=>setIsGroup(e.target.value === "yes")}><option value="no">No</option><option value="yes">Yes</option></select></div>
@@ -178,14 +180,16 @@ function SubmissionView({ token, data, busy, setBusy, onDone, setNotice }: any) 
         <div className="field full"><label>Support / guidance documents (optional, up to 5 MB each)</label><input className="input" type="file" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.txt,.csv,.jpg,.jpeg,.png,.webp" onChange={(e)=>setSupportFiles(Array.from(e.target.files || []))} /><span className="help">You can upload one or more files, or skip this entirely. Accepted: documents, spreadsheets, slides, ZIP, text and images.</span></div>
         <label className="checkbox-row field full"><input type="checkbox" required/><span>I confirm that the details are correct and that I am responsible for following my university’s academic-integrity and submission rules.</span></label>
       </div>
-      <div style={{marginTop:22}}><button className="btn btn-primary" disabled={busy}>{busy ? <><Loader2 className="spinner" size={18}/> Submitting…</> : <><UploadCloud size={18}/> Submit requirements</>}</button></div>
+      <div style={{marginTop:22}}><button className="btn btn-primary" disabled={busy || !pricingServices.length}>{busy ? <><Loader2 className="spinner" size={18}/> Submitting…</> : <><UploadCloud size={18}/> Submit requirements</>}</button></div>
     </form>
   </div>;
 }
 
 function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: any) {
   const assignment = data.assignment;
-  const accepted = !["submitted", "cancelled"].includes(assignment.status);
+  const quoteAccepted = assignment.status !== "cancelled" && assignment.quote_status === "accepted" && Number(assignment.quoted_amount) > 0;
+  const payHerePending = assignment.payment_status === "submitted" && !assignment.payment_reference && String(assignment.payment_note || "").startsWith("PayHere checkout");
+  const bankPaymentPending = assignment.payment_status === "submitted" && Boolean(assignment.payment_reference);
   const reviewPreviewAvailable = ["client_review", "revision", "completed", "delivered"].includes(assignment.status);
   const canDownloadFinals = assignment.payment_status === "verified" && assignment.download_unlocked;
   const canEditDetails = !["completed", "delivered", "cancelled"].includes(assignment.status);
@@ -224,9 +228,12 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
 
   async function sendPayment(e:React.FormEvent) {
     e.preventDefault();
+    if (!proof) {
+      setNotice({type:"error", text:"Upload the bank payment slip before submitting for verification."});
+      return;
+    }
     await run(async()=>{
-      let proofFile = null;
-      if (proof) proofFile = await uploadPrivateFile({file:proof, scope:"client-payment", token});
+      const proofFile = await uploadPrivateFile({file:proof, scope:"client-payment", token});
       await post("payment", {reference:paymentRef, note:paymentNote, proofFile});
     }, "Payment reference submitted for verification.");
   }
@@ -268,7 +275,7 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
   }
 
   async function respondToQuote(accepted:boolean) {
-    await run(()=>post("quoteResponse", {accepted}), accepted ? "Quote accepted. StHelp will begin the next stage." : "Quote declined. You can leave a comment if you would like to discuss it.");
+    await run(()=>post("quoteResponse", {accepted, quoteSentAt:assignment.quote_sent_at}), accepted ? "Quote accepted. StHelp will begin the next stage." : "Quote declined. You can leave a comment if you would like to discuss it.");
   }
 
   async function updateDetails(event: React.FormEvent<HTMLFormElement>) {
@@ -293,23 +300,25 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
     <div className="stack">
       <section className="client-command-card">
         <div className="client-command-top"><div><span className="eyebrow">Your workspace</span><h1>{assignment.assignment_title}</h1><p>{assignment.module_name || assignment.service_type} · Due {formatDate(assignment.deadline)}</p></div><span className={`status-badge ${assignment.status === "delivered" ? "success" : ""}`}><Clock3 size={14}/>{statusLabel(assignment.status)}</span></div>
-        <div className="client-progress-row"><div><div className="progress-head"><span>Assignment progress</span><strong>{assignment.progress}%</strong></div><div className="progress-track"><div className="progress-fill" style={{width:`${assignment.progress}%`}}/></div></div><div className="client-next-step"><span>What happens next</span><strong>{nextStep(assignment)}</strong></div></div>
+        <div className="client-progress-row"><div><div className="progress-head"><span>Assignment progress</span><strong>{assignment.progress}%</strong></div><div className="progress-track" role="progressbar" aria-label="Assignment progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={assignment.progress}><div className="progress-fill" style={{width:`${assignment.progress}%`}}/></div></div><div className="client-next-step"><span>What happens next</span><strong>{nextStep(assignment)}</strong></div></div>
         <StageRail assignment={assignment}/>
-        {!accepted ? <div className="notice notice-info">Your request is safely received. Your quote, progress and payment details will appear as soon as the task is accepted.</div> : null}
+        {assignment.quote_status === "draft" ? <div className="notice notice-info">Your request is safely received. StHelp is reviewing the requirements and will send the final quotation here before any payment is due.</div> : null}
       </section>
 
-      {assignment.quote_status === "sent" ? <section className="panel quote-panel"><div className="panel-title"><div><span className="eyebrow">Quote ready</span><h3 style={{marginTop:6}}>Review your support quote</h3></div><Banknote/></div><div className="quote-amount">{formatMoney(assignment.quoted_amount, assignment.currency || data.settings.currency)}</div>{assignment.quote_note ? <p className="muted" style={{whiteSpace:"pre-wrap"}}>{assignment.quote_note}</p> : <p className="muted small">Please review the quote and confirm whether you would like StHelp to proceed.</p>}<div className="quote-actions"><button className="btn btn-primary" disabled={busy} onClick={()=>respondToQuote(true)}><CheckCircle2 size={17}/> Accept quote</button><button className="btn btn-soft" disabled={busy} onClick={()=>respondToQuote(false)}>Decline</button></div></section> : null}
+      {assignment.quote_status === "draft" && assignment.starting_price_snapshot ? <section className="panel quote-panel"><div className="panel-title"><div><span className="eyebrow">Starting estimate</span><h3 style={{marginTop:6}}>Final quotation under review</h3></div><Clock3/></div><div className="quote-amount">From {formatMoney(assignment.starting_price_snapshot, assignment.starting_currency_snapshot || assignment.currency || data.settings.currency)}</div><p className="muted small">This is the public starting price saved when you ordered. StHelp will review the scope and send the final amount for your approval before payment.</p></section> : null}
+      {assignment.quote_status === "sent" && assignment.status !== "cancelled" ? <section className="panel quote-panel"><div className="panel-title"><div><span className="eyebrow">Quote ready</span><h3 style={{marginTop:6}}>Review your support quote</h3></div><Banknote/></div><div className="quote-amount">{formatMoney(assignment.quoted_amount, assignment.currency || data.settings.currency)}</div>{assignment.quote_note ? <p className="muted" style={{whiteSpace:"pre-wrap"}}>{assignment.quote_note}</p> : <p className="muted small">Please review the quote and confirm whether you would like StHelp to proceed.</p>}<div className="quote-actions"><button className="btn btn-primary" disabled={busy} onClick={()=>respondToQuote(true)}><CheckCircle2 size={17}/> Accept quote</button><button className="btn btn-soft" disabled={busy} onClick={()=>respondToQuote(false)}>Decline</button></div></section> : null}
+      {assignment.status === "cancelled" ? <div className="notice notice-info">This assignment request was cancelled. No new quotation or payment can be submitted for it.</div> : assignment.quote_status === "declined" ? <div className="notice notice-info">You declined the latest quote. Send StHelp a message if you would like to discuss the scope or receive a revised quotation.</div> : null}
 
       <section className="panel"><div className="panel-title"><h3>Progress updates</h3><RefreshCw size={18}/></div>{data.progress.length ? <div className="timeline">{data.progress.map((item:any)=><div className="timeline-item" key={item.id}><span className="timeline-dot"/><div><strong>{item.title}</strong><p className="muted small">{item.details}</p><span className="tiny muted">{item.progress}% · {formatDate(item.created_at)}</span></div></div>)}</div> : <div className="lock-box"><Clock3/><h3>Waiting for the first update</h3><p className="muted small">Updates will be added here as the work progresses.</p></div>}</section>
 
-      {accepted && ((reviewPreviewAvailable && previews.length) || finals.length) ? <section className="panel"><div className="panel-title"><div><h3>Revision preview and final files</h3><p className="muted small">The preview is permanently watermarked and provided only for checking and revision requests.</p></div><FileLock2/></div>
+      {quoteAccepted && ((reviewPreviewAvailable && previews.length) || finals.length) ? <section className="panel"><div className="panel-title"><div><h3>Revision preview and final files</h3><p className="muted small">The preview is permanently watermarked and provided only for checking and revision requests.</p></div><FileLock2/></div>
         {reviewPreviewAvailable ? previews.map((file:any)=><Preview key={file.id} file={file} token={token}/>) : null}
         {reviewPreviewAvailable && !previews.length && finals.length && !canDownloadFinals ? <div className="lock-box"><LockKeyhole size={30}/><h3>Final output is ready</h3><p className="muted">A revision preview has not been uploaded. Ask StHelp to provide a protected preview.</p></div> : null}
         <div style={{marginTop:18}}>{finals.map((file:any)=><div className="file-row" key={file.id}><div className="file-name"><strong>{file.original_name}</strong><span className="tiny muted">Final deliverable</span></div>{canDownloadFinals ? <a className="btn btn-blue btn-sm" href={`/api/client/${token}/download/${file.id}`}><Download size={15}/> Download</a> : <span className="status-badge warning"><LockKeyhole size={14}/> Payment required</span>}</div>)}</div>
         {!canDownloadFinals && finals.length ? <div className="notice notice-info"><ShieldCheck size={16} style={{verticalAlign:"middle", marginRight:6}}/>Final documents remain private until payment is verified and StHelp unlocks them.</div> : null}
       </section> : null}
 
-      <section className="panel"><div className="panel-title"><h3>Comments and revision requests</h3><MessageSquareText/></div><div className="comment-list">{data.comments.length ? data.comments.map((item:any)=><div className={`comment ${item.author === "admin" ? "admin" : ""}`} key={item.id}>{item.message}<time>{item.author === "admin" ? "StHelp" : "You"} · {formatDate(item.created_at)}</time></div>) : <p className="muted small">No comments yet.</p>}</div><form className="form-inline" onSubmit={sendComment}><input className="input" value={comment} maxLength={1000} onChange={(e)=>setComment(e.target.value)} placeholder="Write a short comment or revision request…"/><button className="btn btn-blue" disabled={busy || !comment.trim()} aria-label="Send"><Send size={18}/></button></form></section>
+      <section className="panel"><div className="panel-title"><h3>Comments and revision requests</h3><MessageSquareText/></div><div className="comment-list">{data.comments.length ? data.comments.map((item:any)=><div className={`comment ${item.author === "admin" ? "admin" : ""}`} key={item.id}>{item.message}<time>{item.author === "admin" ? "StHelp" : "You"} · {formatDate(item.created_at)}</time></div>) : <p className="muted small">No comments yet.</p>}</div><form className="form-inline" onSubmit={sendComment}><label className="sr-only" htmlFor="client-comment">Comment or revision request</label><input id="client-comment" className="input" value={comment} maxLength={1000} onChange={(e)=>setComment(e.target.value)} placeholder="Write a short comment or revision request…"/><button className="btn btn-blue" disabled={busy || !comment.trim()} aria-label="Send"><Send size={18}/></button></form></section>
 
       {canDownloadFinals && !assignment.feedback_submitted ? <section className="panel"><div className="panel-title"><div><h3>Share your feedback</h3><p className="muted small">Your feedback will appear publicly only after admin approval.</p></div><Star/></div><form className="stack" onSubmit={sendFeedback}><div className="field"><label>Rating</label><select className="select" value={rating} onChange={(e)=>setRating(Number(e.target.value))}>{[5,4,3,2,1].map(n=><option key={n} value={n}>{n} star{n>1?"s":""}</option>)}</select></div><div className="field"><label>Feedback</label><textarea className="textarea" value={feedback} onChange={(e)=>setFeedback(e.target.value)} required maxLength={1500}/></div><button className="btn btn-primary" disabled={busy}>Submit feedback</button></form></section> : null}
     </div>
@@ -334,8 +343,8 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
         {submittedDocuments.length ? <div className="submitted-documents"><div className="submitted-documents-heading"><strong>Your submitted documents</strong><span>You can download a copy at any time.</span></div>{submittedDocuments.map((file:any)=><div className="submitted-document" key={file.id}><div className="file-name"><strong>{file.original_name}</strong><span className="tiny muted">{file.kind === "payment_proof" ? "Payment proof" : "Support document"} · {formatFileSize(file.size_bytes)}</span></div><a className="btn btn-soft btn-sm" href={`/api/client/${token}/download/${file.id}`}><Download size={14}/> Download</a></div>)}</div> : null}
       </section>
 
-      {accepted ? (
-        <section className="payment-card">
+      {quoteAccepted && assignment.payment_status !== "verified" ? (
+        <section className="payment-card" id="portal-payment">
           <div className="payment-card-header">
             <div><span className="eyebrow">Payment</span><h3>Choose how to pay</h3></div>
             <span className="payment-card-icon"><Banknote size={19}/></span>
@@ -344,7 +353,7 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
             <span>Amount to pay</span>
             <strong>{formatMoney(assignment.quoted_amount, assignment.currency || data.settings.currency)}</strong>
           </div>
-          {data.paymentOptions?.payHere && assignment.payment_status !== "verified" ? (
+          {data.paymentOptions?.payHere && assignment.payment_status !== "verified" && !bankPaymentPending ? (
             <div className="payhere-option">
               <div className="payhere-option-heading">
                 <span className="payhere-option-icon"><CreditCard size={19}/></span>
@@ -352,8 +361,8 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
               </div>
               {assignment.email ? (
                 <form className="payhere-form" onSubmit={startPayHere}>
-                  <div className="field"><label>Billing address *</label><input className="input" value={billingAddress} onChange={(event)=>setBillingAddress(event.target.value)} maxLength={300} autoComplete="street-address" required/></div>
-                  <div className="field"><label>City *</label><input className="input" value={billingCity} onChange={(event)=>setBillingCity(event.target.value)} maxLength={100} autoComplete="address-level2" required/></div>
+                  <div className="field"><label htmlFor="payhere-address">Billing address *</label><input id="payhere-address" className="input" value={billingAddress} onChange={(event)=>setBillingAddress(event.target.value)} maxLength={300} autoComplete="street-address" required/></div>
+                  <div className="field"><label htmlFor="payhere-city">City *</label><input id="payhere-city" className="input" value={billingCity} onChange={(event)=>setBillingCity(event.target.value)} maxLength={100} autoComplete="address-level2" required/></div>
                   <button className="btn payhere-button" disabled={busy}><CreditCard size={17}/>{busy ? "Opening PayHere…" : "Continue to PayHere"}</button>
                   <p className="help">By continuing, you agree to the <a href="/terms-and-conditions" target="_blank" rel="noreferrer">Terms</a>, <a href="/privacy-policy" target="_blank" rel="noreferrer">Privacy Policy</a> and <a href="/refund-policy" target="_blank" rel="noreferrer">Refund Policy</a>.</p>
                 </form>
@@ -395,9 +404,10 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
         </section>
       ) : null}
 
-      {accepted && assignment.payment_status !== "verified" ? <section className="panel"><div className="panel-title"><div><h3>Bank transfer verification</h3><p className="muted small">Use this after paying to one of the bank accounts above.</p></div><FileCheck2/></div><form className="stack" onSubmit={sendPayment}><div className="field"><label>Reference / transaction ID *</label><input className="input" value={paymentRef} onChange={(e)=>setPaymentRef(e.target.value)} required/></div><div className="field"><label>Note</label><textarea className="textarea" value={paymentNote} onChange={(e)=>setPaymentNote(e.target.value)} placeholder="Payment date, sender name or anything admin should know."/></div><div className="field"><label>Payment slip (optional, maximum 5 MB)</label><input className="input" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" onChange={(e)=>setProof(e.target.files?.[0] || null)}/></div><button className="btn btn-primary" disabled={busy}>{busy ? "Submitting…" : "Send for verification"}</button></form>{assignment.payment_status === "submitted" ? <div className="notice notice-info">A payment reference is already awaiting verification. You may resubmit corrected details.</div> : null}</section> : null}
+      {quoteAccepted && assignment.payment_status !== "verified" && !payHerePending ? <section className="panel portal-payment-verification"><div className="panel-title"><div><h3>Bank transfer verification</h3><p className="muted small">Use this after paying to one of the bank accounts above.</p></div><FileCheck2/></div>{assignment.payment_status === "rejected" ? <div className="notice notice-error" role="alert">The previous payment could not be verified. Check the latest StHelp message, then submit the corrected reference and slip below.</div> : null}<form className="stack" onSubmit={sendPayment}><div className="field"><label htmlFor="bank-reference">Reference / transaction ID *</label><input id="bank-reference" className="input" value={paymentRef} onChange={(e)=>setPaymentRef(e.target.value)} required/></div><div className="field"><label htmlFor="bank-payment-note">Note</label><textarea id="bank-payment-note" className="textarea" value={paymentNote} onChange={(e)=>setPaymentNote(e.target.value)} placeholder="Payment date, sender name or anything admin should know."/></div><div className="field"><label htmlFor="bank-payment-slip">Bank payment slip * (maximum 5 MB)</label><input id="bank-payment-slip" className="input" type="file" required accept=".pdf,.jpg,.jpeg,.png,.webp" onChange={(e)=>setProof(e.target.files?.[0] || null)}/></div><button className="btn btn-primary" disabled={busy}>{busy ? "Submitting…" : "Send slip for verification"}</button></form>{bankPaymentPending ? <div className="notice notice-info" role="status">Your payment reference and slip are awaiting verification. You may resubmit corrected details.</div> : null}</section> : null}
+      {quoteAccepted && payHerePending && assignment.payment_status !== "verified" ? <div className="notice notice-info portal-payment-state" role="status">PayHere checkout is awaiting confirmation. Retry PayHere above if checkout was not completed, or contact StHelp before switching to bank transfer.</div> : null}
 
-      {assignment.payment_status === "verified" ? <section className="panel"><div className="lock-box" style={{background:"#ebf8f2"}}><CheckCircle2 color="#15805d" size={34}/><h3>Payment verified</h3><p className="muted small">Final downloads are {assignment.download_unlocked ? "unlocked" : "waiting for admin release"}.</p></div></section> : null}
+      {assignment.payment_status === "verified" ? <section className="panel payment-verified-panel" id="portal-payment"><div className="lock-box" style={{background:"#ebf8f2"}}><CheckCircle2 color="#15805d" size={34}/><h3>Payment verified</h3><p className="muted small">Final downloads are {assignment.download_unlocked ? "unlocked" : "waiting for admin release"}.</p></div></section> : null}
     </aside>
   </div>;
 }
@@ -454,10 +464,13 @@ function formatFileSize(value: number | string | null) {
 }
 
 function nextStep(assignment: any) {
+  if (assignment.status === "cancelled") return "This request is closed";
   if (assignment.quote_status === "sent") return "Review your quote";
+  if (assignment.quote_status === "draft") return "We are reviewing your final quote";
+  if (assignment.quote_status === "declined") return "Contact StHelp to discuss the quote";
   if (assignment.status === "submitted") return "We are reviewing your request";
   if (assignment.payment_status === "submitted") return "We are verifying your payment";
-  if (assignment.payment_status !== "verified" && assignment.quoted_amount) return "Send your payment reference";
+  if (assignment.quote_status === "accepted" && assignment.payment_status !== "verified") return "Choose a payment method";
   if (assignment.status === "client_review" || assignment.status === "revision") return "Review the update and leave comments";
   if (assignment.status === "delivered") return assignment.payment_status === "verified" && assignment.download_unlocked ? "Your final files are ready" : "Final files are locked until verified payment";
   return "Check the latest project update";
@@ -466,7 +479,7 @@ function nextStep(assignment: any) {
 function StageRail({ assignment }: { assignment: any }) {
   const stages = [
     { label: "Request", done: true },
-    { label: "Quote", done: assignment.quote_status === "accepted" || assignment.status !== "submitted", current: assignment.quote_status === "sent" },
+    { label: "Quote", done: assignment.quote_status === "accepted", current: assignment.quote_status === "sent" || assignment.quote_status === "draft" },
     { label: "In progress", done: ["client_review", "revision", "completed", "delivered"].includes(assignment.status), current: ["accepted", "in_progress"].includes(assignment.status) },
     { label: "Review", done: ["completed", "delivered"].includes(assignment.status), current: ["client_review", "revision"].includes(assignment.status) },
     { label: "Delivered", done: assignment.status === "delivered", current: assignment.status === "completed" }

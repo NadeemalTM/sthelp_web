@@ -46,6 +46,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (!assignment) return apiError("Assignment not found.", 404);
     const db = getServiceSupabase();
     const update: Record<string, unknown> = {};
+    let quoteChanged = false;
+    const quoteIsPaymentLocked = ["submitted", "verified"].includes(String(assignment.payment_status));
 
     if (body.status !== undefined) {
       const status = String(body.status);
@@ -60,14 +62,26 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       update.progress = progress;
     }
     if (body.quotedAmount !== undefined) {
-      if (body.quotedAmount === "" || body.quotedAmount === null) update.quoted_amount = null;
+      if (body.quotedAmount === "" || body.quotedAmount === null) {
+        update.quoted_amount = null;
+        quoteChanged = assignment.quoted_amount !== null;
+      }
       else {
         const amount = Number(body.quotedAmount);
-        if (!Number.isFinite(amount) || amount < 0) return apiError("Enter a valid amount.");
+        if (!Number.isFinite(amount) || amount <= 0) return apiError("Enter a quote amount greater than zero.");
+        if (amount > 9_999_999_999.99 || Math.abs(amount * 100 - Math.round(amount * 100)) > 0.000001) {
+          return apiError("Quote amount can have no more than two decimal places and must fit the supported amount range.");
+        }
         update.quoted_amount = amount;
+        quoteChanged = Number(assignment.quoted_amount) !== amount;
       }
     }
-    if (body.currency !== undefined) update.currency = requiredText(body.currency, "Currency", 10).toUpperCase();
+    if (body.currency !== undefined) {
+      const currency = requiredText(body.currency, "Currency", 3).toUpperCase();
+      if (!/^[A-Z]{3}$/.test(currency)) return apiError("Use a valid three-letter currency code.");
+      update.currency = currency;
+      quoteChanged = quoteChanged || String(assignment.currency || "LKR").toUpperCase() !== currency;
+    }
     if (body.finalMessage !== undefined) update.final_message = optionalText(body.finalMessage, 3000);
     if (body.downloadUnlocked !== undefined) {
       const requestedUnlock = Boolean(body.downloadUnlocked);
@@ -80,24 +94,55 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       update.priority = priority;
     }
     if (body.assignedTo !== undefined) update.assigned_to = optionalText(body.assignedTo, 120);
-    if (body.quoteNote !== undefined) update.quote_note = optionalText(body.quoteNote, 1500);
+    if (body.quoteNote !== undefined) {
+      const quoteNote = optionalText(body.quoteNote, 1500);
+      update.quote_note = quoteNote;
+      quoteChanged = quoteChanged || String(assignment.quote_note || "") !== String(quoteNote || "");
+    }
+
+    if ((quoteChanged || body.quoteAction === "send") && quoteIsPaymentLocked) {
+      return apiError("The quote cannot be changed or resent while a payment is awaiting verification or has been verified.", 409);
+    }
+
+    if (update.status === "cancelled") {
+      if (quoteIsPaymentLocked) return apiError("Resolve or refund the current payment before cancelling this assignment.", 409);
+      if (body.quoteAction === "send") return apiError("A cancelled assignment cannot be sent for quotation.", 409);
+      update.quote_status = "declined";
+      update.quote_responded_at = new Date().toISOString();
+    }
+
+    if (quoteChanged && body.quoteAction !== "send" && assignment.quote_status !== "draft") {
+      update.quote_status = "draft";
+      update.quote_sent_at = null;
+      update.quote_responded_at = null;
+    }
 
     if (body.quoteAction === "send") {
+      if (String(update.status ?? assignment.status) === "cancelled") return apiError("A cancelled assignment cannot be sent for quotation.", 409);
       const quotedAmount = update.quoted_amount === undefined ? assignment.quoted_amount : update.quoted_amount;
-      if (quotedAmount === null || quotedAmount === undefined || !Number.isFinite(Number(quotedAmount))) return apiError("Enter a quote amount before sending it.");
+      if (quotedAmount === null || quotedAmount === undefined || !Number.isFinite(Number(quotedAmount)) || Number(quotedAmount) <= 0) return apiError("Enter a quote amount greater than zero before sending it.");
       update.quote_status = "sent";
       update.quote_sent_at = new Date().toISOString();
       update.quote_responded_at = null;
     } else if (body.quoteAction !== undefined) return apiError("Invalid quote action.");
 
-    const { data: updated, error } = await db.from("assignments").update(update).eq("id", id).select("*").single();
+    const quoteStateTouched = quoteChanged || body.quoteAction === "send" || update.status === "cancelled";
+    let updateQuery = db.from("assignments").update(update).eq("id", id);
+    if (quoteStateTouched) {
+      updateQuery = updateQuery
+        .eq("payment_status", assignment.payment_status)
+        .eq("quote_status", assignment.quote_status);
+    }
+    const { data: updated, error } = await updateQuery.select("*").maybeSingle();
     if (error) throw error;
+    if (!updated) return apiError("The quote or payment state changed while you were saving. Reload the assignment and try again.", 409);
     if (update.status) {
       const linkStatus = update.status === "cancelled" || update.status === "delivered" ? "closed" : update.status === "submitted" ? "submitted" : "accepted";
       await db.from("client_links").update({ status: linkStatus }).eq("id", assignment.client_link_id);
     }
     if (update.status && update.status !== assignment.status) await recordAssignmentActivity(db, { assignmentId: id, actor: "admin", visibility: "client", eventType: "status_changed", summary: `Assignment status changed to ${String(update.status).replace(/_/g, " ")}.` });
     if (body.quoteAction === "send") await recordAssignmentActivity(db, { assignmentId: id, actor: "admin", visibility: "client", eventType: "quote_sent", summary: "A quote is ready for your review in the client portal." });
+    else if (quoteChanged) await recordAssignmentActivity(db, { assignmentId: id, actor: "admin", visibility: "admin", eventType: "quote_draft_updated", summary: "The draft quotation was updated." });
     if (update.assigned_to !== undefined || update.priority !== undefined) await recordAssignmentActivity(db, { assignmentId: id, actor: "admin", visibility: "admin", eventType: "assignment_updated", summary: "Priority or assignment owner was updated." });
     return NextResponse.json({ assignment: updated });
   } catch (error) {
@@ -174,7 +219,20 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     if (action === "verifyPayment") {
+      if (assignment.quote_status !== "accepted" || !Number.isFinite(Number(assignment.quoted_amount)) || Number(assignment.quoted_amount) <= 0) {
+        return apiError("Payment can be verified only against an accepted final quotation.", 409);
+      }
+      if (assignment.payment_status !== "submitted") return apiError("There is no submitted payment awaiting verification.", 409);
       if (!assignment.payment_reference) return apiError("The client must submit a payment reference before verification.", 409);
+      const { data: paymentProof, error: proofError } = await db
+        .from("assignment_files")
+        .select("id")
+        .eq("assignment_id", assignment.id)
+        .eq("kind", "payment_proof")
+        .limit(1)
+        .maybeSingle();
+      if (proofError) throw proofError;
+      if (!paymentProof) return apiError("A bank payment slip is required before verification.", 409);
       const unlock = body.unlock !== false;
       const { error } = await db.from("assignments").update({
         payment_status: "verified",
@@ -187,6 +245,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     if (action === "rejectPayment") {
+      if (assignment.payment_status === "verified") return apiError("A verified payment cannot be rejected.", 409);
+      if (assignment.payment_status !== "submitted") return apiError("There is no submitted payment to reject.", 409);
       const { error } = await db.from("assignments").update({ payment_status: "rejected", download_unlocked: false }).eq("id", id);
       if (error) throw error;
       if (body.message) await db.from("comments").insert({ assignment_id: id, author: "admin", message: requiredText(body.message, "Message", 1000) });

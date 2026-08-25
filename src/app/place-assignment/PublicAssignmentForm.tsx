@@ -2,20 +2,39 @@
 
 import { useState } from "react";
 import { Loader2, ShieldCheck, UploadCloud } from "lucide-react";
-import { FIVE_MB, SERVICE_TYPES } from "@/lib/constants";
+import { FIVE_MB } from "@/lib/constants";
+import { formatMoney } from "@/lib/format";
+import type { PricingService } from "@/lib/pricing";
 import { uploadPrivateFile } from "@/lib/upload-client";
 
-export function PublicAssignmentForm() {
+export function PublicAssignmentForm({
+  pricingServices,
+  initialServiceSlug
+}: {
+  pricingServices: PricingService[];
+  initialServiceSlug?: string;
+}) {
+  const availableServices = pricingServices;
+  const safeInitialService = initialServiceSlug && availableServices.some((service) => service.slug === initialServiceSlug)
+    ? initialServiceSlug
+    : "";
   const [supportFiles, setSupportFiles] = useState<File[]>([]);
   const [isGroup, setIsGroup] = useState(false);
+  const [selectedServiceSlug, setSelectedServiceSlug] = useState(safeInitialService);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const selectedService = availableServices.find((service) => service.slug === selectedServiceSlug) || null;
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     if (supportFiles.some((file) => file.size > FIVE_MB)) {
       setNotice("Each support document must be 5 MB or smaller.");
+      return;
+    }
+    const deadline = new Date(String(form.get("deadline") || ""));
+    if (Number.isNaN(deadline.getTime())) {
+      setNotice("Enter a valid deadline.");
       return;
     }
     setBusy(true);
@@ -31,8 +50,8 @@ export function PublicAssignmentForm() {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "submit", studentName: form.get("studentName"), contactNumber: form.get("contactNumber"), email: form.get("email"),
-          university: form.get("university"), programme: form.get("programme"), moduleName: form.get("moduleName"), assignmentTitle: form.get("assignmentTitle"), serviceType: form.get("serviceType"), academicLevel: form.get("academicLevel"),
-          deadline: form.get("deadline"), isGroup, groupMembers: isGroup ? Number(form.get("groupMembers")) : null,
+          university: form.get("university"), programme: form.get("programme"), moduleName: form.get("moduleName"), assignmentTitle: form.get("assignmentTitle"), pricingServiceSlug: form.get("pricingServiceSlug"), academicLevel: form.get("academicLevel"),
+          deadline: deadline.toISOString(), isGroup, groupMembers: isGroup ? Number(form.get("groupMembers")) : null,
           description: form.get("description"), specialInstructions: form.get("specialInstructions"), supportFiles: supportFilesMeta
         })
       });
@@ -46,17 +65,19 @@ export function PublicAssignmentForm() {
 
   return <form className="form-card request-form" onSubmit={submit}>
     <div className="section-title"><span className="eyebrow">Your request</span><h2>Assignment details</h2><p className="muted">Fields marked with * are required. More detail helps us assess the request faster.</p></div>
-    {notice ? <div className="notice notice-error">{notice}</div> : null}
+    {notice ? <div className="notice notice-error" role="alert" aria-live="polite">{notice}</div> : null}
+    {!availableServices.length ? <div className="notice notice-error" role="alert">Online ordering is temporarily unavailable because no services are published. Please contact StHelp and try again shortly.</div> : null}
     <div className="form-grid">
       <div className="field"><label htmlFor="student-name">Full name *</label><input id="student-name" className="input" name="studentName" autoComplete="name" required /></div>
       <div className="field"><label htmlFor="contact-number">WhatsApp / contact number *</label><input id="contact-number" className="input" name="contactNumber" type="tel" autoComplete="tel" required /></div>
-      <div className="field"><label htmlFor="email">Email address</label><input id="email" className="input" name="email" type="email" autoComplete="email" /></div>
+      <div className="field"><label htmlFor="email">Email address</label><input id="email" className="input" name="email" type="email" autoComplete="email" /><span className="help">Required if you plan to use PayHere online payment.</span></div>
       <div className="field"><label htmlFor="university">University / institute *</label><input id="university" className="input" name="university" required /></div>
       <div className="field"><label htmlFor="programme">Degree / programme</label><input id="programme" className="input" name="programme" /></div>
       <div className="field"><label htmlFor="module">Module / subject</label><input id="module" className="input" name="moduleName" /></div>
       <div className="field full"><label htmlFor="assignment-title">Assignment / project title *</label><input id="assignment-title" className="input" name="assignmentTitle" required /></div>
-      <div className="field"><label htmlFor="service-type">Type of support *</label><select id="service-type" className="select" name="serviceType" required><option value="">Select</option>{SERVICE_TYPES.map((type) => <option key={type}>{type}</option>)}</select></div>
+      <div className="field"><label htmlFor="service-type">Type of support *</label><select id="service-type" className="select" name="pricingServiceSlug" value={selectedServiceSlug} onChange={(event) => setSelectedServiceSlug(event.target.value)} disabled={!availableServices.length} required><option value="">Select a service</option>{availableServices.map((service) => <option value={service.slug} key={service.slug}>{service.name}{service.starting_price && service.starting_price > 0 ? ` — from ${formatMoney(service.starting_price, service.currency)}` : " — custom quote"}</option>)}</select></div>
       <div className="field"><label htmlFor="academic-level">Academic level</label><select id="academic-level" className="select" name="academicLevel"><option value="">Select</option><option>Foundation</option><option>Diploma</option><option>Undergraduate</option><option>Postgraduate</option><option>Other</option></select></div>
+      {selectedService ? <div className="notice notice-info field full" aria-live="polite"><strong>{selectedService.name}</strong><p>{selectedService.short_description}</p><span className="small">{selectedService.starting_price && selectedService.starting_price > 0 ? `${formatMoney(selectedService.starting_price, selectedService.currency)} starting price. We review your requirements and confirm the final quotation in your client portal before payment.` : "This service needs a custom quotation. We will review your requirements and confirm the price in your client portal before payment."}</span></div> : null}
       <div className="field"><label htmlFor="deadline">Deadline *</label><input id="deadline" className="input" name="deadline" type="datetime-local" required /></div>
       <div className="field"><label htmlFor="group">Group assignment?</label><select id="group" className="select" value={isGroup ? "yes" : "no"} onChange={(event) => setIsGroup(event.target.value === "yes")}><option value="no">No</option><option value="yes">Yes</option></select></div>
       {isGroup ? <div className="field"><label htmlFor="group-members">Number of group members *</label><input id="group-members" className="input" name="groupMembers" type="number" min="2" max="100" required /></div> : null}
@@ -66,6 +87,6 @@ export function PublicAssignmentForm() {
       <div className="website-field" aria-hidden="true"><label htmlFor="website">Website</label><input id="website" name="website" tabIndex={-1} autoComplete="off" /></div>
       <label className="checkbox-row field full"><input type="checkbox" required /><span>I confirm that these details are correct and that I will follow my institution’s academic-integrity and submission rules.</span></label>
     </div>
-    <div className="request-submit"><button className="btn btn-primary" disabled={busy}>{busy ? <><Loader2 className="spinner" size={18} /> Creating your private portal…</> : <><UploadCloud size={18} /> Submit assignment request</>}</button><span className="help"><ShieldCheck size={15} /> Your details are sent to a private tracking portal.</span></div>
+    <div className="request-submit"><button className="btn btn-primary" disabled={busy || !availableServices.length}>{busy ? <><Loader2 className="spinner" size={18} /> Creating your private portal…</> : <><UploadCloud size={18} /> Submit assignment request</>}</button><span className="help"><ShieldCheck size={15} /> Your details are sent to a private tracking portal.</span></div>
   </form>;
 }

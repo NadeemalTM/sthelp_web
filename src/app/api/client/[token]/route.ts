@@ -4,6 +4,8 @@ import { getPublicContent } from "@/lib/data";
 import { getServiceSupabase } from "@/lib/supabase-server";
 import { recordAssignmentActivity } from "@/lib/assignment-activity";
 import { isPayHereEnabled } from "@/lib/payhere";
+import { findDefaultPricingService, getPublicPricingServices } from "@/lib/pricing";
+import { FIVE_MB } from "@/lib/constants";
 
 async function findLink(token: string) {
   const db = getServiceSupabase();
@@ -21,12 +23,15 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     if (!link) return apiError("This client link is invalid or expired.", 404);
 
     const db = getServiceSupabase();
-    const { settings, portfolio, testimonials } = await getPublicContent();
+    const [{ settings, portfolio, testimonials }, pricingServices] = await Promise.all([
+      getPublicContent(),
+      getPublicPricingServices()
+    ]);
     const { data: assignment, error } = await db.from("assignments").select("*").eq("client_link_id", link.id).maybeSingle();
     if (error) throw error;
 
     const safeLink = { client_id: link.client_id, client_name: link.client_name, phone: link.phone, status: link.status };
-    if (!assignment) return NextResponse.json({ link: safeLink, assignment: null, settings, portfolio, testimonials });
+    if (!assignment) return NextResponse.json({ link: safeLink, assignment: null, settings, portfolio, testimonials, pricingServices });
 
     const [{ data: progress }, { data: comments }, { data: files }] = await Promise.all([
       db.from("progress_updates").select("*").eq("assignment_id", assignment.id).order("created_at", { ascending: false }),
@@ -41,6 +46,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       settings,
       portfolio,
       testimonials,
+      pricingServices,
       progress: progress || [],
       comments: comments || [],
       files: (files || []).map(publicFile)
@@ -69,7 +75,61 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       const groupMembers = isGroup ? Number(body.groupMembers) : null;
       if (isGroup && (groupMembers === null || !Number.isInteger(groupMembers) || groupMembers < 2 || groupMembers > 100)) return apiError("Enter a valid number of group members.");
 
-      const { data: created, error } = await db.from("assignments").insert({
+      // Admin-created legacy portal links still submit the old service label. Map
+      // those labels to a managed service slug without ever accepting a price
+      // from the browser.
+      const legacyServiceSlugs: Record<string, string> = {
+        "Computing / Software Development": "web-development",
+        "Business Report": "report-writing",
+        "Research Guidance": "research",
+        "Presentation / PowerPoint": "presentation",
+        "Document Formatting": "custom",
+        "Excel / Data Analysis": "data-analysis",
+        "Other Academic Support": "custom"
+      };
+      const submittedSlug = typeof body.pricingServiceSlug === "string"
+        ? body.pricingServiceSlug.trim().toLowerCase()
+        : "";
+      const legacyServiceType = typeof body.serviceType === "string" ? body.serviceType.trim() : "";
+      const pricingServiceSlug = submittedSlug || legacyServiceSlugs[legacyServiceType] || "";
+      if (!pricingServiceSlug || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(pricingServiceSlug)) {
+        return apiError("Choose a valid support service.");
+      }
+
+      const { data: pricingRow, error: pricingError } = await db
+        .from("pricing_services")
+        .select("id, slug, name, starting_price, currency, is_custom")
+        .eq("slug", pricingServiceSlug)
+        .eq("is_published", true)
+        .eq("is_deleted", false)
+        .maybeSingle();
+      const pricingErrorRecord = pricingError as { code?: unknown; message?: unknown; details?: unknown; hint?: unknown } | null;
+      const pricingErrorText = pricingErrorRecord
+        ? `${String(pricingErrorRecord.message || "")} ${String(pricingErrorRecord.details || "")} ${String(pricingErrorRecord.hint || "")}`.toLowerCase()
+        : "";
+      const pricingTableUnavailable = Boolean(pricingErrorRecord)
+        && ["42P01", "PGRST205"].includes(String(pricingErrorRecord?.code || ""))
+        && pricingErrorText.includes("pricing_services");
+      if (pricingError && !pricingTableUnavailable) throw pricingError;
+
+      const pricingService = pricingRow || (pricingTableUnavailable ? findDefaultPricingService(pricingServiceSlug) : null);
+      if (!pricingService) return apiError("That support service is no longer available. Please choose another service.", 409);
+
+      const serviceName = requiredText(pricingService.name, "Support service", 120);
+      const rawStartingPrice = pricingService.starting_price;
+      const numericStartingPrice = rawStartingPrice === null || rawStartingPrice === undefined
+        ? null
+        : Number(rawStartingPrice);
+      const startingPrice = numericStartingPrice !== null && Number.isFinite(numericStartingPrice) && numericStartingPrice > 0
+        ? numericStartingPrice
+        : null;
+      if (!pricingService.is_custom && startingPrice === null) {
+        return apiError("This service does not have a valid starting price. Please choose another service.", 409);
+      }
+      const currency = String(pricingService.currency || "LKR").trim().toUpperCase();
+      if (!/^[A-Z]{3}$/.test(currency)) return apiError("This service has an invalid currency configuration.", 409);
+
+      const assignmentInsert = {
         client_link_id: link.id,
         student_name: requiredText(body.studentName, "Full name", 150),
         contact_number: requiredText(body.contactNumber, "Contact number", 50),
@@ -78,16 +138,40 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         programme: optionalText(body.programme, 250),
         module_name: optionalText(body.moduleName, 250),
         assignment_title: requiredText(body.assignmentTitle, "Assignment title", 300),
-        service_type: requiredText(body.serviceType, "Support type", 200),
+        service_type: serviceName,
         academic_level: optionalText(body.academicLevel, 100),
         deadline: deadline.toISOString(),
         is_group: isGroup,
         group_members: groupMembers,
         description: requiredText(body.description, "Task description", 10000),
         special_instructions: optionalText(body.specialInstructions, 5000),
+        quoted_amount: startingPrice,
+        currency,
         status: "submitted",
         progress: 0
+      };
+      const pricingSnapshot = {
+        pricing_service_id: pricingService.id || null,
+        pricing_name_snapshot: serviceName,
+        starting_price_snapshot: startingPrice,
+        starting_currency_snapshot: currency
+      };
+      let insertResult = await db.from("assignments").insert({
+        ...assignmentInsert,
+        ...pricingSnapshot
       }).select("id").single();
+
+      if (insertResult.error) {
+        const insertError = insertResult.error as { code?: unknown; message?: unknown; details?: unknown; hint?: unknown };
+        const insertErrorText = `${String(insertError.message || "")} ${String(insertError.details || "")} ${String(insertError.hint || "")}`.toLowerCase();
+        const missingPricingColumns = ["PGRST204", "42703"].includes(String(insertError.code || ""))
+          && ["pricing_service_id", "pricing_name_snapshot", "starting_price_snapshot", "starting_currency_snapshot"].some((column) => insertErrorText.includes(column));
+        if (missingPricingColumns) {
+          insertResult = await db.from("assignments").insert(assignmentInsert).select("id").single();
+        }
+      }
+
+      const { data: created, error } = insertResult;
       if (error || !created) throw error || new Error("Unable to create assignment.");
 
       const supportFiles = Array.isArray(body.supportFiles)
@@ -146,17 +230,35 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         ["description", requiredText(body.description, "Task description", 10000), "task description"],
         ["special_instructions", optionalText(body.specialInstructions, 5000), "special instructions"]
       ];
-      const changed = fields
+      const changedFields = fields
         .filter(([key, value]) => key === "deadline"
           ? new Date(String(assignment[key])).getTime() !== new Date(String(value)).getTime()
-          : String(assignment[key] ?? "") !== String(value ?? ""))
-        .map(([, , label]) => label);
+          : String(assignment[key] ?? "") !== String(value ?? ""));
+      const changed = changedFields.map(([, , label]) => label);
 
       if (!changed.length) return NextResponse.json({ ok: true, unchanged: true });
 
-      const update = Object.fromEntries(fields.map(([key, value]) => [key, value]));
-      const { error } = await db.from("assignments").update(update).eq("id", assignment.id);
+      const quoteSensitiveFields = new Set(["programme", "module_name", "assignment_title", "deadline", "description", "special_instructions"]);
+      const scopeChanged = changedFields.some(([key]) => quoteSensitiveFields.has(key));
+      if (scopeChanged && ["submitted", "verified"].includes(String(assignment.payment_status))) {
+        return apiError("Requirements that affect the quote cannot be changed while payment is awaiting verification or has been verified. Please send StHelp a message instead.", 409);
+      }
+
+      const update: Record<string, unknown> = Object.fromEntries(fields.map(([key, value]) => [key, value]));
+      if (scopeChanged && assignment.quote_status !== "draft") {
+        update.quote_status = "draft";
+        update.quote_sent_at = null;
+        update.quote_responded_at = null;
+      }
+      let updateQuery = db.from("assignments").update(update).eq("id", assignment.id);
+      if (scopeChanged) {
+        updateQuery = updateQuery
+          .eq("payment_status", assignment.payment_status)
+          .eq("quote_status", assignment.quote_status);
+      }
+      const { data: savedAssignment, error } = await updateQuery.select("id").maybeSingle();
       if (error) throw error;
+      if (!savedAssignment) return apiError("The assignment changed while you were editing it. Refresh the portal and try again.", 409);
       const { error: linkError } = await db.from("client_links").update({
         client_name: update.student_name,
         phone: update.contact_number
@@ -169,6 +271,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         eventType: "client_details_updated",
         summary: `You updated: ${changed.join(", ")}.`
       });
+      if (scopeChanged && assignment.quote_status !== "draft") {
+        await recordAssignmentActivity(db, {
+          assignmentId: assignment.id,
+          actor: "system",
+          visibility: "both",
+          eventType: "quote_review_required",
+          summary: "Requirement changes need an updated quotation from StHelp before payment."
+        });
+      }
       return NextResponse.json({ ok: true });
     }
 
@@ -181,45 +292,87 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     if (action === "payment") {
+      if (assignment.status === "cancelled") return apiError("This assignment has been cancelled and cannot accept payment.", 409);
       if (assignment.payment_status === "verified") return apiError("This payment has already been verified.", 409);
+      if (assignment.quote_status !== "accepted") return apiError("Accept the final quotation before submitting payment.", 409);
+      const quotedAmount = Number(assignment.quoted_amount);
+      if (!Number.isFinite(quotedAmount) || quotedAmount <= 0) return apiError("A valid final quotation is required before payment.", 409);
+      const payHerePending = assignment.payment_status === "submitted"
+        && !assignment.payment_reference
+        && String(assignment.payment_note || "").startsWith("PayHere checkout");
+      if (payHerePending) return apiError("PayHere checkout is already in progress. Contact StHelp before switching to bank transfer.", 409);
       const reference = requiredText(body.reference, "Payment reference", 250);
+      const file = body.proofFile;
+      if (!file) return apiError("Upload the bank payment slip before submitting for verification.");
+      const path = String(file.storagePath || "");
+      if (!path.startsWith(`assignments/${assignment.id}/payment/`)) return apiError("Invalid payment proof path.");
+      const originalName = requiredText(file.originalName, "File name", 255);
+      const mimeType = requiredText(file.mimeType, "File type", 150);
+      if (!["application/pdf", "image/jpeg", "image/png", "image/webp"].includes(mimeType)) return apiError("Payment slip must be a PDF or supported image.");
+      const sizeBytes = Number(file.sizeBytes);
+      if (!Number.isFinite(sizeBytes) || sizeBytes <= 0 || sizeBytes > FIVE_MB) return apiError("Payment slip must be 5 MB or smaller.");
       const update = {
         payment_reference: reference,
         payment_note: optionalText(body.note, 1500),
         payment_status: "submitted",
         payment_submitted_at: new Date().toISOString()
       };
-      const { error } = await db.from("assignments").update(update).eq("id", assignment.id);
-      if (error) throw error;
+      const { data: proofRecord, error: fileError } = await db.from("assignment_files").insert({
+        assignment_id: assignment.id,
+        kind: "payment_proof",
+        storage_path: path,
+        original_name: originalName,
+        mime_type: mimeType,
+        size_bytes: sizeBytes
+      }).select("id").single();
+      if (fileError) throw fileError;
 
-      const file = body.proofFile;
-      if (file) {
-        const path = String(file.storagePath || "");
-        if (!path.startsWith(`assignments/${assignment.id}/payment/`)) return apiError("Invalid payment proof path.");
-        const { error: fileError } = await db.from("assignment_files").insert({
-          assignment_id: assignment.id,
-          kind: "payment_proof",
-          storage_path: path,
-          original_name: requiredText(file.originalName, "File name", 255),
-          mime_type: requiredText(file.mimeType, "File type", 150),
-          size_bytes: Number(file.sizeBytes)
-        });
-        if (fileError) throw fileError;
+      const { data: paymentLocked, error } = await db
+        .from("assignments")
+        .update(update)
+        .eq("id", assignment.id)
+        .eq("status", assignment.status)
+        .eq("quote_status", "accepted")
+        .eq("quoted_amount", assignment.quoted_amount)
+        .eq("payment_status", assignment.payment_status)
+        .select("id")
+        .maybeSingle();
+      if (error || !paymentLocked) {
+        await db.from("assignment_files").delete().eq("id", proofRecord.id);
+        await db.storage.from("assignment-files").remove([path]);
+        if (error) throw error;
+        return apiError("The quote or payment state changed. Refresh the portal before submitting again.", 409);
       }
       await recordAssignmentActivity(db, { assignmentId: assignment.id, actor: "client", visibility: "both", eventType: "payment_submitted", summary: "You submitted payment details for verification." });
-      if (file) await recordAssignmentActivity(db, { assignmentId: assignment.id, actor: "client", visibility: "both", eventType: "payment_proof_submitted", summary: "You uploaded a payment proof document." });
+      await recordAssignmentActivity(db, { assignmentId: assignment.id, actor: "client", visibility: "both", eventType: "payment_proof_submitted", summary: "You uploaded a payment proof document." });
       return NextResponse.json({ ok: true });
     }
 
     if (action === "quoteResponse") {
+      if (assignment.status === "cancelled") return apiError("This assignment has been cancelled and the quote can no longer be accepted.", 409);
       if (assignment.quote_status !== "sent") return apiError("There is no pending quote to respond to.", 409);
-      const accepted = Boolean(body.accepted);
+      if (!assignment.quote_sent_at || body.quoteSentAt !== assignment.quote_sent_at) return apiError("This quotation has changed. Refresh the portal and review the latest quote.", 409);
+      if (typeof body.accepted !== "boolean") return apiError("Choose whether to accept or decline the quote.");
+      const accepted = body.accepted;
+      if (accepted) {
+        const quotedAmount = Number(assignment.quoted_amount);
+        if (!Number.isFinite(quotedAmount) || quotedAmount <= 0) return apiError("This quotation is not valid. Please ask StHelp to send it again.", 409);
+      }
       const now = new Date().toISOString();
       const update = accepted
-        ? { quote_status: "accepted", quote_responded_at: now, status: "accepted", accepted_at: assignment.accepted_at || now }
+        ? { quote_status: "accepted", quote_responded_at: now, status: assignment.status === "submitted" ? "accepted" : assignment.status, accepted_at: assignment.accepted_at || now }
         : { quote_status: "declined", quote_responded_at: now };
-      const { error } = await db.from("assignments").update(update).eq("id", assignment.id);
+      const { data: responseSaved, error } = await db
+        .from("assignments")
+        .update(update)
+        .eq("id", assignment.id)
+        .eq("quote_status", "sent")
+        .eq("quote_sent_at", assignment.quote_sent_at)
+        .eq("quoted_amount", assignment.quoted_amount)
+        .select("id")
+        .maybeSingle();
       if (error) throw error;
+      if (!responseSaved) return apiError("This quotation changed before your response was saved. Refresh the portal and review it again.", 409);
       if (accepted) await db.from("client_links").update({ status: "accepted" }).eq("id", link.id);
       await recordAssignmentActivity(db, { assignmentId: assignment.id, actor: "client", visibility: "both", eventType: accepted ? "quote_accepted" : "quote_declined", summary: accepted ? "The client accepted the quote." : "The client declined the quote." });
       return NextResponse.json({ ok: true });

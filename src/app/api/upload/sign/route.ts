@@ -58,8 +58,15 @@ export async function POST(request: NextRequest) {
       const token = String(body.token || "");
       const { data: link } = await db.from("client_links").select("id").eq("token", token).maybeSingle();
       if (!link) return apiError("Invalid client link.", 401);
-      const { data: assignment } = await db.from("assignments").select("id").eq("client_link_id", link.id).maybeSingle();
+      const { data: assignment } = await db.from("assignments").select("id, status, quote_status, quoted_amount, payment_status, payment_reference, payment_note").eq("client_link_id", link.id).maybeSingle();
       if (!assignment) return apiError("Assignment not found.", 404);
+      if (assignment.status === "cancelled") return apiError("This assignment has been cancelled and cannot accept payment.", 409);
+      if (assignment.quote_status !== "accepted") return apiError("Accept the final quotation before uploading a payment slip.", 409);
+      if (!Number.isFinite(Number(assignment.quoted_amount)) || Number(assignment.quoted_amount) <= 0) return apiError("A valid final quotation is required before payment.", 409);
+      if (assignment.payment_status === "verified") return apiError("This payment has already been verified.", 409);
+      if (assignment.payment_status === "submitted" && !assignment.payment_reference && String(assignment.payment_note || "").startsWith("PayHere checkout")) {
+        return apiError("PayHere checkout is already in progress. Contact StHelp before switching to bank transfer.", 409);
+      }
       allowed = paymentTypes;
       path = `assignments/${assignment.id}/payment/${randomPathSegment()}-${name}`;
     } else if (scope === "admin-preview" || scope === "admin-final") {
@@ -83,7 +90,8 @@ export async function POST(request: NextRequest) {
     }
 
     if (size > limit) return apiError(`File must be ${Math.round(limit / 1024 / 1024)} MB or smaller.`);
-    if (!allowed.includes(mimeType) && mimeType !== "application/octet-stream") return apiError("This file type is not allowed.");
+    const allowsGenericBinary = mimeType === "application/octet-stream" && ["client-support", "admin-final"].includes(scope);
+    if (!allowed.includes(mimeType) && !allowsGenericBinary) return apiError("This file type is not allowed.");
 
     await ensureBucket(db, bucket, {
       public: bucket === "portfolio-images",
