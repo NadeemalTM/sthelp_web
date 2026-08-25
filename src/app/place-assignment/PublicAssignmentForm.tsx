@@ -1,61 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { ArrowRight, Check, CheckCircle2, Loader2, LockKeyhole, ShieldCheck, UploadCloud } from "lucide-react";
-import { WhatsAppIcon } from "@/components/WhatsAppIcon";
+import { Loader2, ShieldCheck, UploadCloud } from "lucide-react";
 import { FIVE_MB } from "@/lib/constants";
-import { formatDate, formatMoney } from "@/lib/format";
+import { formatMoney } from "@/lib/format";
 import type { PricingService } from "@/lib/pricing";
 import { uploadPrivateFile } from "@/lib/upload-client";
 
-type SubmittedOrder = {
-  reference: string;
-  studentName: string;
-  university: string;
-  assignmentTitle: string;
-  serviceName: string;
-  deadline: string;
-  startingPrice: number | null;
-  currency: string;
-  token: string;
-};
-
-function normalizeWhatsAppNumber(value: string) {
-  const digits = value.replace(/\D/g, "");
-  return digits.startsWith("0") ? `94${digits.slice(1)}` : digits;
-}
-
-function createWhatsAppMessage(order: SubmittedOrder) {
-  const price = order.startingPrice !== null
-    ? `${formatMoney(order.startingPrice, order.currency)} starting estimate`
-    : "Custom quotation requested";
-
-  return [
-    "Hello StHelp 👋",
-    "",
-    "I have submitted a new assignment support request through your website.",
-    "",
-    `Order reference: ${order.reference}`,
-    `Name: ${order.studentName}`,
-    `University: ${order.university}`,
-    `Service: ${order.serviceName}`,
-    `Assignment: ${order.assignmentTitle}`,
-    `Deadline: ${formatDate(order.deadline)}`,
-    `Price: ${price}`,
-    "",
-    "Please review my requirements and confirm the final quotation. Thank you."
-  ].join("\n");
-}
-
 export function PublicAssignmentForm({
   pricingServices,
-  initialServiceSlug,
-  whatsappNumber
+  initialServiceSlug
 }: {
   pricingServices: PricingService[];
   initialServiceSlug?: string;
-  whatsappNumber: string;
 }) {
   const availableServices = pricingServices;
   const safeInitialService = initialServiceSlug && availableServices.some((service) => service.slug === initialServiceSlug)
@@ -66,45 +23,7 @@ export function PublicAssignmentForm({
   const [selectedServiceSlug, setSelectedServiceSlug] = useState(safeInitialService);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
-  const [submittedOrder, setSubmittedOrder] = useState<SubmittedOrder | null>(null);
   const selectedService = availableServices.find((service) => service.slug === selectedServiceSlug) || null;
-  const whatsapp = normalizeWhatsAppNumber(whatsappNumber);
-
-  if (submittedOrder) {
-    const message = createWhatsAppMessage(submittedOrder);
-    const whatsappHref = whatsapp ? `https://wa.me/${whatsapp}?text=${encodeURIComponent(message)}` : null;
-    const priceLabel = submittedOrder.startingPrice !== null
-      ? `From ${formatMoney(submittedOrder.startingPrice, submittedOrder.currency)}`
-      : "Custom quotation";
-
-    return <section id="order-success" className="form-card request-success-card" aria-live="polite">
-      <div className="request-success-top">
-        <span className="request-success-mark"><Check size={31} strokeWidth={3} /></span>
-        <div><span className="eyebrow">Request received</span><h2>Your assignment is safely in.</h2><p>We saved your requirements and created a private workspace. Send the prepared WhatsApp message so StHelp can identify your request quickly.</p></div>
-      </div>
-
-      <div className="request-success-ticket">
-        <div className="request-success-reference"><span>Order reference</span><strong>{submittedOrder.reference}</strong></div>
-        <div className="request-success-summary">
-          <div><span>Support type</span><strong>{submittedOrder.serviceName}</strong></div>
-          <div><span>Deadline</span><strong>{formatDate(submittedOrder.deadline)}</strong></div>
-          <div><span>Initial pricing</span><strong>{priceLabel}</strong></div>
-        </div>
-        <p><CheckCircle2 size={17} /> Your final quotation will be confirmed after StHelp reviews the full brief.</p>
-      </div>
-
-      <div className="request-whatsapp-panel">
-        <div className="request-whatsapp-icon"><WhatsAppIcon size={29} /></div>
-        <div><strong>One last tap</strong><p>WhatsApp opens with your order summary already written. Review it, then tap Send.</p></div>
-      </div>
-
-      <div className="request-success-actions">
-        {whatsappHref ? <a className="btn request-whatsapp-btn" href={whatsappHref} target="_blank" rel="noreferrer"><WhatsAppIcon size={21} /> Send order on WhatsApp</a> : <div className="notice notice-info">WhatsApp is not configured right now. Your request is still saved—continue to your portal below.</div>}
-        <Link className="btn request-portal-btn" href={`/portal/${submittedOrder.token}`}><LockKeyhole size={18} /> Open private portal <ArrowRight size={18} /></Link>
-      </div>
-      <p className="request-success-note">Your message is not sent automatically. WhatsApp lets you check it before sending.</p>
-    </section>;
-  }
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -138,20 +57,7 @@ export function PublicAssignmentForm({
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || "Unable to submit your requirements.");
-      const order = payload.order;
-      if (!order?.reference) throw new Error("Your request was saved, but its confirmation could not be displayed. Open your private portal and contact StHelp if needed.");
-      setSubmittedOrder({
-        reference: String(order.reference),
-        studentName: String(order.studentName || form.get("studentName") || ""),
-        university: String(order.university || form.get("university") || ""),
-        assignmentTitle: String(order.assignmentTitle || form.get("assignmentTitle") || ""),
-        serviceName: String(order.serviceName || selectedService?.name || "Assignment support"),
-        deadline: String(order.deadline || deadline.toISOString()),
-        startingPrice: order.startingPrice === null || order.startingPrice === undefined ? null : Number(order.startingPrice),
-        currency: String(order.currency || selectedService?.currency || "LKR"),
-        token
-      });
-      window.requestAnimationFrame(() => document.getElementById("order-success")?.scrollIntoView({ behavior: "smooth", block: "center" }));
+      window.location.assign(`/portal/${token}`);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Unable to submit your request.");
     } finally { setBusy(false); }

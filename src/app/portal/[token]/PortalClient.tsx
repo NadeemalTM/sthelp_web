@@ -22,8 +22,10 @@ import {
   ShieldCheck,
   Star,
   UploadCloud,
+  Zap,
   X
 } from "lucide-react";
+import { WhatsAppIcon } from "@/components/WhatsAppIcon";
 import { FIVE_MB } from "@/lib/constants";
 import { formatDate, formatMoney, statusLabel } from "@/lib/format";
 import { uploadPrivateFile } from "@/lib/upload-client";
@@ -213,6 +215,20 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
     data.settings.account_number_2,
     data.settings.bank_branch_2
   ].some(Boolean);
+  const whatsapp = normalizeWhatsAppNumber(data.settings.whatsapp_number);
+  const urgentMessage = [
+    "Hello StHelp 👋",
+    "",
+    "I need quick action for an urgent assignment request.",
+    `Client ID: ${data.link.client_id}`,
+    `Assignment: ${assignment.assignment_title}`,
+    `Deadline: ${formatDate(assignment.deadline)}`,
+    "",
+    "Please review my portal requirements and respond when possible. Thank you."
+  ].join("\n");
+  const urgentWhatsAppHref = whatsapp
+    ? `https://wa.me/${whatsapp}?text=${encodeURIComponent(urgentMessage)}`
+    : null;
 
   async function run(task: () => Promise<any>, success: string) {
     setBusy(true); setNotice(null);
@@ -296,7 +312,13 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
     if (saved) setEditingDetails(false);
   }
 
-  return <div className="portal-grid">
+  return <>
+    {urgentWhatsAppHref ? <section className="portal-urgent-contact">
+      <span className="portal-urgent-symbol"><Zap size={20} /></span>
+      <div><span className="eyebrow">Quick action · urgent work</span><strong>Is your deadline very close?</strong><p>Use WhatsApp only when you need a faster response for urgent work. Keep normal updates, files and revision requests inside this portal.</p></div>
+      <a className="btn portal-urgent-button" href={urgentWhatsAppHref} target="_blank" rel="noreferrer"><WhatsAppIcon size={20} /> Message urgent request</a>
+    </section> : null}
+    <div className="portal-grid">
     <div className="stack">
       <section className="client-command-card">
         <div className="client-command-top"><div><span className="eyebrow">Your workspace</span><h1>{assignment.assignment_title}</h1><p>{assignment.module_name || assignment.service_type} · Due {formatDate(assignment.deadline)}</p></div><span className={`status-badge ${assignment.status === "delivered" ? "success" : ""}`}><Clock3 size={14}/>{statusLabel(assignment.status)}</span></div>
@@ -409,7 +431,8 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
 
       {assignment.payment_status === "verified" ? <section className="panel payment-verified-panel" id="portal-payment"><div className="lock-box" style={{background:"#ebf8f2"}}><CheckCircle2 color="#15805d" size={34}/><h3>Payment verified</h3><p className="muted small">Final downloads are {assignment.download_unlocked ? "unlocked" : "waiting for admin release"}.</p></div></section> : null}
     </aside>
-  </div>;
+    </div>
+  </>;
 }
 
 function PaymentAccount({
@@ -454,6 +477,11 @@ function dateTimeLocalValue(value: string) {
   if (Number.isNaN(date.getTime())) return "";
   const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
   return local.toISOString().slice(0, 16);
+}
+
+function normalizeWhatsAppNumber(value: unknown) {
+  const digits = String(value || "").replace(/\D/g, "");
+  return digits.startsWith("0") ? `94${digits.slice(1)}` : digits;
 }
 
 function formatFileSize(value: number | string | null) {

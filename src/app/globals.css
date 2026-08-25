@@ -240,52 +240,6 @@ h3 { font-size: 1.12rem; line-height: 1.3; margin-bottom: 8px; }
 .request-page .request-submit { padding-top: 24px; border-top: 1px solid #cfd3ca; }
 .request-page .request-submit .btn-primary { color: #fff; background: var(--request-coral); box-shadow: 0 14px 30px rgba(242,100,82,.18); }
 .request-page .request-submit .btn-primary:hover { background: #d94c3c; }
-.request-success-card { overflow: hidden; padding: 0; border: 1px solid #d3ddd5; border-radius: 24px; background: #fffdf8; box-shadow: 0 26px 70px rgba(31,59,46,.13); }
-.request-success-top { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 23px; padding: 38px 38px 31px; color: #fff; background: radial-gradient(circle at 92% 8%, rgba(189,232,212,.2), transparent 32%), #1a2b24; }
-.request-success-mark { width: 72px; height: 72px; display: grid; place-items: center; border-radius: 23px; color: #155f47; background: #bde8d4; box-shadow: inset 0 0 0 1px rgba(255,255,255,.72); transform: rotate(-3deg); }
-.request-success-top .eyebrow { color: #ffc95d; }
-.request-success-top h2 { margin: 9px 0 11px; font-family: Georgia, "Times New Roman", serif; font-size: clamp(2.25rem, 5vw, 3.4rem); font-weight: 500; line-height: .98; letter-spacing: -.055em; }
-.request-success-top p { max-width: 610px; margin: 0; color: rgba(255,255,255,.7); line-height: 1.65; }
-.request-success-ticket { position: relative; margin: 30px 30px 22px; overflow: hidden; border: 1px solid #d9ded7; border-radius: 18px; background: #f8f4ec; }
-.request-success-ticket::before { content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 5px; background: var(--request-coral); }
-.request-success-reference { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 19px 22px 17px 27px; border-bottom: 1px dashed #cbd2ca; }
-.request-success-reference span, .request-success-summary span { color: #657169; font-size: .69rem; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
-.request-success-reference strong { color: #1d493a; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 1.06rem; letter-spacing: .06em; }
-.request-success-summary { display: grid; grid-template-columns: 1fr 1.2fr .8fr; }
-.request-success-summary > div { min-width: 0; display: grid; align-content: start; gap: 6px; padding: 19px 22px 20px 27px; }
-.request-success-summary > div + div { border-left: 1px solid #dce1db; }
-.request-success-summary strong { overflow-wrap: anywhere; color: #27352f; font-size: .9rem; line-height: 1.45; }
-.request-success-ticket > p { display: flex; align-items: flex-start; gap: 8px; margin: 0; padding: 14px 22px 15px 27px; color: #376754; background: #e7f4eb; font-size: .8rem; font-weight: 700; }
-.request-success-ticket > p svg { flex: 0 0 auto; margin-top: 1px; }
-.request-whatsapp-panel { display: grid; grid-template-columns: 54px minmax(0, 1fr); align-items: center; gap: 15px; margin: 0 30px 22px; padding: 18px; border: 1px solid #bde6ca; border-radius: 17px; color: #183b2b; background: linear-gradient(135deg, #edfaf1, #f7fcf8); }
-.request-whatsapp-icon { width: 54px; height: 54px; display: grid; place-items: center; border-radius: 17px; color: #fff; background: #25d366; box-shadow: 0 10px 24px rgba(37,211,102,.23); }
-.request-whatsapp-panel strong { font-size: 1rem; }
-.request-whatsapp-panel p { margin: 4px 0 0; color: #557064; font-size: .82rem; line-height: 1.5; }
-.request-success-actions { display: grid; grid-template-columns: 1.15fr 1fr; gap: 12px; padding: 0 30px; }
-.request-success-actions .btn { min-height: 52px; padding-inline: 16px; text-align: center; }
-.request-whatsapp-btn { color: #fff; background: #1fb65a; box-shadow: 0 13px 27px rgba(26,137,72,.2); }
-.request-whatsapp-btn:hover { color: #fff; background: #15994a; }
-.request-portal-btn { border: 1px solid #bec9c1; color: #203b31; background: #fff; }
-.request-portal-btn:hover { color: #10291f; border-color: #7f9689; background: #f7faf8; }
-.request-success-note { margin: 14px 30px 29px; color: #738078; font-size: .75rem; text-align: center; }
-
-@media (max-width: 680px) {
-  .request-success-card { border-radius: 19px; }
-  .request-success-top { grid-template-columns: 1fr; gap: 18px; padding: 25px 20px 23px; }
-  .request-success-mark { width: 58px; height: 58px; border-radius: 18px; }
-  .request-success-top h2 { margin-top: 8px; font-size: clamp(2.15rem, 11vw, 2.8rem); }
-  .request-success-ticket { margin: 20px 15px 16px; border-radius: 15px; }
-  .request-success-reference { align-items: flex-start; flex-direction: column; gap: 6px; padding: 17px 18px 15px 22px; }
-  .request-success-summary { grid-template-columns: 1fr; }
-  .request-success-summary > div { gap: 5px; padding: 14px 18px 15px 22px; }
-  .request-success-summary > div + div { border-top: 1px solid #dce1db; border-left: 0; }
-  .request-success-ticket > p { padding: 13px 16px 14px 22px; }
-  .request-whatsapp-panel { grid-template-columns: 46px minmax(0, 1fr); gap: 12px; margin: 0 15px 16px; padding: 14px; }
-  .request-whatsapp-icon { width: 46px; height: 46px; border-radius: 14px; }
-  .request-success-actions { grid-template-columns: 1fr; padding: 0 15px; }
-  .request-success-actions .btn { width: 100%; }
-  .request-success-note { margin: 13px 18px 21px; line-height: 1.5; }
-}
 
 /* Homepage: editorial workspace redesign */
 .home-page { --coral: #f26452; --coral-deep: #d94c3c; --ink-dark: #17201d; --paper: #f8f4ed; --moss: #bde8d4; background: var(--paper); color: var(--ink-dark); overflow: hidden; }
@@ -557,6 +511,13 @@ h3 { font-size: 1.12rem; line-height: 1.3; margin-bottom: 8px; }
 .portal-header-inner { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
 .portal-main { padding: 34px 0 74px; }
 .client-portal-page { min-width: 0; overflow-x: clip; background: #f5f7fa; }
+.portal-urgent-contact { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; align-items: center; gap: 16px; margin-bottom: 18px; padding: 17px 18px; overflow: hidden; border: 1px solid #bfe6cb; border-radius: 18px; color: #18382b; background: linear-gradient(115deg, #effbf3, #fff 64%); box-shadow: 0 12px 28px rgba(30,104,66,.08); }
+.portal-urgent-symbol { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 15px; color: #fff; background: #f26452; box-shadow: 0 10px 21px rgba(242,100,82,.2); }
+.portal-urgent-contact .eyebrow { display: block; margin-bottom: 3px; color: #1d8358; font-size: .64rem; }
+.portal-urgent-contact strong { display: block; margin-bottom: 2px; font-size: .96rem; }
+.portal-urgent-contact p { margin: 0; color: #61736a; font-size: .79rem; line-height: 1.45; }
+.portal-urgent-button { min-width: 205px; color: #fff; background: #20b95b; box-shadow: 0 11px 24px rgba(32,185,91,.2); }
+.portal-urgent-button:hover { color: #fff; background: #15994a; }
 .client-portal-page .portal-main,
 .client-portal-page .portal-grid,
 .client-portal-page .portal-grid > *,
@@ -565,6 +526,12 @@ h3 { font-size: 1.12rem; line-height: 1.3; margin-bottom: 8px; }
 .client-portal-page .form-card,
 .client-portal-page aside { min-width: 0; }
 .portal-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, .6fr); gap: 24px; align-items: start; }
+
+@media (max-width: 680px) {
+  .portal-urgent-contact { grid-template-columns: 44px minmax(0, 1fr); gap: 12px; padding: 14px; border-radius: 15px; }
+  .portal-urgent-symbol { width: 44px; height: 44px; border-radius: 13px; }
+  .portal-urgent-button { grid-column: 1 / -1; width: 100%; min-width: 0; }
+}
 .portal-sync { position: relative; z-index: 1; display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; color: rgba(255,255,255,.66); font-size: .76rem; }
 .portal-sync > span, .admin-command-actions > span { display: inline-flex; align-items: center; gap: 7px; color: #c8eed5; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; font-size: .68rem; }
 .portal-sync i, .admin-command-actions i { width: 7px; height: 7px; border-radius: 50%; background: #73e6ae; box-shadow: 0 0 0 5px rgba(115,230,174,.14); animation: live-pulse 2s infinite; }
