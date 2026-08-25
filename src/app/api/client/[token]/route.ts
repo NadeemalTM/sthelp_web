@@ -203,7 +203,19 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           summary: `You submitted ${supportFiles.length} support document${supportFiles.length === 1 ? "" : "s"}.`
         });
       }
-      return NextResponse.json({ ok: true });
+      return NextResponse.json({
+        ok: true,
+        order: {
+          reference: String(link.client_id),
+          studentName: assignmentInsert.student_name,
+          university: assignmentInsert.university,
+          assignmentTitle: assignmentInsert.assignment_title,
+          serviceName,
+          deadline: assignmentInsert.deadline,
+          startingPrice,
+          currency
+        }
+      });
     }
 
     if (!assignment) return apiError("Submit your assignment requirements first.", 404);
