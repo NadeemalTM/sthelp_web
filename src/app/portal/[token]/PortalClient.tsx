@@ -84,12 +84,12 @@ export function PortalClient({ token }: { token: string }) {
     return payload;
   }
 
-  if (loading) return <main className="loading"><div className="stack" style={{justifyItems:"center"}}><div className="spinner"/><span>Opening your private portal…</span></div></main>;
-  if (!data) return <main className="access-page"><div className="access-card"><AlertCircle/><h2>Portal unavailable</h2><p className="muted">{notice?.text || "Please request a new link from StHelp."}</p></div></main>;
+  if (loading) return <main className="portal-loading-page"><div className="portal-loading-card"><Image src="/sthelp-mark.png" alt="" width={64} height={64}/><span className="portal-loading-spinner"><Loader2 className="spinner" size={22}/></span><div><strong>Opening your workspace</strong><p>Loading the latest assignment, quotation and payment details…</p></div></div></main>;
+  if (!data) return <main className="portal-error-page"><div className="portal-error-card"><span><AlertCircle size={27}/></span><div><small>Private portal</small><h1>Workspace unavailable</h1><p>{notice?.text || "Please request a new link from StHelp."}</p><a className="btn btn-dark" href="/access">Return to portal access</a></div></div></main>;
 
   return (
     <main className="page-shell client-portal-page">
-      <header className="portal-header"><div className="container portal-header-inner"><a className="brand" href="/"><Image className="brand-logo" src="/sthelp-mark.png" alt="" width={48} height={48}/><span className="brand-copy">StHelp<small>Private client portal</small></span></a><div className="portal-sync"><span><i/> Live workspace</span><button type="button" onClick={() => void load(true)} disabled={busy} title="Refresh assignment updates"><RefreshCw size={15}/></button><small>Client ID: <strong>{data.link.client_id}</strong>{lastSynced ? ` · updated ${lastSynced.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : ""}</small></div></div></header>
+      <header className="portal-header"><div className="container portal-header-inner"><a className="brand" href="/"><Image className="brand-logo" src="/sthelp-mark.png" alt="" width={48} height={48}/><span className="brand-copy">StHelp<small>Client workspace</small></span></a><div className="portal-header-tools"><div className="portal-client-identity"><span><i/> Private workspace</span><strong>{data.link.client_id}</strong><small>{lastSynced ? `Updated ${lastSynced.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "Connecting…"}</small></div><button className="portal-refresh" type="button" onClick={() => void load(true)} disabled={busy} title="Refresh assignment updates" aria-label="Refresh assignment updates"><RefreshCw className={busy ? "spinner" : ""} size={17}/></button></div></div></header>
       <div className="container portal-main">
         {notice ? <div className={`notice notice-${notice.type}`} role={notice.type === "error" ? "alert" : "status"} aria-live="polite">{notice.text}</div> : null}
         {!data.assignment ? (
@@ -155,7 +155,7 @@ function SubmissionView({ token, data, busy, setBusy, onDone, setNotice }: any) 
   }
 
   return <div className="stack submission-flow">
-    <section className="panel submission-intro" style={{background:"linear-gradient(135deg,#0b1f3a,#174b75)", color:"white"}}><span className="eyebrow" style={{color:"#ffc95d"}}>Welcome to StHelp</span><h1 style={{fontSize:"clamp(2rem,6vw,3.8rem)", marginTop:8}}>Tell us exactly what support you need.</h1><p className="lead">This private link will become your progress dashboard after submission. You can return to it at any time.</p></section>
+    <section className="panel submission-intro"><div><span className="eyebrow">Welcome to StHelp</span><h1>Tell us exactly what support you need.</h1><p className="lead">This private link becomes your live workspace after submission. You can return here for quotes, progress, revisions, payments and final files.</p></div><div className="submission-intro-steps"><span><strong>01</strong> Submit brief</span><span><strong>02</strong> Approve quote</span><span><strong>03</strong> Track delivery</span></div></section>
 
     <section className="submission-portfolio"><div className="section-title"><span className="eyebrow">Previous work</span><h2 style={{fontSize:"1.9rem"}}>Examples of supported work</h2></div><div className="portfolio-grid">{data.portfolio.map((item: any) => <article className="card portfolio-card" key={item.id}><div className="portfolio-visual">{item.image_url ? <img src={item.image_url} alt=""/> : <FileText size={44}/>}</div><span className="tag">{item.category}</span><h3>{item.title}</h3><p className="muted">{item.description}</p></article>)}</div></section>
 
@@ -232,6 +232,7 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
   const showUrgentWhatsApp = Boolean(urgentWhatsAppHref)
     && assignment.quote_status !== "accepted"
     && assignment.status !== "cancelled";
+  const progressValue = Math.min(100, Math.max(0, Number(assignment.progress) || 0));
 
   async function run(task: () => Promise<any>, success: string) {
     setBusy(true); setNotice(null);
@@ -322,11 +323,13 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
       <a className="btn portal-urgent-button" href={urgentWhatsAppHref!} target="_blank" rel="noreferrer"><WhatsAppIcon size={20} /> Message urgent request</a>
     </section> : null}
     <PortalSnapshot assignment={assignment} previewCount={previews.length} finalCount={finals.length} />
+    <PortalSectionNav hasQuote={Boolean((assignment.quote_status === "draft" && assignment.starting_price_snapshot) || assignment.quote_status === "sent")} quoteAccepted={quoteAccepted} hasFiles={Boolean(previews.length || finals.length)} />
     <div className="portal-grid">
     <div className="stack">
-      <section className="client-command-card">
+      <section className="client-command-card" id="portal-overview">
         <div className="client-command-top"><div><span className="eyebrow">Your workspace</span><h1>{assignment.assignment_title}</h1><p>{assignment.module_name || assignment.service_type} · Due {formatDate(assignment.deadline)}</p></div><span className={`status-badge ${assignment.status === "delivered" ? "success" : ""}`}><Clock3 size={14}/>{statusLabel(assignment.status)}</span></div>
-        <div className="client-progress-row"><div><div className="progress-head"><span>Assignment progress</span><strong>{assignment.progress}%</strong></div><div className="progress-track" role="progressbar" aria-label="Assignment progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={assignment.progress}><div className="progress-fill" style={{width:`${assignment.progress}%`}}/></div></div><div className="client-next-step"><span>What happens next</span><strong>{nextStep(assignment)}</strong></div></div>
+        <div className="client-command-body"><div className="client-next-step"><span>Your next step</span><strong>{nextStep(assignment)}</strong><p>The workspace refreshes automatically when StHelp posts an update.</p></div><div className="client-progress-dial" style={{background:`conic-gradient(#d0f4c5 ${progressValue}%, rgba(255,255,255,.14) 0)`}} role="progressbar" aria-label="Assignment progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progressValue}><span><strong>{progressValue}%</strong><small>complete</small></span></div></div>
+        <div className="client-progress-line"><div className="progress-head"><span>Overall assignment progress</span><strong>{progressValue}%</strong></div><div className="progress-track"><div className="progress-fill" style={{width:`${progressValue}%`}}/></div></div>
         <StageRail assignment={assignment}/>
         {assignment.quote_status === "draft" ? <div className="notice notice-info">Your request is safely received. StHelp is reviewing the requirements and will send the final quotation here before any payment is due.</div> : null}
       </section>
@@ -346,10 +349,10 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
 
       <section className="panel portal-section-card portal-comments-card" id="portal-comments"><div className="panel-title"><h3>Comments and revision requests</h3><MessageSquareText/></div><div className="comment-list">{data.comments.length ? data.comments.map((item:any)=><div className={`comment ${item.author === "admin" ? "admin" : ""}`} key={item.id}>{item.message}<time>{item.author === "admin" ? "StHelp" : "You"} · {formatDate(item.created_at)}</time></div>) : <p className="muted small">No comments yet.</p>}</div><form className="form-inline" onSubmit={sendComment}><label className="sr-only" htmlFor="client-comment">Comment or revision request</label><input id="client-comment" className="input" value={comment} maxLength={1000} onChange={(e)=>setComment(e.target.value)} placeholder="Write a short comment or revision request…"/><button className="btn btn-blue" disabled={busy || !comment.trim()} aria-label="Send"><Send size={18}/></button></form></section>
 
-      {canDownloadFinals && !assignment.feedback_submitted ? <section className="panel"><div className="panel-title"><div><h3>Share your feedback</h3><p className="muted small">Your feedback will appear publicly only after admin approval.</p></div><Star/></div><form className="stack" onSubmit={sendFeedback}><div className="field"><label>Rating</label><select className="select" value={rating} onChange={(e)=>setRating(Number(e.target.value))}>{[5,4,3,2,1].map(n=><option key={n} value={n}>{n} star{n>1?"s":""}</option>)}</select></div><div className="field"><label>Feedback</label><textarea className="textarea" value={feedback} onChange={(e)=>setFeedback(e.target.value)} required maxLength={1500}/></div><button className="btn btn-primary" disabled={busy}>Submit feedback</button></form></section> : null}
+      {canDownloadFinals && !assignment.feedback_submitted ? <section className="panel portal-section-card portal-feedback-card"><div className="panel-title"><div><h3>Share your feedback</h3><p className="muted small">Your feedback will appear publicly only after admin approval.</p></div><Star/></div><form className="stack" onSubmit={sendFeedback}><div className="field"><label>Rating</label><select className="select" value={rating} onChange={(e)=>setRating(Number(e.target.value))}>{[5,4,3,2,1].map(n=><option key={n} value={n}>{n} star{n>1?"s":""}</option>)}</select></div><div className="field"><label>Feedback</label><textarea className="textarea" value={feedback} onChange={(e)=>setFeedback(e.target.value)} required maxLength={1500}/></div><button className="btn btn-primary" disabled={busy}>Submit feedback</button></form></section> : null}
     </div>
 
-    <aside className="stack">
+    <aside className="stack portal-control-rail">
       <section className="panel client-details-panel portal-section-card" id="portal-details">
         <div className="panel-title"><div><h3>Assignment details</h3><p className="muted small">Keep your contact and requirement details accurate.</p></div>{canEditDetails && !editingDetails ? <button type="button" className="btn btn-soft btn-sm" onClick={()=>setEditingDetails(true)}><Pencil size={14}/> Edit</button> : <FileText/>}</div>
         {editingDetails ? <form className="client-edit-form" onSubmit={updateDetails}>
@@ -430,13 +433,25 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
         </section>
       ) : null}
 
-      {quoteAccepted && assignment.payment_status !== "verified" && !payHerePending ? <section className="panel portal-payment-verification"><div className="panel-title"><div><h3>Bank transfer verification</h3><p className="muted small">Use this after paying to one of the bank accounts above.</p></div><FileCheck2/></div>{assignment.payment_status === "rejected" ? <div className="notice notice-error" role="alert">The previous payment could not be verified. Check the latest StHelp message, then submit the corrected reference and slip below.</div> : null}<form className="stack" onSubmit={sendPayment}><div className="field"><label htmlFor="bank-reference">Reference / transaction ID *</label><input id="bank-reference" className="input" value={paymentRef} onChange={(e)=>setPaymentRef(e.target.value)} required/></div><div className="field"><label htmlFor="bank-payment-note">Note</label><textarea id="bank-payment-note" className="textarea" value={paymentNote} onChange={(e)=>setPaymentNote(e.target.value)} placeholder="Payment date, sender name or anything admin should know."/></div><div className="field"><label htmlFor="bank-payment-slip">Bank payment slip * (maximum 5 MB)</label><input id="bank-payment-slip" className="input" type="file" required accept=".pdf,.jpg,.jpeg,.png,.webp" onChange={(e)=>setProof(e.target.files?.[0] || null)}/></div><button className="btn btn-primary" disabled={busy}>{busy ? "Submitting…" : "Send slip for verification"}</button></form>{bankPaymentPending ? <div className="notice notice-info" role="status">Your payment reference and slip are awaiting verification. You may resubmit corrected details.</div> : null}</section> : null}
+      {quoteAccepted && assignment.payment_status !== "verified" && !payHerePending ? <section className="panel portal-payment-verification portal-section-card"><div className="panel-title"><div><h3>Bank transfer verification</h3><p className="muted small">Use this after paying to one of the bank accounts above.</p></div><FileCheck2/></div>{assignment.payment_status === "rejected" ? <div className="notice notice-error" role="alert">The previous payment could not be verified. Check the latest StHelp message, then submit the corrected reference and slip below.</div> : null}<form className="stack" onSubmit={sendPayment}><div className="field"><label htmlFor="bank-reference">Reference / transaction ID *</label><input id="bank-reference" className="input" value={paymentRef} onChange={(e)=>setPaymentRef(e.target.value)} required/></div><div className="field"><label htmlFor="bank-payment-note">Note</label><textarea id="bank-payment-note" className="textarea" value={paymentNote} onChange={(e)=>setPaymentNote(e.target.value)} placeholder="Payment date, sender name or anything admin should know."/></div><div className="field"><label htmlFor="bank-payment-slip">Bank payment slip * (maximum 5 MB)</label><input id="bank-payment-slip" className="input" type="file" required accept=".pdf,.jpg,.jpeg,.png,.webp" onChange={(e)=>setProof(e.target.files?.[0] || null)}/></div><button className="btn btn-primary" disabled={busy}>{busy ? "Submitting…" : "Send slip for verification"}</button></form>{bankPaymentPending ? <div className="notice notice-info" role="status">Your payment reference and slip are awaiting verification. You may resubmit corrected details.</div> : null}</section> : null}
       {quoteAccepted && payHerePending && assignment.payment_status !== "verified" ? <div className="notice notice-info portal-payment-state" role="status">PayHere checkout is awaiting confirmation. Retry PayHere above if checkout was not completed, or contact StHelp before switching to bank transfer.</div> : null}
 
       {assignment.payment_status === "verified" ? <section className="panel payment-verified-panel" id="portal-payment"><div className="lock-box" style={{background:"#ebf8f2"}}><CheckCircle2 color="#15805d" size={34}/><h3>Payment verified</h3><p className="muted small">Final downloads are {assignment.download_unlocked ? "unlocked" : "waiting for admin release"}.</p></div></section> : null}
     </aside>
     </div>
   </>;
+}
+
+function PortalSectionNav({ hasQuote, quoteAccepted, hasFiles }: { hasQuote: boolean; quoteAccepted: boolean; hasFiles: boolean }) {
+  return <nav className="portal-section-nav" aria-label="Workspace sections">
+    <a href="#portal-overview"><Clock3 size={16}/><span>Overview</span></a>
+    {hasQuote ? <a href="#portal-quote"><Banknote size={16}/><span>Quotation</span></a> : null}
+    {quoteAccepted ? <a href="#portal-payment"><CreditCard size={16}/><span>Payment</span></a> : null}
+    {hasFiles ? <a href="#portal-files"><FileLock2 size={16}/><span>Files</span></a> : null}
+    <a href="#portal-progress"><RefreshCw size={16}/><span>Updates</span></a>
+    <a href="#portal-comments"><MessageSquareText size={16}/><span>Messages</span></a>
+    <a href="#portal-details"><FileText size={16}/><span>Details</span></a>
+  </nav>;
 }
 
 function PortalSnapshot({ assignment, previewCount, finalCount }: { assignment: any; previewCount: number; finalCount: number }) {
