@@ -21,6 +21,8 @@ import {
 } from "lucide-react";
 import { formatDate, formatMoney, statusLabel } from "@/lib/format";
 
+type DashboardNotice = { type: "success" | "error" | "info"; text: string };
+
 export function AdminDashboard({ supabaseConfigured }: { supabaseConfigured: boolean }) {
   const [links, setLinks] = useState<any[]>([]);
   const [feedbackLinks, setFeedbackLinks] = useState<any[]>([]);
@@ -31,15 +33,16 @@ export function AdminDashboard({ supabaseConfigured }: { supabaseConfigured: boo
   const [busy, setBusy] = useState(false);
   const [created, setCreated] = useState<any>(null);
   const [feedbackCreated, setFeedbackCreated] = useState<any>(null);
-  const [notice, setNotice] = useState("");
+  const [notice, setNotice] = useState<DashboardNotice | null>(null);
 
   const load = useCallback(async () => {
     if (!supabaseConfigured) {
       setLoading(false);
-      setNotice("Connect Supabase in Vercel to enable client links and assignments.");
-      return;
+      setNotice({ type: "info", text: "Connect Supabase in Vercel to enable client links and assignments." });
+      return false;
     }
 
+    setNotice(null);
     setLoading(true);
     try {
       const [linkRes, assignmentRes, feedbackLinkRes] = await Promise.all([
@@ -58,8 +61,10 @@ export function AdminDashboard({ supabaseConfigured }: { supabaseConfigured: boo
       setLinks(linkData.links || []);
       setAssignments(assignmentData.assignments || []);
       setFeedbackLinks(feedbackLinkData.links || []);
+      return true;
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Unable to load dashboard.");
+      setNotice({ type: "error", text: error instanceof Error ? error.message : "Unable to load dashboard." });
+      return false;
     } finally {
       setLoading(false);
     }
@@ -116,11 +121,11 @@ export function AdminDashboard({ supabaseConfigured }: { supabaseConfigured: boo
   async function createLink(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!supabaseConfigured) {
-      setNotice("Connect Supabase in Vercel before creating client links.");
+      setNotice({ type: "info", text: "Connect Supabase in Vercel before creating client links." });
       return;
     }
     setBusy(true);
-    setNotice("");
+    setNotice(null);
     const formElement = event.currentTarget;
     const form = new FormData(formElement);
     try {
@@ -137,9 +142,10 @@ export function AdminDashboard({ supabaseConfigured }: { supabaseConfigured: boo
       if (!response.ok) throw new Error(data.error || "Unable to create link.");
       setCreated(data);
       formElement.reset();
-      await load();
+      const refreshed = await load();
+      if (refreshed) setNotice({ type: "success", text: "Private client access created." });
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Unable to create link.");
+      setNotice({ type: "error", text: error instanceof Error ? error.message : "Unable to create link." });
     } finally {
       setBusy(false);
     }
@@ -148,11 +154,11 @@ export function AdminDashboard({ supabaseConfigured }: { supabaseConfigured: boo
   async function createFeedbackLink(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!supabaseConfigured) {
-      setNotice("Connect Supabase in Vercel before creating feedback links.");
+      setNotice({ type: "info", text: "Connect Supabase in Vercel before creating feedback links." });
       return;
     }
     setBusy(true);
-    setNotice("");
+    setNotice(null);
     const formElement = event.currentTarget;
     const form = new FormData(formElement);
     try {
@@ -168,9 +174,10 @@ export function AdminDashboard({ supabaseConfigured }: { supabaseConfigured: boo
       if (!response.ok) throw new Error(data.error || "Unable to create feedback link.");
       setFeedbackCreated(data);
       formElement.reset();
-      await load();
+      const refreshed = await load();
+      if (refreshed) setNotice({ type: "success", text: "Feedback link created." });
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Unable to create feedback link.");
+      setNotice({ type: "error", text: error instanceof Error ? error.message : "Unable to create feedback link." });
     } finally {
       setBusy(false);
     }
@@ -179,11 +186,11 @@ export function AdminDashboard({ supabaseConfigured }: { supabaseConfigured: boo
   async function clearAssignments(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!supabaseConfigured) {
-      setNotice("Connect Supabase in Vercel before using cleanup tools.");
+      setNotice({ type: "info", text: "Connect Supabase in Vercel before using cleanup tools." });
       return;
     }
     setBusy(true);
-    setNotice("");
+    setNotice(null);
     const formElement = event.currentTarget;
     const form = new FormData(formElement);
     try {
@@ -197,25 +204,32 @@ export function AdminDashboard({ supabaseConfigured }: { supabaseConfigured: boo
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Unable to clear assignment data.");
-      setNotice(
-        `Cleared ${data.deletedAssignments} assignments, ${data.deletedFiles} files, and ${data.deletedClientLinks} client links.`
-      );
       formElement.reset();
-      await load();
+      const refreshed = await load();
+      if (refreshed) {
+        setNotice({
+          type: "success",
+          text: `Cleared ${data.deletedAssignments} assignments, ${data.deletedFiles} files, and ${data.deletedClientLinks} client links.`
+        });
+      }
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Unable to clear assignment data.");
+      setNotice({ type: "error", text: error instanceof Error ? error.message : "Unable to clear assignment data." });
     } finally {
       setBusy(false);
     }
   }
 
   async function copy(text: string) {
-    await navigator.clipboard.writeText(text);
-    setNotice("Copied to clipboard.");
+    try {
+      await navigator.clipboard.writeText(text);
+      setNotice({ type: "success", text: "Copied to clipboard." });
+    } catch {
+      setNotice({ type: "error", text: "Unable to copy. Select the link and copy it manually." });
+    }
   }
 
   return (
-    <main className="admin-content admin-dashboard stack">
+    <main className="admin-content admin-dashboard admin-page--overview stack">
       <section className="admin-page-header">
         <div>
           <span className="eyebrow">Today&apos;s workspace</span>
@@ -231,10 +245,10 @@ export function AdminDashboard({ supabaseConfigured }: { supabaseConfigured: boo
         </div>
       </section>
 
-      {notice ? <div className="notice notice-info" role="status">{notice}</div> : null}
+      {notice ? <div className={`notice notice-${notice.type}`} role={notice.type === "error" ? "alert" : "status"}>{notice.text}</div> : null}
 
       <section className="admin-stats" aria-label="Assignment summary">
-        <article className="admin-metric">
+        <article className="admin-metric metric-total">
           <span className="metric-icon"><UsersRound size={17} /></span>
           <div><strong>{stats.total}</strong><span>Total assignments</span></div>
         </article>
@@ -362,7 +376,7 @@ export function AdminDashboard({ supabaseConfigured }: { supabaseConfigured: boo
             ) : null}
           </section>
 
-          <details className="admin-disclosure">
+          <details className="admin-disclosure feedback-link-disclosure">
             <summary><span className="summary-icon"><MessageSquareQuote size={17} /></span><span><strong>Create feedback link</strong><small>One-time public review URL</small></span><ChevronDown size={17} /></summary>
             <div className="disclosure-body">
               <form className="stack compact-stack" onSubmit={createFeedbackLink}>
@@ -374,7 +388,7 @@ export function AdminDashboard({ supabaseConfigured }: { supabaseConfigured: boo
             </div>
           </details>
 
-          <details className="admin-disclosure">
+          <details className="admin-disclosure access-history-disclosure">
             <summary><span className="summary-icon"><Clock3 size={17} /></span><span><strong>Recent links</strong><small>Client and feedback access</small></span><ChevronDown size={17} /></summary>
             <div className="disclosure-body link-history">
               <strong className="section-label">Client portals</strong>

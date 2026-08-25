@@ -218,14 +218,14 @@ export function ContentManager({ supabaseConfigured }: { supabaseConfigured: boo
   }
 
   if (loading) {
-    return <main className="admin-content loading"><div className="spinner"/></main>;
+    return <main className="admin-content admin-settings-page admin-content-page loading"><div className="spinner"/></main>;
   }
 
   if (!supabaseConfigured) {
-    return <main className="admin-content admin-settings-page stack">
+    return <main className="admin-content admin-settings-page admin-content-page stack">
       <div><span className="eyebrow">Website management</span><h2 style={{ marginTop: 7 }}>Content and settings</h2><p className="muted">Update WhatsApp, bank details, public work examples and customer feedback.</p></div>
       <div className="notice notice-info">Supabase setup is required before website content can be edited.</div>
-      <section className="panel stack">
+      <section className="panel admin-setup-panel stack">
         <h3>Complete the database connection</h3>
         <p className="muted">Add these variables to the Production environment in Vercel, then redeploy:</p>
         <div className="code-box">NEXT_PUBLIC_SUPABASE_URL</div>
@@ -236,11 +236,11 @@ export function ContentManager({ supabaseConfigured }: { supabaseConfigured: boo
     </main>;
   }
 
-  return <main className="admin-content admin-settings-page stack">
+  return <main className="admin-content admin-settings-page admin-content-page stack">
     <div><span className="eyebrow">Website management</span><h2 style={{ marginTop: 7 }}>Content and settings</h2><p className="muted">Manage business details, student resources, public work examples and customer feedback.</p></div>
     {notice ? <div className={`notice notice-${notice.type}`}>{notice.text}</div> : null}
 
-    {settings ? <section className="panel">
+    {settings ? <section className="panel business-settings-panel">
       <div className="panel-title"><div><h3>Business and payment settings</h3><p className="muted small">These details appear on the public website and active client dashboards.</p></div><Save/></div>
       <form className="form-grid" onSubmit={saveSettings}>
         <div className="field"><label htmlFor="business-name">Business name</label><input id="business-name" className="input" name="businessName" autoComplete="organization" defaultValue={settings.business_name} required/></div>
@@ -263,12 +263,12 @@ export function ContentManager({ supabaseConfigured }: { supabaseConfigured: boo
       </form>
     </section> : <div className="notice notice-error">The settings record is missing. Run the latest Supabase schema and refresh this page.</div>}
 
-    <section className="panel resource-admin-panel" id="student-resources">
+    <section className="panel resource-admin-panel student-resources-panel" id="student-resources">
       <div className="panel-title"><div><span className="eyebrow">Public discovery page</span><h3>Student resources</h3><p className="muted small">Add, edit, order, feature or hide tools shown at /student-resources.</p></div><a className="btn btn-soft btn-sm" href="/student-resources" target="_blank"><ExternalLink size={15}/> View page</a></div>
       {content.resourceSetupRequired ? <div className="notice notice-info">Run <strong>supabase/migrations/20260819_add_student_resources.sql</strong> before saving resource changes. The public page already uses the built-in starter directory.</div> : null}
       <div className="resource-admin-grid">
-        <form className="stack resource-editor" id="resource-editor" key={editingResource?.id || "new-resource"} onSubmit={saveResource}>
-          <div className="resource-editor-heading"><div><strong>{editingResource ? "Edit resource" : "Add a resource"}</strong><span>{editingResource ? "Update the selected card and save your changes." : "Create a new link for the public directory."}</span></div>{editingResource ? <button type="button" className="btn btn-soft btn-sm" onClick={() => { setEditingResource(null); setResourceImage(null); }}><X size={14}/> Cancel</button> : <Plus size={18}/>}</div>
+        <form className="stack resource-editor content-resource-editor" id="resource-editor" key={editingResource?.id || "new-resource"} onSubmit={saveResource}>
+          <div className="resource-editor-heading"><div><strong>{editingResource ? `Edit ${editingResource.title}` : "Add a resource"}</strong><span>{editingResource ? "Update the selected card and save your changes." : "Create a new link for the public directory."}</span></div>{editingResource ? <button type="button" className="btn btn-soft btn-sm" onClick={() => { setEditingResource(null); setResourceImage(null); }}><X size={14}/> Cancel</button> : <Plus size={18}/>}</div>
           <div className="form-grid">
             <div className="field"><label htmlFor="resource-title">Resource title</label><input id="resource-title" className="input" name="title" defaultValue={editingResource?.title || ""} required/></div>
             <div className="field"><label htmlFor="resource-category">Category</label><select id="resource-category" className="select" name="category" defaultValue={editingResource?.category || RESOURCE_CATEGORIES[0]}>{editingResource?.category && !RESOURCE_CATEGORIES.includes(editingResource.category) ? <option>{editingResource.category}</option> : null}{RESOURCE_CATEGORIES.map((item) => <option key={item}>{item}</option>)}</select></div>
@@ -284,11 +284,11 @@ export function ContentManager({ supabaseConfigured }: { supabaseConfigured: boo
           <button className="btn btn-primary" disabled={busy}>{editingResource ? <><Save size={17}/> Save resource</> : <><Plus size={17}/> Add resource</>}</button>
         </form>
 
-        <div className="resource-admin-library">
+        <div className="resource-admin-library content-resource-library">
           <label className="search-field"><Search size={17}/><span className="sr-only">Search student resources</span><input value={resourceSearch} onChange={(event) => setResourceSearch(event.target.value)} placeholder="Search resources"/></label>
           <div className="resource-admin-count"><strong>{filteredResources.length}</strong> of {content.resources?.length || 0} resources</div>
           <div className="resource-admin-list">
-            {filteredResources.map((item: any) => <article className="resource-admin-row" key={item.id}>
+            {filteredResources.map((item: any) => <article className={`resource-admin-row ${editingResource?.id === item.id ? "is-editing" : ""}`} aria-current={editingResource?.id === item.id ? "true" : undefined} key={item.id}>
               <div className="resource-admin-thumb"><span>{item.title.slice(0, 1)}</span><img src={item.thumbnail_url || resourceFavicon(item.url)} alt="" width="38" height="38" loading="lazy" referrerPolicy="no-referrer"/></div>
               <div className="resource-admin-copy"><strong>{item.title}</strong><span>{item.category} · {RESOURCE_ACCESS_LABELS[item.access_type as keyof typeof RESOURCE_ACCESS_LABELS]} · {item.is_published ? "Published" : "Hidden"}{item.is_featured ? " · Featured" : ""}</span></div>
               <div className="resource-admin-actions"><button className="btn btn-soft btn-sm" type="button" title="Edit resource" onClick={() => editResource(item)}><Pencil size={14}/></button><a className="btn btn-soft btn-sm" href={item.url} target="_blank" title="Open website"><ExternalLink size={14}/></a><button className="btn btn-soft btn-sm" type="button" title={item.is_published ? "Hide resource" : "Publish resource"} onClick={() => contentAction({ action: "toggle", type: "resource", id: item.id, isPublished: !item.is_published }, item.is_published ? "Resource hidden." : "Resource published.")}>{item.is_published ? <EyeOff size={14}/> : <Eye size={14}/>}</button><button className="btn btn-danger btn-sm" type="button" title="Delete resource" onClick={() => window.confirm(`Delete ${item.title}?`) && contentAction({ action: "delete", type: "resource", id: item.id }, "Resource deleted.")}><Trash2 size={14}/></button></div>
@@ -300,7 +300,7 @@ export function ContentManager({ supabaseConfigured }: { supabaseConfigured: boo
     </section>
 
     <section className="admin-grid">
-      <div className="panel">
+      <div className="panel portfolio-editor-panel">
         <div className="panel-title"><div><h3>Add previous work</h3><p className="muted small">Upload an image file or leave it empty for the default visual.</p></div><Plus/></div>
         <form className="stack" onSubmit={createPortfolio}>
           <div className="form-grid">
@@ -314,7 +314,7 @@ export function ContentManager({ supabaseConfigured }: { supabaseConfigured: boo
         </form>
       </div>
 
-      <div className="panel">
+      <div className="panel feedback-editor-panel">
         <div className="panel-title"><div><h3>Add customer feedback</h3><p className="muted small">Client-submitted feedback also appears below for approval.</p></div><Plus/></div>
         <form className="stack" onSubmit={createTestimonial}>
           <div className="form-grid">
@@ -328,13 +328,13 @@ export function ContentManager({ supabaseConfigured }: { supabaseConfigured: boo
       </div>
     </section>
 
-    <section className="panel">
+    <section className="panel portfolio-library-panel">
       <div className="panel-title"><h3>Previous work items</h3></div>
       {content.portfolio.map((item: any) => <div className="file-row" key={item.id}><div className="file-name"><strong>{item.title}</strong><span className="tiny muted">{item.category} · {item.is_published ? "Published" : "Hidden"}</span></div><div style={{ display: "flex", gap: 8 }}><button className="btn btn-soft btn-sm" type="button" title={item.is_published ? "Hide item" : "Publish item"} onClick={() => contentAction({ action: "toggle", type: "portfolio", id: item.id, isPublished: !item.is_published }, item.is_published ? "Item hidden." : "Item published.")}>{item.is_published ? <EyeOff size={14}/> : <Eye size={14}/>}</button><button className="btn btn-danger btn-sm" type="button" title="Delete item" onClick={() => window.confirm("Delete this work item?") && contentAction({ action: "delete", type: "portfolio", id: item.id }, "Item deleted.")}><Trash2 size={14}/></button></div></div>)}
       {!content.portfolio.length ? <p className="muted">No work examples.</p> : null}
     </section>
 
-    <section className="panel">
+    <section className="panel feedback-library-panel">
       <div className="panel-title"><h3>Testimonials and pending feedback</h3></div>
       {content.testimonials.map((item: any) => <div className="file-row" key={item.id}><div className="file-name"><strong>{item.customer_name} · {"★".repeat(item.rating)}</strong><span className="tiny muted">{item.feedback} · {item.is_published ? "Published" : "Waiting / hidden"}</span></div><div style={{ display: "flex", gap: 8 }}><button className="btn btn-soft btn-sm" type="button" title={item.is_published ? "Hide feedback" : "Publish feedback"} onClick={() => contentAction({ action: "toggle", type: "testimonial", id: item.id, isPublished: !item.is_published }, item.is_published ? "Feedback hidden." : "Feedback published.")}>{item.is_published ? <EyeOff size={14}/> : <Eye size={14}/>}</button><button className="btn btn-danger btn-sm" type="button" title="Delete testimonial" onClick={() => window.confirm("Delete this testimonial?") && contentAction({ action: "delete", type: "testimonial", id: item.id }, "Testimonial deleted.")}><Trash2 size={14}/></button></div></div>)}
       {!content.testimonials.length ? <p className="muted">No testimonials.</p> : null}

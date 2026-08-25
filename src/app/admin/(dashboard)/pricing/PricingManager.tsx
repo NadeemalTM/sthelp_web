@@ -182,32 +182,32 @@ export function PricingManager({ supabaseConfigured }: { supabaseConfigured: boo
   }
 
   if (loading) {
-    return <main className="admin-content loading"><div className="spinner"/></main>;
+    return <main className="admin-content admin-settings-page admin-pricing-page loading"><div className="spinner"/></main>;
   }
 
   if (!supabaseConfigured) {
-    return <main className="admin-content admin-settings-page stack">
+    return <main className="admin-content admin-settings-page admin-pricing-page stack">
       <div><span className="eyebrow">Service catalogue</span><h2 style={{ marginTop: 7 }}>Pricing</h2><p className="muted">Manage the starting prices shown to website visitors.</p></div>
       <div className="notice notice-info">Connect Supabase in Vercel before managing pricing services.</div>
     </main>;
   }
 
-  return <main className="admin-content admin-settings-page stack">
+  return <main className="admin-content admin-settings-page admin-pricing-page stack">
     <div><span className="eyebrow">Service catalogue</span><h2 style={{ marginTop: 7 }}>Pricing</h2><p className="muted">Manage public starting prices. Each client receives a final quote after their requirements are reviewed.</p></div>
 
     {notice ? <div className={`notice notice-${notice.type}`} role="status">{notice.text}</div> : null}
     {setupRequired ? <div className="notice notice-info"><strong>Database setup required.</strong> {setupMessage}</div> : null}
 
-    <section className="panel resource-admin-panel">
+    <section className="panel resource-admin-panel pricing-catalog-panel">
       <div className="panel-title">
         <div><span className="eyebrow">Public pricing page</span><h3>Services and starting prices</h3><p className="muted small">Add, edit, order, feature or hide the services displayed to customers.</p></div>
         <Link className="btn btn-soft btn-sm" href="/pricing" target="_blank"><ExternalLink size={15}/> View page</Link>
       </div>
 
       <div className="resource-admin-grid">
-        <form className="stack resource-editor" id="pricing-editor" key={editing?.id || "new-pricing-service"} onSubmit={saveService}>
+        <form className="stack resource-editor pricing-editor" id="pricing-editor" key={editing?.id || "new-pricing-service"} onSubmit={saveService}>
           <div className="resource-editor-heading">
-            <div><strong>{editing ? "Edit pricing service" : "Add a pricing service"}</strong><span>{editing ? "Update the selected service and save your changes." : "Create a service for the public pricing page."}</span></div>
+            <div><strong>{editing ? `Edit ${editing.name}` : "Add a pricing service"}</strong><span>{editing ? "Update the selected service and save your changes." : "Create a service for the public pricing page."}</span></div>
             {editing ? <button type="button" className="btn btn-soft btn-sm" onClick={clearEditor}><X size={14}/> Cancel</button> : <Plus size={18}/>} 
           </div>
 
@@ -231,11 +231,11 @@ export function PricingManager({ supabaseConfigured }: { supabaseConfigured: boo
           <button className="btn btn-primary" disabled={busy || setupRequired}>{editing ? <><Save size={17}/> Save service</> : <><Plus size={17}/> Add service</>}</button>
         </form>
 
-        <div className="resource-admin-library">
+        <div className="resource-admin-library pricing-library">
           <label className="search-field"><Search size={17}/><span className="sr-only">Search pricing services</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search services"/></label>
           <div className="resource-admin-count"><strong>{filteredServices.length}</strong> of {services.length} services</div>
           <div className="resource-admin-list">
-            {filteredServices.map((service) => <article className="resource-admin-row" key={service.id}>
+            {filteredServices.map((service) => <article className={`resource-admin-row ${editing?.id === service.id ? "is-editing" : ""}`} aria-current={editing?.id === service.id ? "true" : undefined} key={service.id}>
               <div className="resource-admin-thumb"><BadgeDollarSign size={21}/></div>
               <div className="resource-admin-copy"><strong>{service.name}</strong><span>{service.is_custom ? "Custom quote" : `${formatMoney(service.starting_price, service.currency)} and up`} · {service.is_published ? "Published" : "Hidden"}{service.is_featured ? " · Featured" : ""}</span></div>
               <div className="resource-admin-actions">
