@@ -46,14 +46,14 @@ export function ResourcesExplorer({ resources }: { resources: StudentResource[] 
   const featured = resources.filter((resource) => resource.is_featured).slice(0, 6);
 
   return <>
-    <section className="resource-starter-section">
+    <section className="resource-starter-section" data-public-reveal>
       <div className="container">
         <div className="resource-section-heading"><div><span className="eyebrow"><Sparkles size={15}/> Recommended starter kit</span><h2>A strong free stack for most assignments.</h2></div><p>Start small: one research tool, one reference manager and the right tool for your output.</p></div>
         <div className="resource-featured-grid">{featured.map((resource) => <ResourceCard resource={resource} key={resource.id}/>)}</div>
       </div>
     </section>
 
-    <section className="resource-directory-section" id="directory">
+    <section className="resource-directory-section" id="directory" data-public-reveal>
       <div className="container">
         <div className="resource-directory-heading"><div><span className="eyebrow">Browse the directory</span><h2>Find the right tool for today&apos;s task.</h2></div><div className="resource-result-count"><strong>{filtered.length}</strong><span>matching resources</span></div></div>
         <div className="resource-toolbar">
@@ -66,6 +66,6 @@ export function ResourcesExplorer({ resources }: { resources: StudentResource[] 
       </div>
     </section>
 
-    <section className="resource-safety-section"><div className="container resource-safety-grid"><div><span className="resource-safety-icon"><ShieldCheck size={24}/></span><h2>Use every tool with academic judgment.</h2></div><div><p><strong>AI tools:</strong> Verify facts and references through the original paper, Crossref or the publisher. Follow your university&apos;s AI-use policy.</p><p><strong>Private work:</strong> Do not upload confidential data or unpublished research to public PDF and AI services without permission.</p><p><strong>Best source first:</strong> Prioritize your university library, lecturer material and peer-reviewed publications over random websites.</p></div></div></section>
+    <section className="resource-safety-section" data-public-reveal><div className="container resource-safety-grid"><div><span className="resource-safety-icon"><ShieldCheck size={24}/></span><h2>Use every tool with academic judgement.</h2></div><div><p><strong>AI tools:</strong> Verify facts and references through the original paper, Crossref or the publisher. Follow your university&apos;s AI-use policy.</p><p><strong>Private work:</strong> Do not upload confidential data or unpublished research to public PDF and AI services without permission.</p><p><strong>Best source first:</strong> Prioritise your university library, lecturer material and peer-reviewed publications over random websites.</p></div></div></section>
   </>;
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowRight,
   BarChart3,
@@ -65,7 +66,7 @@ export default async function PricingPage() {
   const pricedServices = services.filter((service) => service.starting_price !== null && !service.is_custom);
   const customService = services.find((service) => service.is_custom) || null;
 
-  return <main className="page-shell pricing-page">
+  return <main className="page-shell pricing-page public-site-v2">
     <SiteHeader whatsapp={whatsapp} />
 
     <section className="pricing-hero">
@@ -80,19 +81,11 @@ export default async function PricingPage() {
             {customService ? <Link className="text-action" href={`/place-assignment?service=${encodeURIComponent(customService.slug)}`}>Request a custom quote <span>↗</span></Link> : null}
           </div>
         </div>
-        <aside className="pricing-hero-note" aria-label="How starting prices work">
-          <span className="pricing-note-kicker">Before you pay</span>
-          <h2>Your final price is confirmed after review.</h2>
-          <ul>
-            <li><CheckCircle2 size={17}/><span>See the quotation in your private portal</span></li>
-            <li><CheckCircle2 size={17}/><span>Pay only after the amount is confirmed</span></li>
-            <li><CheckCircle2 size={17}/><span>Use bank transfer or PayHere when available</span></li>
-          </ul>
-        </aside>
+        <div className="pricing-hero-media"><Image src="/images/public/sthelp-study-studio-hero.webp" alt="A carefully organised study desk with assignment notes and a laptop" fill sizes="(max-width: 760px) 100vw, 42vw" loading="eager"/><aside className="pricing-hero-note" aria-label="How starting prices work"><span className="pricing-note-kicker">Before you pay</span><h2>Your final price is confirmed after review.</h2><ul><li><CheckCircle2 size={17}/><span>See the quotation in your private portal</span></li><li><CheckCircle2 size={17}/><span>Pay only after the amount is confirmed</span></li><li><CheckCircle2 size={17}/><span>Use bank transfer or PayHere when available</span></li></ul></aside></div>
       </div>
     </section>
 
-    <section className="pricing-catalog" id="pricing-services">
+    <section className="pricing-catalog" id="pricing-services" data-public-reveal>
       <div className="container">
         <div className="pricing-section-heading">
           <div><span className="eyebrow">Services and starting prices</span><h2>Find the closest fit for your assignment.</h2></div>
@@ -117,7 +110,7 @@ export default async function PricingPage() {
       </div>
     </section>
 
-    <section className="pricing-process">
+    <section className="pricing-process" data-public-reveal>
       <div className="container">
         <div className="pricing-process-heading"><span className="eyebrow">From price to payment</span><h2>A clear decision at every step.</h2></div>
         <ol>{quoteSteps.map((step) => <li key={step.number}><span>{step.number}</span><div><strong>{step.title}</strong><p>{step.copy}</p></div></li>)}</ol>

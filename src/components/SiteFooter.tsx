@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Mail, MapPin, Phone } from "lucide-react";
 
 type PublicSettings = {
@@ -36,7 +37,7 @@ export function SiteFooter({ settings, note = "Assignment guidance, technical su
 
   return <footer className="site-footer public-footer">
     <div className="container public-footer-grid">
-      <div className="public-footer-brand"><strong>{businessName}</strong><p>{note}</p><Link href="/policies">Policy centre</Link></div>
+      <div className="public-footer-brand"><div className="public-footer-lockup"><Image src="/sthelp-mark.png" alt="" width={48} height={48}/><strong>{businessName}</strong></div><p>{note}</p><Link href="/policies">Policy centre</Link></div>
       <nav className="public-footer-explore" aria-label="Explore StHelp"><strong>Explore</strong>{exploreLinks.map((item) => <Link href={item.href} prefetch={item.prefetch} key={item.href}>{item.label}</Link>)}</nav>
       <div className="public-footer-contact"><strong>Business contact</strong><address>
         {phone ? <a href={`tel:${phoneHref(phone)}`}><Phone size={15}/><span>{phone}</span></a> : null}

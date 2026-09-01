@@ -21,10 +21,10 @@ const policies = [
 
 export default async function PoliciesPage() {
   const { settings } = await getPublicContent();
-  return <main className="page-shell policy-page">
+  return <main className="page-shell policy-page public-site-v2">
     <SiteHeader whatsapp={String(settings.whatsapp_number || "")} />
     <section className="policy-hero"><div className="container"><span className="eyebrow" style={{color:"#bde8d4"}}>StHelp policy centre</span><h1>Clear policies.<br/><em>Confident decisions.</em></h1><p>Review the policies that apply when you request, pay for and receive StHelp&apos;s digital support services.</p></div></section>
-    <section className="section"><div className="container"><div className="support-cards policy-centre-grid">{policies.map(({href,title,copy,icon:Icon}) => <article key={href}><Icon/><h2>{title}</h2><p>{copy}</p><Link href={href}>Read the full policy <ArrowRight size={16}/></Link></article>)}</div></div></section>
+    <section className="section" data-public-reveal><div className="container"><div className="support-cards policy-centre-grid">{policies.map(({href,title,copy,icon:Icon}) => <article key={href}><Icon/><h2>{title}</h2><p>{copy}</p><Link href={href}>Read the full policy <ArrowRight size={16}/></Link></article>)}</div></div></section>
     <SiteFooter settings={settings}/>
   </main>;
 }

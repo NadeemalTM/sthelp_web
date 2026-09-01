@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowDown, BookOpenCheck, LibraryBig, SearchCheck } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -26,13 +27,12 @@ export default async function StudentResourcesPage() {
   const categories = new Set(resources.map((resource) => resource.category)).size;
   const siteUrl = publicSiteUrl();
 
-  return <main className="page-shell resources-page">
+  return <main className="page-shell resources-page public-site-v2">
     <SiteHeader whatsapp={whatsapp}/>
     <section className="resources-hero">
-      <div className="resource-hero-orb resource-hero-orb-one"/><div className="resource-hero-orb resource-hero-orb-two"/>
       <div className="container resources-hero-grid">
-        <div><span className="eyebrow">The StHelp student toolkit</span><h1>Useful tools for better research, clearer work and calmer study days.</h1><p>Explore a carefully organized collection of academic websites for Sri Lankan university students—from finding papers and managing references to coding, data analysis and group projects.</p><div className="resources-hero-actions"><a className="btn btn-coral" href="#directory">Explore all resources <ArrowDown size={18}/></a><Link className="text-action" href="/place-assignment">Need personal support? <span>↗</span></Link></div></div>
-        <div className="resource-hero-board" aria-label="Student resource directory summary"><div className="resource-board-top"><span><LibraryBig size={20}/></span><div><small>Curated directory</small><strong>Your study stack</strong></div></div><div className="resource-board-stats"><div><strong>{resources.length}+</strong><span>Useful tools</span></div><div><strong>{categories}</strong><span>Task categories</span></div></div><div className="resource-board-list"><span><SearchCheck size={17}/> Find trustworthy research</span><span><BookOpenCheck size={17}/> Build cleaner references</span><span><LibraryBig size={17}/> Discover Sri Lankan sources</span></div><p>Most tools include a free plan or may be available through your university account.</p></div>
+        <div className="resources-hero-copy"><span className="eyebrow">The StHelp student toolkit</span><h1>Useful tools for better research, clearer work and calmer study days.</h1><p>Explore a carefully organised collection of academic websites for Sri Lankan university students—from finding papers and managing references to coding, data analysis and group projects.</p><div className="resources-hero-actions"><a className="btn btn-coral" href="#directory">Explore all resources <ArrowDown size={18}/></a><Link className="text-action" href="/place-assignment">Need personal support? <span>↗</span></Link></div></div>
+        <div className="resources-hero-visual"><div className="resources-hero-image"><Image src="/images/public/sthelp-study-process.webp" alt="A student reviewing research materials beside a library window" fill sizes="(max-width: 760px) 100vw, 38vw" loading="eager"/></div><div className="resource-hero-board" aria-label="Student resource directory summary"><div className="resource-board-top"><span><LibraryBig size={20}/></span><div><small>Curated directory</small><strong>Your study stack</strong></div></div><div className="resource-board-stats"><div><strong>{resources.length}+</strong><span>Useful tools</span></div><div><strong>{categories}</strong><span>Task categories</span></div></div><div className="resource-board-list"><span><SearchCheck size={17}/> Find trustworthy research</span><span><BookOpenCheck size={17}/> Build cleaner references</span><span><LibraryBig size={17}/> Discover Sri Lankan sources</span></div><p>Most tools include a free plan or may be available through your university account.</p></div></div>
       </div>
     </section>
     <ResourcesExplorer resources={resources}/>
