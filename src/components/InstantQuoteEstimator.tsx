@@ -788,15 +788,18 @@ export function InstantQuoteEstimator({ whatsapp }: { whatsapp: string }) {
     addOnsList.push("Official Turnitin Certificate");
   }
 
-  const addOnsText = addOnsList.length > 0 ? `\n• Add-ons: ${addOnsList.join(", ")}` : "";
+  const addOnsText = addOnsList.length > 0 ? `\r\n• *Add-ons:* ${addOnsList.join(", ")}` : "";
 
   const prefilledWaMessage = encodeURIComponent(
-    `Hi StHelp! I used the price calculator on your website:\n` +
-      `• Category: ${activeCategoryMeta.label}\n` +
-      `• Details: ${calculation.summary}\n` +
-      (category === "report" ? `• Level: ${activeLevelMeta.label}\n` : "") +
-      `• Timeline: ${activeUrgencyMeta.tag}${addOnsText}\n` +
-      `• Estimated Price: LKR ${calculation.min} – ${calculation.max}\n\n` +
+    `*Instant Price Calculator Inquiry - StHelp*\r\n\r\n` +
+      `Hello StHelp Team,\r\n` +
+      `I used the price calculator on your website and would like to confirm availability:\r\n\r\n` +
+      `*Estimate Details:*\r\n` +
+      `• *Category:* ${activeCategoryMeta.label}\r\n` +
+      `• *Details:* ${calculation.summary}\r\n` +
+      (category === "report" ? `• *Level:* ${activeLevelMeta.label}\r\n` : "") +
+      `• *Timeline:* ${activeUrgencyMeta.tag}${addOnsText}\r\n` +
+      `• *Estimated Price:* LKR ${calculation.min} – ${calculation.max}\r\n\r\n` +
       `Can I share my assignment brief with you for an exact quotation?`
   );
 

@@ -261,18 +261,32 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
     .match(/(?:Quoted Estimate|Website calculator quote|Website Estimate Range):\s*(LKR\s*[\d,]+\s*[–-]\s*[\d,]+)/i);
   const calcEstimateRange = calcEstimateMatch ? calcEstimateMatch[1] : null;
 
+  const portalUrl = typeof window !== "undefined"
+    ? `${window.location.origin}/portal/${data.link.token}`
+    : `https://www.sthelp.edu.lk/portal/${data.link.token}`;
+
+  const urgentDetails = [
+    `• *Client ID:* ${data.link.client_id}`,
+    `• *Assignment:* ${assignment.assignment_title}`,
+    assignment.module_name ? `• *Module:* ${assignment.module_name}` : null,
+    `• *Deadline:* ${formatDate(assignment.deadline)}`,
+    calcEstimateRange ? `• *Website Estimate:* ${calcEstimateRange}` : null,
+  ].filter(Boolean).join("\r\n");
+
   const urgentMessage = [
-    "Hello StHelp 👋",
+    "*URGENT ASSIGNMENT REQUEST - StHelp*",
     "",
-    "I need quick action for an urgent assignment request.",
-    `Client ID: ${data.link.client_id}`,
-    `Assignment: ${assignment.assignment_title}`,
-    assignment.module_name ? `Module: ${assignment.module_name}` : null,
-    `Deadline: ${formatDate(assignment.deadline)}`,
-    calcEstimateRange ? `Website Estimate: ${calcEstimateRange}` : null,
+    "Hello StHelp Team,",
+    "I need quick action for an urgent university assignment.",
     "",
-    "Please review my portal requirements and respond when possible. Thank you."
-  ].filter(Boolean).join("\n");
+    "*Assignment Details:*",
+    urgentDetails,
+    "",
+    "*Private Portal Link:*",
+    portalUrl,
+    "",
+    "Please review my portal requirements immediately and respond as soon as possible. Thank you!"
+  ].join("\r\n");
   const urgentWhatsAppHref = whatsapp
     ? `https://wa.me/${whatsapp}?text=${encodeURIComponent(urgentMessage)}`
     : null;
@@ -280,19 +294,28 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
     && assignment.quote_status !== "accepted"
     && assignment.status !== "cancelled";
 
+  const orderDetails = [
+    `• *Client ID:* ${data.link.client_id}`,
+    `• *Assignment:* ${assignment.assignment_title}`,
+    assignment.module_name ? `• *Module:* ${assignment.module_name}` : null,
+    `• *Deadline:* ${formatDate(assignment.deadline)}`,
+    calcEstimateRange ? `• *Calculator Estimate:* ${calcEstimateRange}` : null,
+  ].filter(Boolean).join("\r\n");
+
   const orderWhatsAppMessage = [
-    "Hello StHelp 👋",
+    "*New Assignment Order - StHelp*",
     "",
-    "I just placed an assignment order on your website:",
-    `• Client ID: ${data.link.client_id}`,
-    `• Assignment: ${assignment.assignment_title}`,
-    assignment.module_name ? `• Module: ${assignment.module_name}` : null,
-    `• Deadline: ${formatDate(assignment.deadline)}`,
-    calcEstimateRange ? `• Calculator Estimate: ${calcEstimateRange}` : null,
-    `• Private Portal: ${typeof window !== "undefined" ? window.location.href : ""}`,
+    "Hello StHelp Team,",
+    "I just placed an assignment order on your website.",
+    "",
+    "*Assignment Details:*",
+    orderDetails,
+    "",
+    "*Private Portal Link:*",
+    portalUrl,
     "",
     "Please review my assignment requirements and confirm availability. Thank you!"
-  ].filter(Boolean).join("\n");
+  ].join("\r\n");
   const orderWhatsAppHref = whatsapp
     ? `https://wa.me/${whatsapp}?text=${encodeURIComponent(orderWhatsAppMessage)}`
     : null;
