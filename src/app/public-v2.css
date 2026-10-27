@@ -3281,9 +3281,85 @@ main.public-site-v2 .control-label {
   text-transform: uppercase;
 }
 
+main.public-site-v2 .estimator-category-pills {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+main.public-site-v2 .category-pill-btn {
+  appearance: none;
+  border: 1px solid rgba(24, 35, 30, .14);
+  background: #faf9f6;
+  padding: 9px 11px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+  text-align: left;
+  transition: all .16s ease;
+  font-family: inherit;
+  color: var(--public-ink);
+}
+
+main.public-site-v2 .category-pill-btn:hover {
+  background: #fff;
+  border-color: var(--public-green);
+  transform: translateY(-1px);
+}
+
+main.public-site-v2 .category-pill-btn.active {
+  background: rgba(40, 104, 79, .09);
+  border-color: var(--public-green);
+  box-shadow: 0 0 0 2px var(--public-green) inset;
+}
+
+main.public-site-v2 .category-pill-icon {
+  font-size: 1.3rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+main.public-site-v2 .category-pill-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+main.public-site-v2 .category-pill-content strong {
+  font-size: .78rem;
+  font-weight: 750;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+main.public-site-v2 .category-pill-content small {
+  font-size: .65rem;
+  color: rgba(24, 35, 30, .6);
+  line-height: 1.2;
+}
+
+main.public-site-v2 .category-config-box {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 18px;
+  background: #faf8f3;
+  border: 1px solid rgba(24, 35, 30, .1);
+  border-radius: 16px;
+}
+
 main.public-site-v2 .selector-grid {
   display: grid;
   gap: 8px;
+}
+
+main.public-site-v2 .selector-vertical {
+  grid-template-columns: 1fr;
 }
 
 main.public-site-v2 .selector-subjects {
@@ -3311,12 +3387,13 @@ main.public-site-v2 .selector-btn {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 2px;
+  gap: 4px;
   cursor: pointer;
   text-align: left;
   transition: all .16s ease;
   font-family: inherit;
   color: var(--public-ink);
+  width: 100%;
 }
 
 main.public-site-v2 .selector-btn:hover {
@@ -3349,9 +3426,180 @@ main.public-site-v2 .selector-btn strong {
 }
 
 main.public-site-v2 .selector-btn small {
-  font-size: .65rem;
+  font-size: .67rem;
+  color: rgba(24, 35, 30, .68);
+  line-height: 1.3;
+}
+
+main.public-site-v2 .selector-btn-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+main.public-site-v2 .selector-price-badge {
+  font-size: .7rem;
+  font-weight: 800;
+  background: rgba(40, 104, 79, .12);
+  color: #1e5a40;
+  padding: 2px 7px;
+  border-radius: 5px;
+  white-space: nowrap;
+}
+
+main.public-site-v2 .addons-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+main.public-site-v2 .addon-checkbox-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #fff;
+  border: 1px solid rgba(24, 35, 30, .14);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all .16s ease;
+}
+
+main.public-site-v2 .addon-checkbox-card:hover {
+  border-color: var(--public-green);
+  background: #fdfdfc;
+}
+
+main.public-site-v2 .addon-checkbox-card.checked {
+  border-color: var(--public-green);
+  background: rgba(40, 104, 79, .06);
+  box-shadow: 0 0 0 1px var(--public-green) inset;
+}
+
+main.public-site-v2 .addon-checkbox-card input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--public-green);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+main.public-site-v2 .addon-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex-grow: 1;
+}
+
+main.public-site-v2 .addon-info strong {
+  font-size: .78rem;
+  font-weight: 750;
+  color: var(--public-ink);
+}
+
+main.public-site-v2 .addon-info small {
+  font-size: .67rem;
   color: rgba(24, 35, 30, .65);
-  line-height: 1.2;
+}
+
+main.public-site-v2 .addon-fee {
+  font-size: .7rem;
+  font-weight: 800;
+  color: #1e5a40;
+  background: rgba(40, 104, 79, .12);
+  padding: 3px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+main.public-site-v2 .slide-counter-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+main.public-site-v2 .slide-counter-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border: 1px solid rgba(24, 35, 30, .16);
+  border-radius: 12px;
+  padding: 6px 8px;
+}
+
+main.public-site-v2 .counter-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid rgba(24, 35, 30, .14);
+  background: #faf9f6;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--public-ink);
+  transition: all .16s ease;
+}
+
+main.public-site-v2 .counter-btn:hover {
+  background: #fff;
+  border-color: var(--public-green);
+  color: var(--public-green);
+}
+
+main.public-site-v2 .counter-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 64px;
+}
+
+main.public-site-v2 .counter-number {
+  font-size: 1.4rem;
+  font-weight: 850;
+  line-height: 1;
+  color: var(--public-ink);
+}
+
+main.public-site-v2 .counter-unit {
+  font-size: .56rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  color: rgba(24, 35, 30, .6);
+}
+
+main.public-site-v2 .slide-preset-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+main.public-site-v2 .preset-chip {
+  appearance: none;
+  background: #fff;
+  border: 1px solid rgba(24, 35, 30, .14);
+  border-radius: 8px;
+  padding: 6px 11px;
+  font-size: .72rem;
+  font-weight: 700;
+  color: var(--public-ink);
+  cursor: pointer;
+  transition: all .15s ease;
+}
+
+main.public-site-v2 .preset-chip:hover {
+  border-color: var(--public-green);
+}
+
+main.public-site-v2 .preset-chip.active {
+  background: rgba(40, 104, 79, .1);
+  border-color: var(--public-green);
+  color: #1e5a40;
 }
 
 /* Result Panel */
@@ -3403,6 +3651,19 @@ main.public-site-v2 .result-price strong {
   color: #fff;
   line-height: 1.1;
   letter-spacing: -.02em;
+}
+
+main.public-site-v2 .result-selection-summary {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, .1);
+  border: 1px solid rgba(255, 255, 255, .16);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: .72rem;
+  color: #d1fae5;
+  font-weight: 600;
+  margin-top: 4px;
 }
 
 main.public-site-v2 .turnaround-tag {
@@ -3548,6 +3809,19 @@ main.public-site-v2 .result-disclaimer {
   }
   main.public-site-v2 .guarantees-grid {
     grid-template-columns: 1fr;
+  }
+  main.public-site-v2 .estimator-category-pills {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  main.public-site-v2 .category-config-box {
+    padding: 14px 12px;
+  }
+  main.public-site-v2 .slide-counter-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  main.public-site-v2 .slide-counter-controls {
+    justify-content: space-between;
   }
   main.public-site-v2 .selector-subjects,
   main.public-site-v2 .selector-levels,
