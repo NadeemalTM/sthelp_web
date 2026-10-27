@@ -6,21 +6,10 @@ import {
   ArrowRight,
   Calculator,
   Check,
-  CheckCircle2,
   Clock3,
-  FileCode,
-  FileSpreadsheet,
-  FileText,
-  HelpCircle,
-  Laptop,
-  Layers,
   Minus,
   Plus,
-  Presentation,
-  ShieldCheck,
-  Smartphone,
-  Sparkles,
-  Zap
+  Sparkles
 } from "lucide-react";
 import { WhatsAppIcon } from "@/components/WhatsAppIcon";
 
@@ -29,9 +18,14 @@ export type CategoryKey =
   | "research"
   | "web"
   | "mobile"
-  | "presentation"
+  | "uiux"
+  | "database"
+  | "engineering"
   | "analysis"
-  | "other";
+  | "presentation"
+  | "business"
+  | "law_nursing"
+  | "turnitin";
 
 export type AcademicLevelKey = "diploma" | "undergrad" | "postgrad";
 export type UrgencyKey = "express" | "standard" | "relaxed";
@@ -74,6 +68,34 @@ const CATEGORIES: CategoryMeta[] = [
     desc: "Flutter, React Native, Native Apps, FYP & AI models"
   },
   {
+    key: "uiux",
+    label: "UI/UX & Figma",
+    badge: "Prototypes",
+    icon: "🎨",
+    desc: "Mobile/Web Wireframes, Figma Prototypes & Design Systems"
+  },
+  {
+    key: "database",
+    label: "Database & Systems",
+    badge: "SQL & ERD",
+    icon: "🗄️",
+    desc: "Relational Schemas, ERDs, Complex SQL, UML & SRS Docs"
+  },
+  {
+    key: "engineering",
+    label: "Engineering & Simulation",
+    badge: "Cisco & MATLAB",
+    icon: "🔌",
+    desc: "Cisco Packet Tracer, MATLAB, AutoCAD & SolidWorks"
+  },
+  {
+    key: "analysis",
+    label: "Data & Statistics",
+    badge: "SPSS & SmartPLS",
+    icon: "📊",
+    desc: "SPSS, SmartPLS, Advanced Excel Modeling & Python/R"
+  },
+  {
     key: "presentation",
     label: "Presentations",
     badge: "Per-slide rate",
@@ -81,18 +103,25 @@ const CATEGORIES: CategoryMeta[] = [
     desc: "PowerPoint & Canva Decks for Viva, Pitches & Class"
   },
   {
-    key: "analysis",
-    label: "Data & Statistics",
-    badge: "SPSS & SmartPLS",
-    icon: "📊",
-    desc: "SPSS, SmartPLS, Advanced Excel Modeling & Python"
+    key: "business",
+    label: "Business & Finance",
+    badge: "Finance & Strategy",
+    icon: "💼",
+    desc: "Case Studies, Financial Valuation, Ratios & Business Plans"
   },
   {
-    key: "other",
-    label: "UI/UX & Tech Tasks",
-    badge: "Specialized",
-    icon: "⚙️",
-    desc: "Figma UI/UX, Database SQL, Case Studies & Simulations"
+    key: "law_nursing",
+    label: "Law & Healthcare",
+    badge: "OSCOLA & Clinical",
+    icon: "⚖️",
+    desc: "Legal Problem Questions, Nursing Care Plans & Clinical Reviews"
+  },
+  {
+    key: "turnitin",
+    label: "Turnitin & AI Rewrite",
+    badge: "Humanize & Polish",
+    icon: "✍️",
+    desc: "Turnitin Similarity Reduction, AI Humanizer & Proofreading"
   }
 ];
 
@@ -141,6 +170,13 @@ const RESEARCH_TYPES = [
     max: 20000
   },
   {
+    key: "prisma",
+    label: "Systematic Literature Review (PRISMA Framework)",
+    desc: "Structured search strategy, inclusion/exclusion matrix & qualitative synthesis",
+    min: 10000,
+    max: 15000
+  },
+  {
     key: "paper",
     label: "Academic Research Paper (Journal / Conference)",
     desc: "Scopus / IEEE formatted paper ready for submission or publication",
@@ -185,6 +221,13 @@ const WEB_TIERS = [
     desc: "Custom machine learning model, PyTorch/TensorFlow, trained datasets & API",
     min: 30000,
     max: 50000
+  },
+  {
+    key: "web_api",
+    label: "RESTful API & Microservices Backend",
+    desc: "Node/Express, FastAPI or Spring Boot with JWT authentication & Swagger docs",
+    min: 10000,
+    max: 16000
   }
 ];
 
@@ -227,23 +270,117 @@ const MOBILE_TIERS = [
   }
 ];
 
-// --- 5. Presentation options ---
-const PRESENTATION_STYLES = [
+// --- 5. UI/UX Design options ---
+const UIUX_TIERS = [
   {
-    key: "standard",
-    label: "Standard Academic Slides",
-    rate: 150,
-    desc: "LKR 150 / slide • Clear structured points, clean layout, charts & references"
+    key: "ui_landing",
+    label: "Landing Page & Web Wireframes (3–5 Screens)",
+    desc: "Modern Figma layout, responsive auto-layout, wireframes & component styles",
+    min: 4500,
+    max: 6500
   },
   {
-    key: "advanced",
-    label: "Advanced Executive & Animated Slides",
-    rate: 175,
-    desc: "LKR 175 / slide • Custom infographics, modern animations, speaker notes included"
+    key: "ui_app",
+    label: "Complete Mobile App UI (10–15 Screens)",
+    desc: "High-fidelity mobile UI screens, typography tokens, icons & design library",
+    min: 7500,
+    max: 12000
+  },
+  {
+    key: "ui_prototype",
+    label: "Full Web/App Clickable Interactive Prototype",
+    desc: "Interactive Figma prototype with realistic micro-interactions & user journeys",
+    min: 10000,
+    max: 16000
+  },
+  {
+    key: "ui_fyp",
+    label: "Final Year Project (FYP) Design System + Usability Report",
+    desc: "Complete component system, color tokens, SUS usability testing & UX evaluation",
+    min: 14000,
+    max: 22000
   }
 ];
 
-// --- 6. Data Analysis options ---
+// --- 6. Database & Systems options ---
+const DATABASE_TIERS = [
+  {
+    key: "db_erd",
+    label: "Database Design, ERD & Normalization (1NF–BCNF)",
+    desc: "Entity-Relationship Diagrams, Relational Schema, dependency diagrams & 3NF normalization",
+    min: 4500,
+    max: 7000
+  },
+  {
+    key: "db_sql",
+    label: "Advanced SQL Database & Business Logic",
+    desc: "Complex nested queries, Stored Procedures, Triggers, Views & Index optimization",
+    min: 6000,
+    max: 9500
+  },
+  {
+    key: "db_srs",
+    label: "Software Requirements Specification (SRS) Document",
+    desc: "IEEE 830 formatted SRS, functional/non-functional requirements & acceptance criteria",
+    min: 6500,
+    max: 10000
+  },
+  {
+    key: "db_uml",
+    label: "Full UML System Architecture Suite",
+    desc: "Use Case, Class, Sequence, Activity, State Machine & Deployment diagrams",
+    min: 6500,
+    max: 11000
+  },
+  {
+    key: "db_nosql",
+    label: "NoSQL & MongoDB Architecture",
+    desc: "Document modeling, aggregation pipelines, indexing & Node/Python integration",
+    min: 7500,
+    max: 12000
+  }
+];
+
+// --- 7. Engineering & Simulation options ---
+const ENGINEERING_TIERS = [
+  {
+    key: "eng_cisco",
+    label: "Cisco Packet Tracer Network Design & Topology",
+    desc: "VLANs, Inter-VLAN routing, OSPF/EIGRP, NAT, DHCP & Access Control Lists (ACLs)",
+    min: 6500,
+    max: 10000
+  },
+  {
+    key: "eng_matlab",
+    label: "MATLAB & Simulink Modeling & Simulation",
+    desc: "Mathematical modeling, control systems, signal processing & algorithm simulation",
+    min: 8000,
+    max: 14000
+  },
+  {
+    key: "eng_autocad",
+    label: "AutoCAD 2D/3D Engineering Drafting",
+    desc: "Architectural floor plans, structural sections, elevations & mechanical drawings",
+    min: 7000,
+    max: 12000
+  },
+  {
+    key: "eng_solidworks",
+    label: "SolidWorks CAD 3D Mechanical Modeling",
+    desc: "3D part modeling, mechanical assembly, motion study & exploded views",
+    min: 8500,
+    max: 15000
+  },
+  {
+    key: "eng_iot",
+    label: "IoT & Embedded Simulation (Arduino / Proteus)",
+    desc: "Microcontroller circuits, sensor interfacing, C/C++ firmware & Proteus/Tinkercad test",
+    min: 8000,
+    max: 13000
+  }
+];
+
+// --- 8. Data Analysis options ---
 const ANALYSIS_METHODS = [
   {
     key: "spss",
@@ -267,6 +404,13 @@ const ANALYSIS_METHODS = [
     max: 13000
   },
   {
+    key: "powerbi",
+    label: "Power BI / Tableau Interactive BI Dashboards",
+    desc: "Data modeling, DAX measures, automated ETL pipeline & executive interactive dashboards",
+    min: 9000,
+    max: 14000
+  },
+  {
     key: "python_r",
     label: "Python / R Data Science & Visualizations",
     desc: "Exploratory data analysis, predictive statistical models, Seaborn/Matplotlib visual charts",
@@ -275,35 +419,121 @@ const ANALYSIS_METHODS = [
   }
 ];
 
-// --- 7. Other Tech & Specialized Tasks ---
-const OTHER_SERVICES = [
+// --- 9. Presentation options ---
+const PRESENTATION_STYLES = [
   {
-    key: "figma",
-    label: "Figma UI/UX Prototyping & Wireframes",
-    desc: "High-fidelity mobile/web interfaces, component design system, clickable prototype",
-    min: 5000,
-    max: 9000
+    key: "standard",
+    label: "Standard Academic Slides",
+    rate: 150,
+    desc: "LKR 150 / slide • Clear structured points, clean layout, charts & references"
   },
   {
-    key: "database",
-    label: "Database Design, ERD & Advanced SQL",
-    desc: "Entity-Relationship Diagrams, Relational Schema, 1NF to BCNF Normalization, queries",
-    min: 4500,
-    max: 8000
+    key: "advanced",
+    label: "Advanced Executive & Animated Slides",
+    rate: 175,
+    desc: "LKR 175 / slide • Custom infographics, modern animations, speaker notes included"
   },
   {
-    key: "casestudy",
+    key: "viva",
+    label: "Final Year Viva Defense Master Deck",
+    rate: 200,
+    desc: "LKR 200 / slide • High-impact academic defense presentation + question anticipation"
+  }
+];
+
+// --- 10. Business & Finance options ---
+const BUSINESS_TIERS = [
+  {
+    key: "biz_case",
     label: "Business Case Study & Strategic Analysis",
-    desc: "SWOT, PESTEL, Porter's Five Forces, financial ratio analysis & strategic report",
+    desc: "SWOT, PESTEL, Porter's Five Forces, VRIO & strategic management recommendations",
     min: 4000,
+    max: 7000
+  },
+  {
+    key: "biz_finance",
+    label: "Financial Statement Analysis & Ratios",
+    desc: "Liquidity, profitability, solvency, efficiency ratios & executive commentary",
+    min: 5000,
+    max: 8500
+  },
+  {
+    key: "biz_valuation",
+    label: "Investment Appraisal & Financial Valuation",
+    desc: "DCF modeling, NPV, IRR, Payback Period & financial sensitivity analysis",
+    min: 6500,
+    max: 10500
+  },
+  {
+    key: "biz_plan",
+    label: "Comprehensive Business Plan & Marketing Strategy",
+    desc: "Executive summary, 4Ps/7Ps marketing mix, operational plan & 3-year financial forecast",
+    min: 8000,
+    max: 14000
+  }
+];
+
+// --- 11. Law & Healthcare options ---
+const LAW_NURSING_TIERS = [
+  {
+    key: "law_problem",
+    label: "Legal Problem Question & Case Brief (OSCOLA)",
+    desc: "IRAC methodology (Issue, Rule, Application, Conclusion) with primary UK/Sri Lankan case law",
+    min: 4500,
     max: 7500
   },
   {
-    key: "simulation",
-    label: "Engineering & Network Simulation",
-    desc: "Cisco Packet Tracer routing/switching, MATLAB algorithms, or technical lab simulation",
+    key: "nursing_care",
+    label: "Nursing Care Plan & Clinical Interventions",
+    desc: "NANDA-I nursing diagnoses, SMART goals, evidence-based interventions & evaluations",
+    min: 4500,
+    max: 7500
+  },
+  {
+    key: "nursing_reflection",
+    label: "Healthcare Clinical Reflection (Gibbs / Johns)",
+    desc: "Reflective cycle analysis, personal professional practice & clinical competency links",
+    min: 4000,
+    max: 6500
+  },
+  {
+    key: "healthcare_review",
+    label: "Evidence-Based Healthcare Critical Review",
+    desc: "Critical appraisal of clinical trials, CASP checklists & healthcare policy evaluation",
     min: 6500,
-    max: 11000
+    max: 10000
+  }
+];
+
+// --- 12. Turnitin & AI Rewrite options ---
+const TURNITIN_TIERS = [
+  {
+    key: "turn_2500",
+    label: "Up to 2,500 Words AI & Similarity Reduction",
+    desc: "Thorough human rewriting & phrasing to reduce Turnitin similarity and AI score to under 10%",
+    min: 2500,
+    max: 3500
+  },
+  {
+    key: "turn_5000",
+    label: "Up to 5,000 Words AI & Similarity Reduction",
+    desc: "Complete coursework/report rewrite, academic tone preservation & reference retention",
+    min: 4500,
+    max: 6500
+  },
+  {
+    key: "turn_10000",
+    label: "Up to 10,000 Words Full Dissertation Rewrite",
+    desc: "Comprehensive dissertation polishing, humanization, syntax restructuring & Turnitin clearance",
+    min: 8500,
+    max: 13000
+  },
+  {
+    key: "turn_proofread",
+    label: "Academic Proofreading & Harvard/APA Formatting",
+    desc: "Grammar, sentence flow, academic vocabulary, citation cross-checking & typography cleanup",
+    min: 2000,
+    max: 4000
   }
 ];
 
@@ -324,14 +554,30 @@ export function InstantQuoteEstimator({ whatsapp }: { whatsapp: string }) {
   const [mobileTier, setMobileTier] = useState<string>("app_mid");
   const [mobileDocumentation, setMobileDocumentation] = useState<boolean>(false);
 
-  const [presentationStyle, setPresentationStyle] = useState<string>("standard");
-  const [slideCount, setSlideCount] = useState<number>(15);
-  const [presentationNotes, setPresentationNotes] = useState<boolean>(false);
+  const [uiuxTier, setUiuxTier] = useState<string>("ui_app");
+  const [uiuxUserTesting, setUiuxUserTesting] = useState<boolean>(false);
+
+  const [databaseTier, setDatabaseTier] = useState<string>("db_sql");
+  const [databaseTestData, setDatabaseTestData] = useState<boolean>(false);
+
+  const [engineeringTier, setEngineeringTier] = useState<string>("eng_cisco");
+  const [engineeringVideoDemo, setEngineeringVideoDemo] = useState<boolean>(false);
 
   const [analysisMethod, setAnalysisMethod] = useState<string>("spss");
   const [analysisDataEntry, setAnalysisDataEntry] = useState<boolean>(false);
 
-  const [otherService, setOtherService] = useState<string>("figma");
+  const [presentationStyle, setPresentationStyle] = useState<string>("standard");
+  const [slideCount, setSlideCount] = useState<number>(15);
+  const [presentationNotes, setPresentationNotes] = useState<boolean>(false);
+
+  const [businessTier, setBusinessTier] = useState<string>("biz_case");
+  const [businessExcelModel, setBusinessExcelModel] = useState<boolean>(false);
+
+  const [lawNursingTier, setLawNursingTier] = useState<string>("law_problem");
+  const [lawCitationsBundle, setLawCitationsBundle] = useState<boolean>(false);
+
+  const [turnitinTier, setTurnitinTier] = useState<string>("turn_2500");
+  const [turnitinCertificate, setTurnitinCertificate] = useState<boolean>(false);
 
   // Calculation Engine
   const calculation = useMemo(() => {
@@ -381,6 +627,46 @@ export function InstantQuoteEstimator({ whatsapp }: { whatsapp: string }) {
         baseMin += 4000;
         baseMax += 5000;
       }
+    } else if (category === "uiux") {
+      const match = UIUX_TIERS.find((u) => u.key === uiuxTier) || UIUX_TIERS[1];
+      baseMin = match.min;
+      baseMax = match.max;
+      categorySummary = `UI/UX: ${match.label}`;
+
+      if (uiuxUserTesting) {
+        baseMin += 3000;
+        baseMax += 4000;
+      }
+    } else if (category === "database") {
+      const match = DATABASE_TIERS.find((d) => d.key === databaseTier) || DATABASE_TIERS[1];
+      baseMin = match.min;
+      baseMax = match.max;
+      categorySummary = `Database / System: ${match.label}`;
+
+      if (databaseTestData) {
+        baseMin += 2500;
+        baseMax += 3500;
+      }
+    } else if (category === "engineering") {
+      const match = ENGINEERING_TIERS.find((e) => e.key === engineeringTier) || ENGINEERING_TIERS[0];
+      baseMin = match.min;
+      baseMax = match.max;
+      categorySummary = `Engineering: ${match.label}`;
+
+      if (engineeringVideoDemo) {
+        baseMin += 3000;
+        baseMax += 4000;
+      }
+    } else if (category === "analysis") {
+      const match = ANALYSIS_METHODS.find((a) => a.key === analysisMethod) || ANALYSIS_METHODS[0];
+      baseMin = match.min;
+      baseMax = match.max;
+      categorySummary = `Data Analysis: ${match.label}`;
+
+      if (analysisDataEntry) {
+        baseMin += 3000;
+        baseMax += 4500;
+      }
     } else if (category === "presentation") {
       const styleMatch = PRESENTATION_STYLES.find((p) => p.key === presentationStyle) || PRESENTATION_STYLES[0];
       const count = Math.max(5, Math.min(60, slideCount));
@@ -393,21 +679,36 @@ export function InstantQuoteEstimator({ whatsapp }: { whatsapp: string }) {
         baseMin += 800;
         baseMax += 1000;
       }
-    } else if (category === "analysis") {
-      const match = ANALYSIS_METHODS.find((a) => a.key === analysisMethod) || ANALYSIS_METHODS[0];
+    } else if (category === "business") {
+      const match = BUSINESS_TIERS.find((b) => b.key === businessTier) || BUSINESS_TIERS[0];
       baseMin = match.min;
       baseMax = match.max;
-      categorySummary = `Data Analysis: ${match.label}`;
+      categorySummary = `Business/Finance: ${match.label}`;
 
-      if (analysisDataEntry) {
-        baseMin += 3000;
-        baseMax += 4500;
+      if (businessExcelModel) {
+        baseMin += 2500;
+        baseMax += 3500;
       }
-    } else if (category === "other") {
-      const match = OTHER_SERVICES.find((o) => o.key === otherService) || OTHER_SERVICES[0];
+    } else if (category === "law_nursing") {
+      const match = LAW_NURSING_TIERS.find((l) => l.key === lawNursingTier) || LAW_NURSING_TIERS[0];
       baseMin = match.min;
       baseMax = match.max;
-      categorySummary = `Tech Task: ${match.label}`;
+      categorySummary = `Law/Healthcare: ${match.label}`;
+
+      if (lawCitationsBundle) {
+        baseMin += 2000;
+        baseMax += 3000;
+      }
+    } else if (category === "turnitin") {
+      const match = TURNITIN_TIERS.find((t) => t.key === turnitinTier) || TURNITIN_TIERS[0];
+      baseMin = match.min;
+      baseMax = match.max;
+      categorySummary = `Turnitin Polish: ${match.label}`;
+
+      if (turnitinCertificate) {
+        baseMin += 1000;
+        baseMax += 1500;
+      }
     }
 
     // Apply urgency modifier
@@ -436,12 +737,23 @@ export function InstantQuoteEstimator({ whatsapp }: { whatsapp: string }) {
     webDocumentation,
     mobileTier,
     mobileDocumentation,
+    uiuxTier,
+    uiuxUserTesting,
+    databaseTier,
+    databaseTestData,
+    engineeringTier,
+    engineeringVideoDemo,
+    analysisMethod,
+    analysisDataEntry,
     presentationStyle,
     slideCount,
     presentationNotes,
-    analysisMethod,
-    analysisDataEntry,
-    otherService
+    businessTier,
+    businessExcelModel,
+    lawNursingTier,
+    lawCitationsBundle,
+    turnitinTier,
+    turnitinCertificate
   ]);
 
   const activeCategoryMeta = CATEGORIES.find((c) => c.key === category) || CATEGORIES[0];
@@ -458,10 +770,22 @@ export function InstantQuoteEstimator({ whatsapp }: { whatsapp: string }) {
     addOnsList.push("System Documentation & Viva Slides");
   } else if (category === "mobile" && mobileDocumentation) {
     addOnsList.push("System Documentation & Viva Slides");
-  } else if (category === "presentation" && presentationNotes) {
-    addOnsList.push("Full Viva Speech Notes");
+  } else if (category === "uiux" && uiuxUserTesting) {
+    addOnsList.push("Usability Testing & Personas Report");
+  } else if (category === "database" && databaseTestData) {
+    addOnsList.push("Realistic Test Data Generation");
+  } else if (category === "engineering" && engineeringVideoDemo) {
+    addOnsList.push("Simulation Video Walkthrough & Report");
   } else if (category === "analysis" && analysisDataEntry) {
     addOnsList.push("Raw Questionnaire Data Entry");
+  } else if (category === "presentation" && presentationNotes) {
+    addOnsList.push("Full Viva Speech Notes");
+  } else if (category === "business" && businessExcelModel) {
+    addOnsList.push("Excel Financial Models");
+  } else if (category === "law_nursing" && lawCitationsBundle) {
+    addOnsList.push("Authorities & Citations Bundle");
+  } else if (category === "turnitin" && turnitinCertificate) {
+    addOnsList.push("Official Turnitin Certificate");
   }
 
   const addOnsText = addOnsList.length > 0 ? `\n• Add-ons: ${addOnsList.join(", ")}` : "";
@@ -479,8 +803,9 @@ export function InstantQuoteEstimator({ whatsapp }: { whatsapp: string }) {
   const whatsappHref = wa ? `https://wa.me/${wa}?text=${prefilledWaMessage}` : "#";
 
   // Deliverables based on category
-  const isSoftwareOrWeb = category === "web" || category === "mobile";
+  const isCodeOrSystem = category === "web" || category === "mobile" || category === "database" || category === "engineering";
   const isPresentation = category === "presentation";
+  const isUiUx = category === "uiux";
 
   return (
     <section className="section quote-estimator-section" id="quote-calculator" data-public-reveal aria-label="Instant Price Estimator">
@@ -492,7 +817,7 @@ export function InstantQuoteEstimator({ whatsapp }: { whatsapp: string }) {
           </span>
           <h2>Calculate your exact budget in 10 seconds.</h2>
           <p>
-            Real university assignment rates across reports, research theses, web & mobile development, SPSS analysis, and presentations.
+            Real Sri Lankan university rates across all assignment types — Reports, Dissertations, Web, Mobile, UI/UX, Engineering, SPSS, and Law.
           </p>
         </div>
 
@@ -731,14 +1056,210 @@ export function InstantQuoteEstimator({ whatsapp }: { whatsapp: string }) {
                 </>
               )}
 
-              {/* Category 5: Presentations */}
+              {/* Category 5: UI/UX & Figma */}
+              {category === "uiux" && (
+                <>
+                  <div className="control-group">
+                    <label className="control-label">
+                      <span>2. Select UI/UX Design Level</span>
+                    </label>
+                    <div className="selector-grid selector-vertical">
+                      {UIUX_TIERS.map((ut) => (
+                        <button
+                          type="button"
+                          key={ut.key}
+                          className={`selector-btn ${uiuxTier === ut.key ? "active" : ""}`}
+                          onClick={() => setUiuxTier(ut.key)}
+                        >
+                          <div className="selector-btn-header">
+                            <strong>{ut.label}</strong>
+                            <span className="selector-price-badge">
+                              LKR {ut.min.toLocaleString()} – {ut.max.toLocaleString()}
+                            </span>
+                          </div>
+                          <small>{ut.desc}</small>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="control-group">
+                    <label className="control-label">
+                      <span>Optional UX Research Add-on</span>
+                    </label>
+                    <div className="addons-grid">
+                      <label className={`addon-checkbox-card ${uiuxUserTesting ? "checked" : ""}`}>
+                        <input
+                          type="checkbox"
+                          checked={uiuxUserTesting}
+                          onChange={(e) => setUiuxUserTesting(e.target.checked)}
+                        />
+                        <div className="addon-info">
+                          <strong>Usability Testing & User Personas Report</strong>
+                          <small>User personas, empathy maps, task flows and System Usability Scale (SUS) analysis</small>
+                        </div>
+                        <span className="addon-fee">+ LKR 3,000</span>
+                      </label>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Category 6: Database & Systems */}
+              {category === "database" && (
+                <>
+                  <div className="control-group">
+                    <label className="control-label">
+                      <span>2. Select Database / Systems Requirement</span>
+                    </label>
+                    <div className="selector-grid selector-vertical">
+                      {DATABASE_TIERS.map((dt) => (
+                        <button
+                          type="button"
+                          key={dt.key}
+                          className={`selector-btn ${databaseTier === dt.key ? "active" : ""}`}
+                          onClick={() => setDatabaseTier(dt.key)}
+                        >
+                          <div className="selector-btn-header">
+                            <strong>{dt.label}</strong>
+                            <span className="selector-price-badge">
+                              LKR {dt.min.toLocaleString()} – {dt.max.toLocaleString()}
+                            </span>
+                          </div>
+                          <small>{dt.desc}</small>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="control-group">
+                    <label className="control-label">
+                      <span>Optional Dataset Add-on</span>
+                    </label>
+                    <div className="addons-grid">
+                      <label className={`addon-checkbox-card ${databaseTestData ? "checked" : ""}`}>
+                        <input
+                          type="checkbox"
+                          checked={databaseTestData}
+                          onChange={(e) => setDatabaseTestData(e.target.checked)}
+                        />
+                        <div className="addon-info">
+                          <strong>Include Realistic Synthetic Test Dataset (50–100 records)</strong>
+                          <small>Populated mock tables ready to demonstrate query results and normalization proofs</small>
+                        </div>
+                        <span className="addon-fee">+ LKR 2,500</span>
+                      </label>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Category 7: Engineering & Simulation */}
+              {category === "engineering" && (
+                <>
+                  <div className="control-group">
+                    <label className="control-label">
+                      <span>2. Select Engineering Software & Tool</span>
+                    </label>
+                    <div className="selector-grid selector-vertical">
+                      {ENGINEERING_TIERS.map((et) => (
+                        <button
+                          type="button"
+                          key={et.key}
+                          className={`selector-btn ${engineeringTier === et.key ? "active" : ""}`}
+                          onClick={() => setEngineeringTier(et.key)}
+                        >
+                          <div className="selector-btn-header">
+                            <strong>{et.label}</strong>
+                            <span className="selector-price-badge">
+                              LKR {et.min.toLocaleString()} – {et.max.toLocaleString()}
+                            </span>
+                          </div>
+                          <small>{et.desc}</small>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="control-group">
+                    <label className="control-label">
+                      <span>Optional Simulation Walkthrough</span>
+                    </label>
+                    <div className="addons-grid">
+                      <label className={`addon-checkbox-card ${engineeringVideoDemo ? "checked" : ""}`}>
+                        <input
+                          type="checkbox"
+                          checked={engineeringVideoDemo}
+                          onChange={(e) => setEngineeringVideoDemo(e.target.checked)}
+                        />
+                        <div className="addon-info">
+                          <strong>Video Walkthrough & Simulation Verification Report</strong>
+                          <small>Screen recorded execution proof explaining configuration parameters & ping/trace test results</small>
+                        </div>
+                        <span className="addon-fee">+ LKR 3,000</span>
+                      </label>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Category 8: Data & Statistics */}
+              {category === "analysis" && (
+                <>
+                  <div className="control-group">
+                    <label className="control-label">
+                      <span>2. Select Analysis Software & Scope</span>
+                    </label>
+                    <div className="selector-grid selector-vertical">
+                      {ANALYSIS_METHODS.map((am) => (
+                        <button
+                          type="button"
+                          key={am.key}
+                          className={`selector-btn ${analysisMethod === am.key ? "active" : ""}`}
+                          onClick={() => setAnalysisMethod(am.key)}
+                        >
+                          <div className="selector-btn-header">
+                            <strong>{am.label}</strong>
+                            <span className="selector-price-badge">
+                              LKR {am.min.toLocaleString()} – {am.max.toLocaleString()}
+                            </span>
+                          </div>
+                          <small>{am.desc}</small>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="control-group">
+                    <label className="control-label">
+                      <span>Optional Data Entry Add-on</span>
+                    </label>
+                    <div className="addons-grid">
+                      <label className={`addon-checkbox-card ${analysisDataEntry ? "checked" : ""}`}>
+                        <input
+                          type="checkbox"
+                          checked={analysisDataEntry}
+                          onChange={(e) => setAnalysisDataEntry(e.target.checked)}
+                        />
+                        <div className="addon-info">
+                          <strong>Raw Questionnaire Coding & Data Entry</strong>
+                          <small>Manual variable coding and entry from printed or online forms into SPSS/Excel dataset</small>
+                        </div>
+                        <span className="addon-fee">+ LKR 3,000 – 4,500</span>
+                      </label>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Category 9: Presentations */}
               {category === "presentation" && (
                 <>
                   <div className="control-group">
                     <label className="control-label">
                       <span>2. Select Slide Design Level</span>
                     </label>
-                    <div className="selector-grid selector-scopes">
+                    <div className="selector-grid selector-vertical">
                       {PRESENTATION_STYLES.map((ps) => (
                         <button
                           type="button"
@@ -746,7 +1267,10 @@ export function InstantQuoteEstimator({ whatsapp }: { whatsapp: string }) {
                           className={`selector-btn ${presentationStyle === ps.key ? "active" : ""}`}
                           onClick={() => setPresentationStyle(ps.key)}
                         >
-                          <strong>{ps.label}</strong>
+                          <div className="selector-btn-header">
+                            <strong>{ps.label}</strong>
+                            <span className="selector-price-badge">LKR {ps.rate} / slide</span>
+                          </div>
                           <small>{ps.desc}</small>
                         </button>
                       ))}
@@ -818,28 +1342,28 @@ export function InstantQuoteEstimator({ whatsapp }: { whatsapp: string }) {
                 </>
               )}
 
-              {/* Category 6: Data & Statistics */}
-              {category === "analysis" && (
+              {/* Category 10: Business & Finance */}
+              {category === "business" && (
                 <>
                   <div className="control-group">
                     <label className="control-label">
-                      <span>2. Select Analysis Software & Scope</span>
+                      <span>2. Select Business / Finance Task</span>
                     </label>
                     <div className="selector-grid selector-vertical">
-                      {ANALYSIS_METHODS.map((am) => (
+                      {BUSINESS_TIERS.map((bt) => (
                         <button
                           type="button"
-                          key={am.key}
-                          className={`selector-btn ${analysisMethod === am.key ? "active" : ""}`}
-                          onClick={() => setAnalysisMethod(am.key)}
+                          key={bt.key}
+                          className={`selector-btn ${businessTier === bt.key ? "active" : ""}`}
+                          onClick={() => setBusinessTier(bt.key)}
                         >
                           <div className="selector-btn-header">
-                            <strong>{am.label}</strong>
+                            <strong>{bt.label}</strong>
                             <span className="selector-price-badge">
-                              LKR {am.min.toLocaleString()} – {am.max.toLocaleString()}
+                              LKR {bt.min.toLocaleString()} – {bt.max.toLocaleString()}
                             </span>
                           </div>
-                          <small>{am.desc}</small>
+                          <small>{bt.desc}</small>
                         </button>
                       ))}
                     </div>
@@ -847,51 +1371,122 @@ export function InstantQuoteEstimator({ whatsapp }: { whatsapp: string }) {
 
                   <div className="control-group">
                     <label className="control-label">
-                      <span>Optional Data Entry Add-on</span>
+                      <span>Optional Financial Model Add-on</span>
                     </label>
                     <div className="addons-grid">
-                      <label className={`addon-checkbox-card ${analysisDataEntry ? "checked" : ""}`}>
+                      <label className={`addon-checkbox-card ${businessExcelModel ? "checked" : ""}`}>
                         <input
                           type="checkbox"
-                          checked={analysisDataEntry}
-                          onChange={(e) => setAnalysisDataEntry(e.target.checked)}
+                          checked={businessExcelModel}
+                          onChange={(e) => setBusinessExcelModel(e.target.checked)}
                         />
                         <div className="addon-info">
-                          <strong>Raw Questionnaire Coding & Data Entry</strong>
-                          <small>Manual variable coding and entry from printed or online forms into SPSS/Excel dataset</small>
+                          <strong>Include Dynamic Excel Financial Valuation Model (.xlsx)</strong>
+                          <small>Fully linked DCF/NPV spreadsheet with formulas, sensitivity tables and clean charts</small>
                         </div>
-                        <span className="addon-fee">+ LKR 3,000 – 4,500</span>
+                        <span className="addon-fee">+ LKR 2,500</span>
                       </label>
                     </div>
                   </div>
                 </>
               )}
 
-              {/* Category 7: UI/UX & Specialized Tasks */}
-              {category === "other" && (
-                <div className="control-group">
-                  <label className="control-label">
-                    <span>2. Select Specialized Assignment Type</span>
-                  </label>
-                  <div className="selector-grid selector-vertical">
-                    {OTHER_SERVICES.map((os) => (
-                      <button
-                        type="button"
-                        key={os.key}
-                        className={`selector-btn ${otherService === os.key ? "active" : ""}`}
-                        onClick={() => setOtherService(os.key)}
-                      >
-                        <div className="selector-btn-header">
-                          <strong>{os.label}</strong>
-                          <span className="selector-price-badge">
-                            LKR {os.min.toLocaleString()} – {os.max.toLocaleString()}
-                          </span>
-                        </div>
-                        <small>{os.desc}</small>
-                      </button>
-                    ))}
+              {/* Category 11: Law & Healthcare */}
+              {category === "law_nursing" && (
+                <>
+                  <div className="control-group">
+                    <label className="control-label">
+                      <span>2. Select Law / Healthcare Task</span>
+                    </label>
+                    <div className="selector-grid selector-vertical">
+                      {LAW_NURSING_TIERS.map((lt) => (
+                        <button
+                          type="button"
+                          key={lt.key}
+                          className={`selector-btn ${lawNursingTier === lt.key ? "active" : ""}`}
+                          onClick={() => setLawNursingTier(lt.key)}
+                        >
+                          <div className="selector-btn-header">
+                            <strong>{lt.label}</strong>
+                            <span className="selector-price-badge">
+                              LKR {lt.min.toLocaleString()} – {lt.max.toLocaleString()}
+                            </span>
+                          </div>
+                          <small>{lt.desc}</small>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+
+                  <div className="control-group">
+                    <label className="control-label">
+                      <span>Optional Citations Add-on</span>
+                    </label>
+                    <div className="addons-grid">
+                      <label className={`addon-checkbox-card ${lawCitationsBundle ? "checked" : ""}`}>
+                        <input
+                          type="checkbox"
+                          checked={lawCitationsBundle}
+                          onChange={(e) => setLawCitationsBundle(e.target.checked)}
+                        />
+                        <div className="addon-info">
+                          <strong>Comprehensive OSCOLA Table of Authorities / Clinical Bibliography</strong>
+                          <small>Full table of cases, legislation and peer-reviewed clinical guidelines</small>
+                        </div>
+                        <span className="addon-fee">+ LKR 2,000</span>
+                      </label>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Category 12: Turnitin & AI Polish */}
+              {category === "turnitin" && (
+                <>
+                  <div className="control-group">
+                    <label className="control-label">
+                      <span>2. Select Rewrite / Humanizing Scope</span>
+                    </label>
+                    <div className="selector-grid selector-vertical">
+                      {TURNITIN_TIERS.map((tt) => (
+                        <button
+                          type="button"
+                          key={tt.key}
+                          className={`selector-btn ${turnitinTier === tt.key ? "active" : ""}`}
+                          onClick={() => setTurnitinTier(tt.key)}
+                        >
+                          <div className="selector-btn-header">
+                            <strong>{tt.label}</strong>
+                            <span className="selector-price-badge">
+                              LKR {tt.min.toLocaleString()} – {tt.max.toLocaleString()}
+                            </span>
+                          </div>
+                          <small>{tt.desc}</small>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="control-group">
+                    <label className="control-label">
+                      <span>Optional Report Certificate</span>
+                    </label>
+                    <div className="addons-grid">
+                      <label className={`addon-checkbox-card ${turnitinCertificate ? "checked" : ""}`}>
+                        <input
+                          type="checkbox"
+                          checked={turnitinCertificate}
+                          onChange={(e) => setTurnitinCertificate(e.target.checked)}
+                        />
+                        <div className="addon-info">
+                          <strong>Include Turnitin Similarity & AI Originality PDF Certificate</strong>
+                          <small>Official Turnitin scan report showing clean 0%–5% similarity and verified human writing</small>
+                        </div>
+                        <span className="addon-fee">+ LKR 1,000</span>
+                      </label>
+                    </div>
+                  </div>
+                </>
               )}
             </div>
 
@@ -937,12 +1532,19 @@ export function InstantQuoteEstimator({ whatsapp }: { whatsapp: string }) {
             <div className="result-features">
               <span>Included at this price:</span>
               <ul>
-                {isSoftwareOrWeb ? (
+                {isCodeOrSystem ? (
                   <>
-                    <li><Check size={14} /> Clean, well-commented source code</li>
+                    <li><Check size={14} /> Clean, well-commented source code / config</li>
                     <li><Check size={14} /> Step-by-step setup guide & execution demo</li>
                     <li><Check size={14} /> 7 days free bug fixes & minor revisions</li>
                     <li><Check size={14} /> Private workspace & live progress tracking</li>
+                  </>
+                ) : isUiUx ? (
+                  <>
+                    <li><Check size={14} /> Figma source file with organized components</li>
+                    <li><Check size={14} /> Responsive layouts & interactive prototype link</li>
+                    <li><Check size={14} /> 7 days free design tweaks & revisions</li>
+                    <li><Check size={14} /> Direct designer consultation on WhatsApp</li>
                   </>
                 ) : isPresentation ? (
                   <>
@@ -954,7 +1556,7 @@ export function InstantQuoteEstimator({ whatsapp }: { whatsapp: string }) {
                 ) : (
                   <>
                     <li><Check size={14} /> Free Turnitin similarity & AI originality report</li>
-                    <li><Check size={14} /> Harvard / APA / IEEE referencing included</li>
+                    <li><Check size={14} /> Harvard / APA / IEEE / OSCOLA referencing</li>
                     <li><Check size={14} /> 7 days free unlimited revisions</li>
                     <li><Check size={14} /> Private workspace & live progress tracking</li>
                   </>
