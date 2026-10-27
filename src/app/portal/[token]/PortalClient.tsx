@@ -257,22 +257,46 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
     data.settings.bank_branch_2
   ].some(Boolean);
   const whatsapp = normalizeWhatsAppNumber(data.settings.whatsapp_number);
+  const calcEstimateMatch = `${assignment.description || ""}\n${assignment.special_instructions || ""}`
+    .match(/(?:Quoted Estimate|Website calculator quote|Website Estimate Range):\s*(LKR\s*[\d,]+\s*[–-]\s*[\d,]+)/i);
+  const calcEstimateRange = calcEstimateMatch ? calcEstimateMatch[1] : null;
+
   const urgentMessage = [
     "Hello StHelp 👋",
     "",
     "I need quick action for an urgent assignment request.",
     `Client ID: ${data.link.client_id}`,
     `Assignment: ${assignment.assignment_title}`,
+    assignment.module_name ? `Module: ${assignment.module_name}` : null,
     `Deadline: ${formatDate(assignment.deadline)}`,
+    calcEstimateRange ? `Website Estimate: ${calcEstimateRange}` : null,
     "",
     "Please review my portal requirements and respond when possible. Thank you."
-  ].join("\n");
+  ].filter(Boolean).join("\n");
   const urgentWhatsAppHref = whatsapp
     ? `https://wa.me/${whatsapp}?text=${encodeURIComponent(urgentMessage)}`
     : null;
   const showUrgentWhatsApp = Boolean(urgentWhatsAppHref)
     && assignment.quote_status !== "accepted"
     && assignment.status !== "cancelled";
+
+  const orderWhatsAppMessage = [
+    "Hello StHelp 👋",
+    "",
+    "I just placed an assignment order on your website:",
+    `• Client ID: ${data.link.client_id}`,
+    `• Assignment: ${assignment.assignment_title}`,
+    assignment.module_name ? `• Module: ${assignment.module_name}` : null,
+    `• Deadline: ${formatDate(assignment.deadline)}`,
+    calcEstimateRange ? `• Calculator Estimate: ${calcEstimateRange}` : null,
+    `• Private Portal: ${typeof window !== "undefined" ? window.location.href : ""}`,
+    "",
+    "Please review my assignment requirements and confirm availability. Thank you!"
+  ].filter(Boolean).join("\n");
+  const orderWhatsAppHref = whatsapp
+    ? `https://wa.me/${whatsapp}?text=${encodeURIComponent(orderWhatsAppMessage)}`
+    : null;
+
   const progressValue = Math.min(100, Math.max(0, Number(assignment.progress) || 0));
 
   async function run(task: () => Promise<any>, success: string) {
@@ -379,7 +403,37 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
         <div className="client-command-body"><div className="client-next-step"><span>Your next step</span><strong>{nextStep(assignment,payHereDisplayState)}</strong><p>The workspace refreshes automatically when StHelp posts an update.</p></div><div className="client-progress-dial" style={{background:`conic-gradient(#d0f4c5 ${progressValue}%, rgba(255,255,255,.14) 0)`}} role="progressbar" aria-label="Assignment progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progressValue}><span><strong>{progressValue}%</strong><small>complete</small></span></div></div>
         <div className="client-progress-line"><div className="progress-head"><span>Overall assignment progress</span><strong>{progressValue}%</strong></div><div className="progress-track"><div className="progress-fill" style={{width:`${progressValue}%`}}/></div></div>
         <StageRail assignment={assignment}/>
-        {assignment.quote_status === "draft" ? <div className="notice notice-info">Your request is safely received. StHelp is reviewing the requirements and will send the final quotation here before any payment is due.</div> : null}
+        {assignment.quote_status === "draft" ? (
+          <div className="notice notice-info" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div>
+              Your request is safely received. StHelp is reviewing the requirements and will confirm the final quotation here before any payment is due.
+            </div>
+            {calcEstimateRange ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 2 }}>
+                <span style={{ fontSize: ".76rem", fontWeight: 800, color: "#165538", background: "#d1fae5", padding: "4px 10px", borderRadius: 6 }}>
+                  ✨ Selected Estimate: {calcEstimateRange}
+                </span>
+                <span style={{ fontSize: ".74rem", color: "#425248" }}>
+                  Calculated price range recorded with your assignment order.
+                </span>
+              </div>
+            ) : null}
+            {orderWhatsAppHref ? (
+              <div style={{ marginTop: 4 }}>
+                <a
+                  className="btn btn-portal-wa"
+                  href={orderWhatsAppHref}
+                  target="_blank"
+                  rel="noreferrer"
+                  title="Message StHelp on WhatsApp with your order details"
+                >
+                  <WhatsAppIcon size={18} />
+                  <span>Send order details to WhatsApp</span>
+                </a>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </section>
 
       {assignment.quote_status === "draft" && assignment.starting_price_snapshot ? <section className="panel quote-panel" id="portal-quote"><div className="panel-title"><div><span className="eyebrow">Starting estimate</span><h3 style={{marginTop:6}}>Final quotation under review</h3></div><Clock3/></div><div className="quote-amount">From {formatMoney(assignment.starting_price_snapshot, assignment.starting_currency_snapshot || assignment.currency || data.settings.currency)}</div><p className="muted small">This is the public starting price saved when you ordered. StHelp will review the scope and send the final amount for your approval before payment.</p></section> : null}

@@ -802,6 +802,20 @@ export function InstantQuoteEstimator({ whatsapp }: { whatsapp: string }) {
 
   const whatsappHref = wa ? `https://wa.me/${wa}?text=${prefilledWaMessage}` : "#";
 
+  const orderParams = new URLSearchParams({
+    fromCalc: "1",
+    cat: category,
+    catLabel: activeCategoryMeta.label,
+    title: calculation.summary,
+    level: activeLevelMeta.label,
+    urgency: activeUrgencyMeta.tag,
+    min: calculation.min,
+    max: calculation.max,
+    turnaround: calculation.turnaround,
+    addons: addOnsList.join(", ")
+  });
+  const orderHref = `/place-assignment?${orderParams.toString()}`;
+
   // Deliverables based on category
   const isCodeOrSystem = category === "web" || category === "mobile" || category === "database" || category === "engineering";
   const isPresentation = category === "presentation";
@@ -1574,8 +1588,8 @@ export function InstantQuoteEstimator({ whatsapp }: { whatsapp: string }) {
                 <WhatsAppIcon size={20} />
                 <span>Lock this quote on WhatsApp</span>
               </a>
-              <Link className="btn btn-estimator-online" href="/place-assignment">
-                <span>Place assignment online</span>
+              <Link className="btn btn-estimator-online" href={orderHref}>
+                <span>Place order with this estimate (LKR {calculation.min} – {calculation.max})</span>
                 <ArrowRight size={17} />
               </Link>
             </div>

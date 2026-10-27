@@ -18,6 +18,7 @@ const policyLinks = [
 
 const exploreLinks = [
   { href: "/pricing", label: "Pricing" },
+  { href: "/calculator", label: "Instant price calculator" },
   { href: "/assignment-support", label: "Assignment support" },
   { href: "/student-resources", label: "Student resources" },
   { href: "/feedback", label: "Student feedback" },

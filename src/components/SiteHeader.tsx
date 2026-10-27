@@ -13,6 +13,7 @@ function displayPhoneNumber(number: string) {
 const navigation = [
   { href: "/assignment-support", label: "Assignment support" },
   { href: "/pricing", label: "Pricing" },
+  { href: "/calculator", label: "Calculator" },
   { href: "/student-resources", label: "Student resources" },
   { href: "/#work", label: "Previous work" },
   { href: "/#feedback", label: "Feedback" },

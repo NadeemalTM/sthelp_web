@@ -3283,24 +3283,25 @@ main.public-site-v2 .control-label {
 
 main.public-site-v2 .estimator-category-pills {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
 }
 
 main.public-site-v2 .category-pill-btn {
   appearance: none;
   border: 1px solid rgba(24, 35, 30, .14);
   background: #faf9f6;
-  padding: 9px 11px;
+  padding: 10px 12px;
   border-radius: 12px;
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 10px;
   cursor: pointer;
   text-align: left;
   transition: all .16s ease;
   font-family: inherit;
   color: var(--public-ink);
+  min-height: 54px;
 }
 
 main.public-site-v2 .category-pill-btn:hover {
@@ -3316,7 +3317,7 @@ main.public-site-v2 .category-pill-btn.active {
 }
 
 main.public-site-v2 .category-pill-icon {
-  font-size: 1.3rem;
+  font-size: 1.35rem;
   line-height: 1;
   flex-shrink: 0;
 }
@@ -3326,15 +3327,17 @@ main.public-site-v2 .category-pill-content {
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+  flex-grow: 1;
 }
 
 main.public-site-v2 .category-pill-content strong {
-  font-size: .78rem;
+  font-size: .8rem;
   font-weight: 750;
-  line-height: 1.2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.25;
+  white-space: normal;
+  word-break: normal;
+  overflow: visible;
+  text-overflow: clip;
 }
 
 main.public-site-v2 .category-pill-content small {
@@ -3863,3 +3866,107 @@ main.public-site-v2 .result-disclaimer {
     transform: none !important;
   }
 }
+
+/* Calculator estimate locked banner in /place-assignment */
+main.public-site-v2 .calculator-estimate-banner {
+  background: linear-gradient(135deg, #15261f 0%, #1f3d30 100%);
+  border: 1px solid rgba(40, 104, 79, .35);
+  border-radius: 16px;
+  padding: 22px 24px;
+  color: #fff;
+  margin-bottom: 24px;
+  box-shadow: 0 10px 30px rgba(21, 38, 31, .18);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+main.public-site-v2 .estimate-banner-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+main.public-site-v2 .estimate-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(231, 189, 99, .2);
+  border: 1px solid rgba(231, 189, 99, .55);
+  color: #f7d27e;
+  padding: 4px 11px;
+  border-radius: 999px;
+  font-size: .68rem;
+  font-weight: 850;
+  letter-spacing: .08em;
+}
+
+main.public-site-v2 .estimate-price {
+  font-size: 1.6rem;
+  font-weight: 850;
+  color: #38e385;
+  letter-spacing: -.02em;
+}
+
+main.public-site-v2 .estimate-title {
+  font-size: 1.05rem;
+  font-weight: 750;
+  color: #fff;
+  margin: 0;
+}
+
+main.public-site-v2 .estimate-meta-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+main.public-site-v2 .estimate-meta-chips span {
+  font-size: .74rem;
+  background: rgba(255, 255, 255, .12);
+  border: 1px solid rgba(255, 255, 255, .16);
+  padding: 4px 10px;
+  border-radius: 6px;
+  color: #e2fbe8;
+  font-weight: 600;
+}
+
+main.public-site-v2 .estimate-hint {
+  font-size: .73rem;
+  color: rgba(255, 255, 255, .75);
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* Floating CTA button suppression on forms and calculators */
+.request-page .floating-assignment-cta,
+.calculator-page .floating-assignment-cta,
+.client-portal-page .floating-assignment-cta {
+  display: none !important;
+}
+
+/* Dedicated portal WhatsApp button */
+.btn-portal-wa {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  background: #25d366;
+  color: #0c2b18;
+  font-weight: 800;
+  font-size: .86rem;
+  padding: 11px 18px;
+  border-radius: 8px;
+  text-decoration: none;
+  box-shadow: 0 4px 14px rgba(37, 211, 102, .3);
+  transition: background .18s ease, transform .18s ease;
+}
+
+.btn-portal-wa:hover {
+  background: #20ba5a;
+  transform: translateY(-1px);
+}
+

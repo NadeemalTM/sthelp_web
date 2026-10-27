@@ -77,8 +77,8 @@ export default async function PricingPage() {
           <h1>Clear starting prices.<br/><em>A quote shaped to your task.</em></h1>
           <p>Choose the support that best matches your work. We review every brief and confirm the final amount in your private portal before you pay.</p>
           <div className="pricing-hero-actions">
-            <Link className="btn btn-coral" href="#pricing-services">Explore prices <ArrowRight size={18}/></Link>
-            {customService ? <Link className="text-action" href={`/place-assignment?service=${encodeURIComponent(customService.slug)}`}>Request a custom quote <span>↗</span></Link> : null}
+            <Link className="btn btn-coral" href="/calculator">Instant Price Calculator <ArrowRight size={18}/></Link>
+            <Link className="btn btn-dark" href="#pricing-services">Explore service catalog</Link>
           </div>
         </div>
         <div className="pricing-hero-media"><Image src="/images/public/sthelp-study-studio-hero.webp" alt="A carefully organised study desk with assignment notes and a laptop" fill sizes="(max-width: 760px) 100vw, 42vw" loading="eager"/><aside className="pricing-hero-note" aria-label="How starting prices work"><span className="pricing-note-kicker">Before you pay</span><h2>Your final price is confirmed after review.</h2><ul><li><CheckCircle2 size={17}/><span>See the quotation in your private portal</span></li><li><CheckCircle2 size={17}/><span>Pay only after the amount is confirmed</span></li><li><CheckCircle2 size={17}/><span>Use bank transfer or PayHere when available</span></li></ul></aside></div>
