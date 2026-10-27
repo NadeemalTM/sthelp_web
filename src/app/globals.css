@@ -2711,94 +2711,595 @@ th { color: #66748a; font-size: .72rem; text-transform: uppercase; letter-spacin
 }
 
 @media (max-width: 680px) {
-  .client-portal-page .container { width: calc(100% - 16px); }
-  .client-portal-page .portal-header { position: relative; top: auto; padding: 8px 0; }
-  .client-portal-page .portal-header-inner { min-height: 49px; gap: 7px; }
-  .client-portal-page .portal-header .brand { min-width: 0; gap: 7px; }
-  .client-portal-page .portal-header .brand-logo { width: 37px; height: 37px; }
-  .client-portal-page .portal-header .brand-copy { font-size: .86rem; }
-  .client-portal-page .portal-header .brand-copy small { font-size: .48rem; }
-  .portal-header-tools { min-width: 0; gap: 6px; }
-  .portal-client-identity { min-width: 0; max-width: 142px; grid-template-columns: minmax(0, 1fr); gap: 1px; padding: 6px 8px; }
-  .portal-client-identity span { font-size: .52rem; }
-  .portal-client-identity span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .portal-client-identity strong { grid-row: auto; grid-column: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .63rem; }
-  .portal-client-identity small { display: none; }
-  .portal-refresh { width: 37px; height: 37px; border-radius: 10px; }
-  .client-portal-page .portal-main { padding: 9px 0 42px; }
-  .portal-loading-card { grid-template-columns: 52px minmax(0, 1fr); padding: 18px; }
-  .portal-loading-card img { width: 52px; height: 52px; }
-  .portal-loading-spinner { display: none; }
-  .portal-error-card { grid-template-columns: 1fr; padding: 22px; }
-  .portal-error-card > span { width: 50px; height: 50px; }
-  .client-portal-page .submission-intro { grid-template-columns: 1fr; gap: 22px; padding: 25px 20px; border-radius: 20px; }
-  .submission-intro h1 { font-size: clamp(2.35rem, 12vw, 3.3rem); }
-  .submission-intro-steps { grid-template-columns: 1fr; gap: 7px; }
-  .client-portal-page .submission-form { padding: 18px; border-radius: 19px; }
-  .client-portal-page .portal-urgent-contact { margin-bottom: 11px; }
-  .client-portal-page .portal-snapshot { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-bottom: 8px; }
-  .client-portal-page .portal-snapshot-item { grid-template-columns: 30px minmax(0, 1fr); gap: 7px; min-height: 65px; padding: 8px; border-left-width: 3px; border-radius: 10px; box-shadow: 0 5px 14px rgba(19,51,38,.055); }
-  .client-portal-page .portal-snapshot-icon { width: 30px; height: 30px; border-radius: 8px; }
-  .client-portal-page .portal-snapshot-icon svg { width: 14px; height: 14px; }
-  .client-portal-page .portal-snapshot-item small { margin-bottom: 2px; font-size: .57rem; letter-spacing: .07em; }
-  .client-portal-page .portal-snapshot-item strong { font-size: .72rem; line-height: 1.25; }
-  .portal-section-nav { top: 0; gap: 2px; margin-inline: 0; margin-bottom: 9px; padding: 3px; border-radius: 10px; }
-  .portal-section-nav a { min-height: 40px; gap: 5px; padding: 6px 8px; border-radius: 8px; font-size: .65rem; }
-  .portal-section-nav svg { width: 13px; height: 13px; }
-  .client-portal-page :is(#portal-overview, #portal-quote, #portal-payment, #portal-files, #portal-progress, #portal-comments, #portal-details) { scroll-margin-top: 55px; }
-  .client-command-card { padding: 16px 13px; border-radius: 15px; }
-  .client-command-card h1 { margin: 6px 0 5px; font-size: clamp(1.85rem, 10vw, 2.45rem); line-height: .96; }
-  .client-command-card .eyebrow { font-size: .61rem; }
-  .client-command-card p { font-size: .72rem; }
-  .client-command-top { grid-template-columns: 1fr; gap: 9px; }
-  .client-command-top .status-badge { justify-self: start; }
-  .client-command-card .status-badge { padding: 5px 8px; font-size: .63rem; }
-  .client-command-body { grid-template-columns: 1fr; gap: 0; margin: 13px 0 12px; }
-  .client-command-body .client-next-step { min-height: 70px; padding: 12px; border-radius: 10px; }
-  .client-command-body .client-next-step span { font-size: .58rem; }
-  .client-command-body .client-next-step strong { font-size: .78rem; }
-  .client-command-body .client-next-step p { display: none; }
-  .client-progress-dial { display: none; }
-  .client-progress-line { margin-bottom: 13px; }
-  .client-progress-line .progress-head { margin-bottom: 6px; font-size: .62rem; }
-  .client-progress-line .progress-head strong { display: none; }
-  .client-progress-line .progress-track { height: 5px; }
-  .client-command-card .stage-rail { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px; padding: 11px 0 2px; overflow: visible; }
-  .client-command-card .stage { min-width: 0; display: grid; grid-template-columns: 1fr; justify-items: center; gap: 4px; text-align: center; }
-  .client-command-card .stage:last-child { grid-column: auto; }
-  .client-command-card .stage > span { width: 22px; height: 22px; font-size: .58rem; }
-  .client-command-card .stage small { max-width: 100%; overflow: hidden; font-size: .55rem; line-height: 1.15; text-overflow: ellipsis; white-space: nowrap; }
-  .client-command-card .stage:not(:last-child)::after { width: calc(50% + 1px); left: calc(50% + 12px); top: 10px; }
-  .client-command-card .notice { margin-top: 11px; padding: 8px 9px; font-size: .65rem; }
-  .client-portal-page .panel, .client-portal-page .payment-card { padding: 13px; border-radius: 12px; }
-  .client-portal-page .panel-title { gap: 7px; margin-bottom: 11px; }
-  .client-portal-page .panel-title h3 { font-size: .86rem; }
-  .client-portal-page .panel-title p { font-size: .67rem; }
-  .client-portal-page .portal-section-card { border-top-width: 3px; }
-  .client-portal-page .portal-section-card .panel-title > svg { width: 14px; height: 14px; padding: 6px; border-radius: 8px; }
-  .client-portal-page .detail-list { border-radius: 9px; }
-  .client-portal-page .detail-row { display: grid; gap: 3px; padding: 8px; }
-  .client-portal-page .detail-row span:first-child { font-size: .63rem; }
-  .client-portal-page .detail-row strong { font-size: .72rem; }
-  .client-portal-page .detail-row strong { width: auto; text-align: left; overflow-wrap: anywhere; }
-  .client-portal-page .submitted-document { align-items: stretch; padding: 10px; }
-  .client-portal-page .portal-progress-card .lock-box { min-height: 130px; padding: 22px 12px; border: 1px dashed #cedbe4; border-radius: 9px; background: #f5f8fb; }
-  .client-portal-page .portal-progress-card .lock-box svg { width: 20px; height: 20px; }
-  .client-portal-page .portal-progress-card .lock-box h3 { font-size: .82rem; }
-  .client-portal-page .portal-progress-card .lock-box p { font-size: .65rem; }
-  .client-portal-page .portal-comments-card .form-inline { grid-template-columns: minmax(0, 1fr) 42px; margin-top: 10px; padding-top: 10px; }
-  .client-portal-page .portal-comments-card .form-inline .input { min-height: 42px; padding: 8px 10px; font-size: 16px; }
-  .client-portal-page .portal-comments-card .form-inline .btn { width: 42px; min-width: 42px; min-height: 42px; border-radius: 10px; }
-  .client-portal-page .comment-list > .muted { margin: 2px 0 10px; font-size: .68rem; }
-  .client-portal-page .payment-card-header h3 { font-size: .86rem; }
-  .client-portal-page .payment-card-icon { width: 30px; height: 30px; border-radius: 8px; }
-  .client-portal-page .payment-total { margin: 11px 0; padding: 10px; border-radius: 9px; }
-  .client-portal-page .payment-total span { font-size: .6rem; }
-  .client-portal-page .payment-total strong { font-size: 1.35rem; }
-  .client-portal-page .quote-panel .quote-amount { font-size: 1.45rem; }
+  .client-portal-page {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: clip;
+  }
+  .client-portal-page .container {
+    width: min(calc(100% - 20px), 1160px);
+    max-width: 100%;
+    margin-inline: auto;
+  }
+  .client-portal-page .portal-header {
+    position: relative;
+    top: auto;
+    padding: 10px 0;
+  }
+  .client-portal-page .portal-header-inner {
+    min-height: 48px;
+    gap: 8px;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+  }
+  .client-portal-page .portal-header .brand {
+    min-width: 0;
+    flex: 1 1 auto;
+    gap: 8px;
+  }
+  .client-portal-page .portal-header .brand-logo {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+  }
+  .client-portal-page .portal-header .brand-copy {
+    font-size: .88rem;
+    line-height: 1.15;
+  }
+  .client-portal-page .portal-header .brand-copy small {
+    font-size: .52rem;
+    margin-top: 1px;
+  }
+  .portal-header-tools {
+    min-width: 0;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .portal-client-identity {
+    min-width: 0;
+    max-width: 130px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1px;
+    padding: 5px 8px;
+    border-radius: 9px;
+  }
+  .portal-client-identity span {
+    font-size: .52rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .portal-client-identity strong {
+    grid-row: auto;
+    grid-column: auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: .64rem;
+  }
+  .portal-client-identity small {
+    display: none;
+  }
+  .portal-refresh {
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    flex-shrink: 0;
+  }
+  .client-portal-page .portal-main {
+    padding: 12px 0 46px;
+  }
+
+  /* Urgent WhatsApp Banner - Responsive Stack */
+  .client-portal-page .portal-urgent-contact {
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    padding: 13px 14px;
+    margin-bottom: 12px;
+    border-radius: 14px;
+  }
+  .client-portal-page .portal-urgent-symbol {
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+    flex-shrink: 0;
+  }
+  .client-portal-page .portal-urgent-symbol svg {
+    width: 18px;
+    height: 18px;
+  }
+  .client-portal-page .portal-urgent-contact strong {
+    font-size: .88rem;
+    line-height: 1.25;
+  }
+  .client-portal-page .portal-urgent-contact p {
+    font-size: .72rem;
+    line-height: 1.4;
+  }
+  .client-portal-page .portal-urgent-button {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
+    min-height: 44px;
+    padding: 10px 14px;
+    font-size: .82rem;
+    border-radius: 11px;
+    margin-top: 4px;
+  }
+
+  /* Snapshot Cards - Clean balanced grid without text truncation */
+  .client-portal-page .portal-snapshot {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .client-portal-page .portal-snapshot-item {
+    grid-template-columns: 32px minmax(0, 1fr);
+    gap: 8px;
+    min-height: auto;
+    padding: 10px 10px;
+    border-left-width: 3px;
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(19, 51, 38, .05);
+  }
+  .client-portal-page .portal-snapshot-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+  }
+  .client-portal-page .portal-snapshot-icon svg {
+    width: 15px;
+    height: 15px;
+  }
+  .client-portal-page .portal-snapshot-item small {
+    margin-bottom: 2px;
+    font-size: .56rem;
+    letter-spacing: .07em;
+  }
+  .client-portal-page .portal-snapshot-item strong {
+    font-size: .74rem;
+    line-height: 1.25;
+    overflow-wrap: break-word;
+  }
+  /* Documents card & Next Action span full width on mobile for clarity */
+  .client-portal-page .portal-snapshot-item:nth-child(3) {
+    grid-column: 1 / -1;
+  }
+  .client-portal-page .portal-snapshot-item.next {
+    grid-column: 1 / -1;
+    grid-template-columns: 32px minmax(0, 1fr);
+    padding: 11px 12px;
+  }
+  .client-portal-page .portal-snapshot-item.next strong {
+    font-size: .78rem;
+    line-height: 1.35;
+  }
+
+  /* Sticky Section Navigation - Smooth horizontal swipe */
+  .client-portal-page .portal-section-nav {
+    position: sticky;
+    top: 0;
+    z-index: 35;
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    background: rgba(255, 255, 255, .95);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 4px 16px rgba(19, 51, 38, .07);
+    border: 1px solid rgba(205, 219, 211, .9);
+    border-radius: 12px;
+    gap: 4px;
+    margin-bottom: 12px;
+    padding: 4px;
+  }
+  .client-portal-page .portal-section-nav::-webkit-scrollbar {
+    display: none;
+  }
+  .client-portal-page .portal-section-nav a {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    min-height: 38px;
+    gap: 5px;
+    padding: 6px 11px;
+    border-radius: 8px;
+    font-size: .68rem;
+    font-weight: 750;
+  }
+  .client-portal-page .portal-section-nav svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+  .client-portal-page :is(#portal-overview, #portal-quote, #portal-payment, #portal-files, #portal-progress, #portal-comments, #portal-details) {
+    scroll-margin-top: 60px;
+  }
+
+  /* Command Card */
+  .client-command-card {
+    padding: 18px 15px;
+    border-radius: 18px;
+  }
+  .client-command-card h1 {
+    margin: 6px 0 6px;
+    font-size: clamp(1.65rem, 8vw, 2.25rem);
+    line-height: 1.05;
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+  .client-command-card .eyebrow {
+    font-size: .61rem;
+  }
+  .client-command-card p {
+    font-size: .74rem;
+    line-height: 1.4;
+  }
+  .client-command-top {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .client-command-top .status-badge {
+    justify-self: start;
+    padding: 5px 9px;
+    font-size: .65rem;
+  }
+  .client-command-body {
+    grid-template-columns: 1fr;
+    gap: 0;
+    margin: 14px 0 12px;
+  }
+  .client-command-body .client-next-step {
+    min-height: auto;
+    padding: 12px 14px;
+    border-radius: 12px;
+  }
+  .client-command-body .client-next-step span {
+    font-size: .58rem;
+  }
+  .client-command-body .client-next-step strong {
+    font-size: .82rem;
+    line-height: 1.3;
+  }
+  .client-command-body .client-next-step p {
+    display: none;
+  }
+  .client-progress-dial {
+    display: none;
+  }
+  .client-progress-line {
+    margin-bottom: 14px;
+  }
+  .client-progress-line .progress-head {
+    margin-bottom: 6px;
+    font-size: .64rem;
+  }
+  .client-progress-line .progress-head strong {
+    display: inline-block;
+  }
+  .client-progress-line .progress-track {
+    height: 6px;
+  }
+
+  /* Stage Rail - Balanced 5-step flow on mobile */
+  .client-command-card .stage-rail {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 3px;
+    padding: 12px 0 4px;
+    overflow: visible;
+  }
+  .client-command-card .stage {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    text-align: center;
+  }
+  .client-command-card .stage:last-child {
+    grid-column: auto;
+  }
+  .client-command-card .stage > span {
+    width: 24px;
+    height: 24px;
+    font-size: .6rem;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+  }
+  .client-command-card .stage small {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: .56rem;
+    line-height: 1.15;
+  }
+  .client-command-card .stage:not(:last-child)::after {
+    width: calc(50% + 2px);
+    left: calc(50% + 12px);
+    top: 11px;
+  }
+  .client-command-card .notice {
+    margin-top: 11px;
+    padding: 9px 11px;
+    font-size: .68rem;
+  }
+
+  /* Panels and cards */
+  .client-portal-page .panel,
+  .client-portal-page .payment-card {
+    padding: 15px 14px;
+    border-radius: 14px;
+  }
+  .client-portal-page .panel-title {
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .client-portal-page .panel-title h3 {
+    font-size: .92rem;
+  }
+  .client-portal-page .panel-title p {
+    font-size: .68rem;
+  }
+  .client-portal-page .portal-section-card {
+    border-top-width: 3px;
+  }
+  .client-portal-page .portal-section-card .panel-title > svg {
+    width: 15px;
+    height: 15px;
+    padding: 5px;
+    border-radius: 8px;
+  }
+
+  /* Quote Panel */
+  .client-portal-page .quote-panel {
+    border-radius: 14px;
+  }
+  .client-portal-page .quote-panel .quote-amount {
+    font-size: 1.6rem;
+    overflow-wrap: break-word;
+  }
+  .quote-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .quote-actions .btn {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+  }
+
+  /* Details Panel & Rows */
+  .client-portal-page .detail-list {
+    border-radius: 11px;
+  }
+  .client-portal-page .detail-row {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    padding: 9px 11px;
+  }
+  .client-portal-page .detail-row span:first-child {
+    font-size: .65rem;
+  }
+  .client-portal-page .detail-row strong {
+    font-size: .78rem;
+    width: 100%;
+    text-align: left;
+    overflow-wrap: anywhere;
+  }
+  .client-edit-form .input,
+  .client-edit-form .textarea,
+  .client-edit-form .select {
+    font-size: 16px;
+    min-height: 44px;
+  }
+  .client-edit-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .client-edit-actions .btn {
+    width: 100%;
+    min-height: 42px;
+    justify-content: center;
+  }
+
+  /* Submitted Documents in Details Panel */
+  .client-portal-page .submitted-document {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 11px 12px;
+    border-radius: 10px;
+  }
+  .client-portal-page .submitted-document .file-name strong {
+    overflow-wrap: break-word;
+    word-break: break-word;
+    white-space: normal;
+    font-size: .78rem;
+  }
+  .client-portal-page .submitted-document .btn {
+    width: 100%;
+    min-height: 38px;
+    justify-content: center;
+  }
+
+  /* Final Files & Previews */
+  .client-portal-page .portal-files-card .file-row {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 12px 0;
+  }
+  .client-portal-page .portal-files-card .file-row .file-name strong {
+    overflow-wrap: break-word;
+    word-break: break-word;
+    white-space: normal;
+  }
+  .client-portal-page .portal-files-card .file-row .btn,
+  .client-portal-page .portal-files-card .file-row .status-badge {
+    width: 100%;
+    justify-content: center;
+    min-height: 40px;
+  }
+
+  /* Comments Card */
+  .client-portal-page .portal-comments-card .form-inline {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 46px;
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 10px;
+  }
+  .client-portal-page .portal-comments-card .form-inline .input {
+    min-height: 46px;
+    font-size: 16px;
+    padding: 9px 12px;
+    border-radius: 10px;
+  }
+  .client-portal-page .portal-comments-card .form-inline .btn {
+    width: 46px;
+    min-width: 46px;
+    min-height: 46px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+  }
+  .client-portal-page .comment {
+    max-width: 90%;
+    padding: 10px 12px;
+    font-size: .82rem;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  /* Payment Card, PayHere & Bank Details */
+  .client-portal-page .payment-card-header h3 {
+    font-size: .9rem;
+  }
+  .client-portal-page .payment-card-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+  }
+  .client-portal-page .payment-total {
+    margin: 12px 0;
+    padding: 11px 12px;
+    border-radius: 10px;
+  }
+  .client-portal-page .payment-total span {
+    font-size: .62rem;
+  }
+  .client-portal-page .payment-total strong {
+    font-size: 1.45rem;
+    overflow-wrap: anywhere;
+  }
+  .client-portal-page .payment-accounts {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .client-portal-page .payment-account {
+    width: 100%;
+    border-radius: 12px;
+  }
+  .client-portal-page .payment-account dl {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .client-portal-page .payment-account dl > div {
+    padding: 9px 12px;
+  }
+  .client-portal-page .payment-account dl > div + div {
+    border-left: 0;
+    border-top: 1px solid #edf0ed;
+  }
+  .client-portal-page .payment-account-number dd {
+    font-size: 1rem;
+    word-break: break-all;
+    overflow-wrap: anywhere;
+  }
+  .client-portal-page .payhere-option {
+    padding: 12px;
+    margin: 12px 0;
+    border-radius: 12px;
+  }
+  .client-portal-page .payhere-option-heading {
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: 10px;
+  }
+  .client-portal-page .payhere-option-icon {
+    width: 34px;
+    height: 34px;
+  }
+  .client-portal-page .payhere-form .input {
+    min-height: 44px;
+    font-size: 16px;
+  }
+  .client-portal-page .payhere-button {
+    min-height: 46px;
+    font-size: .9rem;
+    border-radius: 11px;
+  }
+  .client-portal-page .portal-payment-verification .btn {
+    width: 100%;
+    min-height: 46px;
+    justify-content: center;
+  }
+
+  /* Initial Submission View */
+  .client-portal-page .submission-intro {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    padding: 24px 18px;
+    border-radius: 18px;
+  }
+  .submission-intro h1 {
+    font-size: clamp(2.1rem, 10vw, 3rem);
+  }
+  .submission-intro-steps {
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+  .client-portal-page .submission-form {
+    padding: 18px 16px;
+    border-radius: 18px;
+  }
 }
 
-@media (max-width: 360px) {
-  .portal-client-identity { max-width: 112px; }
-  .client-portal-page .portal-snapshot { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 380px) {
+  .portal-client-identity {
+    max-width: 105px;
+    padding: 4px 6px;
+  }
+  .portal-client-identity span {
+    font-size: .48rem;
+  }
+  .portal-client-identity strong {
+    font-size: .58rem;
+  }
+  .client-portal-page .portal-header .brand-copy {
+    font-size: .82rem;
+  }
+  .client-portal-page .portal-snapshot-item {
+    padding: 8px;
+  }
+  .client-command-card .stage small {
+    font-size: .52rem;
+  }
 }

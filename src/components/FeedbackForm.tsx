@@ -196,7 +196,7 @@ export function FeedbackForm({ onSuccess, compact = false }: FeedbackFormProps) 
             id="feedback-name"
             className="input"
             type="text"
-            placeholder="e.g. Nadeemal T. or leave blank"
+            placeholder="e.g. Kasun P."
             maxLength={100}
             value={customerName}
             onChange={(e) => setCustomerName(e.target.value)}
@@ -212,7 +212,7 @@ export function FeedbackForm({ onSuccess, compact = false }: FeedbackFormProps) 
             id="feedback-uni"
             className="input"
             type="text"
-            placeholder="e.g. University of Moratuwa, SLIIT, etc."
+            placeholder="e.g. Moratuwa, SLIIT"
             maxLength={150}
             value={university}
             onChange={(e) => setUniversity(e.target.value)}
