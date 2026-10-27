@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { Loader2, ShieldCheck, Sparkles, UploadCloud } from "lucide-react";
 import { FIVE_MB } from "@/lib/constants";
-import { formatMoney } from "@/lib/format";
 import type { PricingService } from "@/lib/pricing";
 import { uploadPrivateFile } from "@/lib/upload-client";
 
@@ -259,9 +258,6 @@ export function PublicAssignmentForm({
             {availableServices.map((service) => (
               <option value={service.slug} key={service.slug}>
                 {service.name}
-                {service.starting_price && service.starting_price > 0
-                  ? ` — from ${formatMoney(service.starting_price, service.currency)}`
-                  : " — custom quote"}
               </option>
             ))}
           </select>
@@ -282,9 +278,7 @@ export function PublicAssignmentForm({
             <strong>{selectedService.name}</strong>
             <p>{selectedService.short_description}</p>
             <span className="small">
-              {selectedService.starting_price && selectedService.starting_price > 0
-                ? `${formatMoney(selectedService.starting_price, selectedService.currency)} starting price. We review your requirements and confirm the final quotation in your client portal before payment.`
-                : "This service needs a custom quotation. We will review your requirements and confirm the price in your client portal before payment."}
+              We review your requirements and confirm the final quotation in your client portal before payment.
             </span>
           </div>
         ) : null}
