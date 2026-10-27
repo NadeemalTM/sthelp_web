@@ -5,7 +5,7 @@ import { STATUS_OPTIONS } from "@/lib/constants";
 import { storeProtectedPreview } from "@/lib/preview-watermark";
 import { getServiceSupabase } from "@/lib/supabase-server";
 import { recordAssignmentActivity } from "@/lib/assignment-activity";
-import { findUnresolvedPayHereAttempt } from "@/lib/payhere-payment-state";
+import { findUnresolvedPayHereAttempt, isMissingRelationError } from "@/lib/payhere-payment-state";
 
 async function assignmentExists(id: string) {
   const db = getServiceSupabase();
@@ -31,7 +31,9 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       db.from("assignment_activity").select("*").eq("assignment_id", id).order("created_at", { ascending: false }).limit(100),
       db.from("payhere_payment_attempts").select("*").eq("assignment_id", id).order("created_at", { ascending: false }).limit(25)
     ]);
-    if (payHereAttemptsError) throw payHereAttemptsError;
+    if (payHereAttemptsError && !isMissingRelationError(payHereAttemptsError)) {
+      console.warn("Unable to load PayHere attempts:", payHereAttemptsError.message || payHereAttemptsError);
+    }
     return NextResponse.json({ assignment, link, progress: progress || [], comments: comments || [], files: files || [], settings, activity: activity || [], payHereAttempts: payHereAttempts || [] });
   } catch (error) {
     logApiError(error);
@@ -52,12 +54,15 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     let quoteChanged = false;
     let currentPayHereAttempt: any = null;
     if (assignment.payhere_payment_attempt_id) {
-      const { data, error } = await db.from("payhere_payment_attempts")
-        .select("id, status, expires_at, review_reason")
-        .eq("id", assignment.payhere_payment_attempt_id)
-        .maybeSingle();
-      if (error) throw error;
-      currentPayHereAttempt = data;
+      try {
+        const { data, error } = await db.from("payhere_payment_attempts")
+          .select("id, status, expires_at, review_reason")
+          .eq("id", assignment.payhere_payment_attempt_id)
+          .maybeSingle();
+        if (!error) currentPayHereAttempt = data;
+      } catch {
+        // Table or attempt may not exist yet
+      }
     }
     const unresolvedPayHereAttempt = await findUnresolvedPayHereAttempt(db, assignment.id);
     const activePayHereCheckout = unresolvedPayHereAttempt?.status === "pending"
@@ -152,9 +157,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       updateQuery = updateQuery
         .eq("payment_status", assignment.payment_status)
         .eq("quote_status", assignment.quote_status);
-      updateQuery = assignment.payhere_payment_attempt_id
-        ? updateQuery.eq("payhere_payment_attempt_id", assignment.payhere_payment_attempt_id)
-        : updateQuery.is("payhere_payment_attempt_id", null);
+      if ("payhere_payment_attempt_id" in assignment) {
+        updateQuery = assignment.payhere_payment_attempt_id
+          ? updateQuery.eq("payhere_payment_attempt_id", assignment.payhere_payment_attempt_id)
+          : updateQuery.is("payhere_payment_attempt_id", null);
+      }
     }
     const { data: updated, error } = await updateQuery.select("*").maybeSingle();
     if (error) throw error;
@@ -260,15 +267,22 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       if (unresolvedPayHere) return apiError("Resolve the pending or paid PayHere transaction before verifying this bank payment.", 409);
       if (assignment.payhere_payment_attempt_id) return apiError("This assignment has a PayHere transaction. Resolve it before verifying a bank slip.", 409);
       const unlock = body.unlock !== false;
-      const { data: verified, error } = await db.from("assignments").update({
+      const verifyUpdate: Record<string, unknown> = {
         payment_status: "verified",
         payment_verified_at: new Date().toISOString(),
-        download_unlocked: unlock,
-        payhere_payment_attempt_id: null
-      }).eq("id", id)
+        download_unlocked: unlock
+      };
+      if ("payhere_payment_attempt_id" in assignment) {
+        verifyUpdate.payhere_payment_attempt_id = null;
+      }
+      let verifyQuery = db.from("assignments").update(verifyUpdate)
+        .eq("id", id)
         .eq("payment_status", "submitted")
-        .eq("payment_reference", assignment.payment_reference)
-        .is("payhere_payment_attempt_id", null)
+        .eq("payment_reference", assignment.payment_reference);
+      if ("payhere_payment_attempt_id" in assignment) {
+        verifyQuery = verifyQuery.is("payhere_payment_attempt_id", null);
+      }
+      const { data: verified, error } = await verifyQuery
         .select("id")
         .maybeSingle();
       if (error) throw error;
@@ -284,12 +298,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       const unresolvedPayHere = await findUnresolvedPayHereAttempt(db, assignment.id);
       if (unresolvedPayHere) return apiError("Resolve the pending or paid PayHere transaction before rejecting this bank payment.", 409);
       if (assignment.payhere_payment_attempt_id) return apiError("This assignment has a PayHere transaction. Resolve it from the PayHere history instead.", 409);
-      const { data: rejected, error } = await db.from("assignments")
+      let rejectQuery = db.from("assignments")
         .update({ payment_status: "rejected", download_unlocked: false })
         .eq("id", id)
         .eq("payment_status", "submitted")
-        .eq("payment_reference", assignment.payment_reference)
-        .is("payhere_payment_attempt_id", null)
+        .eq("payment_reference", assignment.payment_reference);
+      if ("payhere_payment_attempt_id" in assignment) {
+        rejectQuery = rejectQuery.is("payhere_payment_attempt_id", null);
+      }
+      const { data: rejected, error } = await rejectQuery
         .select("id")
         .maybeSingle();
       if (error) throw error;

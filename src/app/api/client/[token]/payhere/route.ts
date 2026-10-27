@@ -50,7 +50,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const { data: assignment, error } = await db
       .from("assignments")
-      .select("id, student_name, contact_number, email, assignment_title, quoted_amount, currency, status, quote_status, quote_sent_at, quote_responded_at, payment_status, payment_reference, payhere_payment_attempt_id")
+      .select("*")
       .eq("client_link_id", link.id)
       .maybeSingle();
     if (error) throw error;
@@ -67,23 +67,28 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return apiError("PayHere is still processing an earlier transaction. Do not start another payment; contact StHelp if it does not update.", 409);
     }
     if (assignment.payhere_payment_attempt_id) {
-      const { data: currentAttempt, error: currentAttemptError } = await db
-        .from("payhere_payment_attempts")
-        .select("status, expires_at")
-        .eq("id", assignment.payhere_payment_attempt_id)
-        .maybeSingle();
-      if (currentAttemptError) throw currentAttemptError;
-      if (currentAttempt?.status === "paid") {
-        return apiError("PayHere has already reported a successful payment for this quotation. StHelp is reviewing it now.", 409);
-      }
-      if (currentAttempt?.status === "pending") {
-        return apiError("PayHere is still processing the current transaction. Do not start another payment; contact StHelp if it does not update.", 409);
-      }
-      if (currentAttempt?.status === "initiated" && new Date(currentAttempt.expires_at).getTime() > Date.now()) {
-        return apiError("A PayHere checkout is already open for this quotation. Complete it or wait briefly before trying again.", 409);
-      }
-      if (currentAttempt?.status === "charged_back") {
-        return apiError("This payment has a chargeback under review. Contact StHelp before making another payment.", 409);
+      try {
+        const { data: currentAttempt, error: currentAttemptError } = await db
+          .from("payhere_payment_attempts")
+          .select("status, expires_at")
+          .eq("id", assignment.payhere_payment_attempt_id)
+          .maybeSingle();
+        if (!currentAttemptError && currentAttempt) {
+          if (currentAttempt.status === "paid") {
+            return apiError("PayHere has already reported a successful payment for this quotation. StHelp is reviewing it now.", 409);
+          }
+          if (currentAttempt.status === "pending") {
+            return apiError("PayHere is still processing the current transaction. Do not start another payment; contact StHelp if it does not update.", 409);
+          }
+          if (currentAttempt.status === "initiated" && new Date(currentAttempt.expires_at).getTime() > Date.now()) {
+            return apiError("A PayHere checkout is already open for this quotation. Complete it or wait briefly before trying again.", 409);
+          }
+          if (currentAttempt.status === "charged_back") {
+            return apiError("This payment has a chargeback under review. Contact StHelp before making another payment.", 409);
+          }
+        }
+      } catch {
+        // Table or attempt may not exist yet
       }
     }
 

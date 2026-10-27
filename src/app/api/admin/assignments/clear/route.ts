@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/auth";
 import { apiError, apiRouteError, logApiError, requiredText } from "@/lib/api";
 import { getServiceSupabase } from "@/lib/supabase-server";
+import { isMissingRelationError } from "@/lib/payhere-payment-state";
 
 const CONFIRM_PHRASE = "DELETE ALL ASSIGNMENTS";
 const STORAGE_BUCKET = "assignment-files";
@@ -30,7 +31,9 @@ export async function POST(request: NextRequest) {
     const { count: payHereRecordCount, error: payHereCountError } = await db
       .from("payhere_payment_attempts")
       .select("id", { count: "exact", head: true });
-    if (payHereCountError) throw payHereCountError;
+    if (payHereCountError && !isMissingRelationError(payHereCountError)) {
+      throw payHereCountError;
+    }
     if ((payHereRecordCount || 0) > 0) {
       return apiError("Assignment data with PayHere financial records cannot be bulk-deleted. Keep these records for payment, refund and chargeback reconciliation.", 409);
     }

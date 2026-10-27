@@ -9,8 +9,13 @@ export function apiRouteError(error: unknown, fallback: string, exposeMessage = 
   if (error instanceof SupabaseConfigurationError) {
     return apiError(error.message, 503);
   }
-  if (exposeMessage && error instanceof Error) {
-    return apiError(error.message, 500);
+  if (exposeMessage) {
+    if (error instanceof Error) {
+      return apiError(error.message, 500);
+    }
+    if (error && typeof error === "object" && "message" in error && typeof (error as any).message === "string") {
+      return apiError((error as any).message, 500);
+    }
   }
   return apiError(fallback, 500);
 }

@@ -76,20 +76,25 @@ export async function POST(request: NextRequest) {
         && !assignment.payment_reference
         && String(assignment.payment_note || "").startsWith("PayHere checkout");
       if (assignment.payhere_payment_attempt_id) {
-        const { data: activeAttempt, error: attemptError } = await db
-          .from("payhere_payment_attempts")
-          .select("status, expires_at")
-          .eq("id", assignment.payhere_payment_attempt_id)
-          .maybeSingle();
-        if (attemptError) throw attemptError;
-        payHerePending = Boolean(activeAttempt)
-          && (activeAttempt?.status === "pending"
-            || (activeAttempt?.status === "initiated" && new Date(activeAttempt.expires_at).getTime() > Date.now()));
-        if (activeAttempt?.status === "paid") {
-          return apiError("PayHere has reported a successful payment that StHelp is reviewing. Do not submit another payment.", 409);
-        }
-        if (activeAttempt?.status === "charged_back") {
-          return apiError("The PayHere transaction has a chargeback under review. Contact StHelp before submitting another payment.", 409);
+        try {
+          const { data: activeAttempt, error: attemptError } = await db
+            .from("payhere_payment_attempts")
+            .select("status, expires_at")
+            .eq("id", assignment.payhere_payment_attempt_id)
+            .maybeSingle();
+          if (!attemptError && activeAttempt) {
+            payHerePending = Boolean(activeAttempt)
+              && (activeAttempt?.status === "pending"
+                || (activeAttempt?.status === "initiated" && new Date(activeAttempt.expires_at).getTime() > Date.now()));
+            if (activeAttempt?.status === "paid") {
+              return apiError("PayHere has reported a successful payment that StHelp is reviewing. Do not submit another payment.", 409);
+            }
+            if (activeAttempt?.status === "charged_back") {
+              return apiError("The PayHere transaction has a chargeback under review. Contact StHelp before submitting another payment.", 409);
+            }
+          }
+        } catch {
+          // Table or attempt may not exist yet
         }
       }
       if (payHerePending) {
