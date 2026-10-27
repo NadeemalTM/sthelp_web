@@ -38,6 +38,7 @@ export function PortalClient({ token }: { token: string }) {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ type: "success" | "error" | "info"; text: string } | null>(null);
   const [lastSynced, setLastSynced] = useState<Date | null>(null);
+  const [payHereReturnState, setPayHereReturnState] = useState<"returned" | "cancelled" | null>(null);
 
   const load = useCallback(async (quiet = false) => {
     if (!quiet) setLoading(true);
@@ -62,16 +63,34 @@ export function PortalClient({ token }: { token: string }) {
   useEffect(() => {
     const url = new URL(window.location.href);
     const payment = url.searchParams.get("payment");
+    let confirmationPoll: number | undefined;
     if (payment === "returned") {
+      setPayHereReturnState("returned");
       setNotice({ type: "info", text: "You returned from PayHere. Payment is confirmed only after PayHere sends its secure verification; this page will update automatically." });
+      void load(true);
+      let checks = 0;
+      confirmationPoll = window.setInterval(() => {
+        checks += 1;
+        void load(true);
+        if (checks >= 10 && confirmationPoll) window.clearInterval(confirmationPoll);
+      }, 3_000);
     } else if (payment === "cancelled") {
-      setNotice({ type: "info", text: "Online payment was not verified. You can retry PayHere, or contact StHelp if you want to switch to bank transfer." });
+      setPayHereReturnState("cancelled");
+      setNotice({ type: "info", text: "You closed the PayHere page. The portal will still use PayHere’s signed server status; contact StHelp if you need to switch to bank transfer immediately." });
+      void load(true);
     }
     if (payment) {
       url.searchParams.delete("payment");
       window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
     }
-  }, []);
+    return () => { if (confirmationPoll) window.clearInterval(confirmationPoll); };
+  }, [load]);
+  useEffect(() => {
+    if (payHereReturnState && data?.assignment?.payment_status === "verified") {
+      setNotice({ type: "success", text: "Payment confirmed securely through PayHere." });
+      setPayHereReturnState(null);
+    }
+  }, [data?.assignment?.payment_status, payHereReturnState]);
 
   async function post(action: string, body: Record<string, unknown>) {
     const response = await fetch(`/api/client/${token}`, {
@@ -190,7 +209,29 @@ function SubmissionView({ token, data, busy, setBusy, onDone, setNotice }: any) 
 function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: any) {
   const assignment = data.assignment;
   const quoteAccepted = assignment.status !== "cancelled" && assignment.quote_status === "accepted" && Number(assignment.quoted_amount) > 0;
-  const payHerePending = assignment.payment_status === "submitted" && !assignment.payment_reference && String(assignment.payment_note || "").startsWith("PayHere checkout");
+  const currentPayHere = data.payHerePayment?.current;
+  const latestPayHere = data.payHerePayment?.latest;
+  const payHerePending = currentPayHere?.status === "pending"
+    || (currentPayHere?.status === "initiated" && new Date(currentPayHere.expiresAt).getTime() > Date.now());
+  const payHerePaidReview = currentPayHere?.status === "paid" && assignment.payment_status !== "verified";
+  const payHereChargeback = currentPayHere?.status === "charged_back";
+  const payHereRefunded = !payHerePending
+    && !payHerePaidReview
+    && !payHereChargeback
+    && latestPayHere?.status === "refunded";
+  const payHereFailed = !payHerePending
+    && !payHerePaidReview
+    && !payHereChargeback
+    && ["cancelled", "failed"].includes(String(latestPayHere?.status));
+  const payHereDisplayState: PortalPayHereState = payHerePaidReview
+    ? "review"
+    : payHereChargeback
+      ? "chargeback"
+      : payHerePending
+        ? "pending"
+        : payHereRefunded
+          ? "refunded"
+          : null;
   const bankPaymentPending = assignment.payment_status === "submitted" && Boolean(assignment.payment_reference);
   const reviewPreviewAvailable = ["client_review", "revision", "completed", "delivered"].includes(assignment.status);
   const canDownloadFinals = assignment.payment_status === "verified" && assignment.download_unlocked;
@@ -279,12 +320,19 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
       const form = document.createElement("form");
       form.method = "POST";
       form.action = payload.checkoutUrl;
+      form.acceptCharset = "UTF-8";
       for (const [name, value] of Object.entries(payload.fields as Record<string, string>)) {
         const input = document.createElement("input");
         input.type = "hidden";
         input.name = name;
         input.value = String(value);
         form.append(input);
+      }
+      try {
+        window.sessionStorage.setItem("sthelp-payhere-return-path", window.location.pathname);
+      } catch {
+        // The return page provides a safe portal-access fallback if browser
+        // storage is unavailable or the payment opens in another tab.
       }
       document.body.append(form);
       form.submit();
@@ -322,13 +370,13 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
       <div><span className="eyebrow">Quick action · urgent work</span><strong>Is your deadline very close?</strong><p>Use WhatsApp only when you need a faster response for urgent work. Keep normal updates, files and revision requests inside this portal.</p></div>
       <a className="btn portal-urgent-button" href={urgentWhatsAppHref!} target="_blank" rel="noreferrer"><WhatsAppIcon size={20} /> Message urgent request</a>
     </section> : null}
-    <PortalSnapshot assignment={assignment} previewCount={previews.length} finalCount={finals.length} />
+    <PortalSnapshot assignment={assignment} previewCount={previews.length} finalCount={finals.length} payHereState={payHereDisplayState} />
     <PortalSectionNav hasQuote={Boolean((assignment.quote_status === "draft" && assignment.starting_price_snapshot) || assignment.quote_status === "sent")} quoteAccepted={quoteAccepted} hasFiles={Boolean(previews.length || finals.length)} />
     <div className="portal-grid">
     <div className="stack">
       <section className="client-command-card" id="portal-overview">
         <div className="client-command-top"><div><span className="eyebrow">Your workspace</span><h1>{assignment.assignment_title}</h1><p>{assignment.module_name || assignment.service_type} · Due {formatDate(assignment.deadline)}</p></div><span className={`status-badge ${assignment.status === "delivered" ? "success" : ""}`}><Clock3 size={14}/>{statusLabel(assignment.status)}</span></div>
-        <div className="client-command-body"><div className="client-next-step"><span>Your next step</span><strong>{nextStep(assignment)}</strong><p>The workspace refreshes automatically when StHelp posts an update.</p></div><div className="client-progress-dial" style={{background:`conic-gradient(#d0f4c5 ${progressValue}%, rgba(255,255,255,.14) 0)`}} role="progressbar" aria-label="Assignment progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progressValue}><span><strong>{progressValue}%</strong><small>complete</small></span></div></div>
+        <div className="client-command-body"><div className="client-next-step"><span>Your next step</span><strong>{nextStep(assignment,payHereDisplayState)}</strong><p>The workspace refreshes automatically when StHelp posts an update.</p></div><div className="client-progress-dial" style={{background:`conic-gradient(#d0f4c5 ${progressValue}%, rgba(255,255,255,.14) 0)`}} role="progressbar" aria-label="Assignment progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progressValue}><span><strong>{progressValue}%</strong><small>complete</small></span></div></div>
         <div className="client-progress-line"><div className="progress-head"><span>Overall assignment progress</span><strong>{progressValue}%</strong></div><div className="progress-track"><div className="progress-fill" style={{width:`${progressValue}%`}}/></div></div>
         <StageRail assignment={assignment}/>
         {assignment.quote_status === "draft" ? <div className="notice notice-info">Your request is safely received. StHelp is reviewing the requirements and will send the final quotation here before any payment is due.</div> : null}
@@ -372,7 +420,8 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
         {submittedDocuments.length ? <div className="submitted-documents"><div className="submitted-documents-heading"><strong>Your submitted documents</strong><span>You can download a copy at any time.</span></div>{submittedDocuments.map((file:any)=><div className="submitted-document" key={file.id}><div className="file-name"><strong>{file.original_name}</strong><span className="tiny muted">{file.kind === "payment_proof" ? "Payment proof" : "Support document"} · {formatFileSize(file.size_bytes)}</span></div><a className="btn btn-soft btn-sm" href={`/api/client/${token}/download/${file.id}`}><Download size={14}/> Download</a></div>)}</div> : null}
       </section>
 
-      {quoteAccepted && assignment.payment_status !== "verified" ? (
+      {quoteAccepted && payHerePaidReview ? <section className="panel portal-payment-state" id="portal-payment"><div className="lock-box"><Clock3 size={32}/><h3>Payment received — review in progress</h3><p className="muted small">PayHere reported a successful payment that needs StHelp to reconcile. Do not pay again. We will update this portal after checking the transaction.</p></div></section> : null}
+      {quoteAccepted && assignment.payment_status !== "verified" && !payHerePaidReview && !payHereChargeback ? (
         <section className="payment-card" id="portal-payment">
           <div className="payment-card-header">
             <div><span className="eyebrow">Payment</span><h3>Choose how to pay</h3></div>
@@ -382,11 +431,13 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
             <span>Amount to pay</span>
             <strong>{formatMoney(assignment.quoted_amount, assignment.currency || data.settings.currency)}</strong>
           </div>
-          {data.paymentOptions?.payHere && assignment.payment_status !== "verified" && !bankPaymentPending ? (
+          {payHerePending ? (
+            <div className="payhere-option"><div className="payhere-option-heading"><span className="payhere-option-icon"><Clock3 size={19}/></span><div><strong>PayHere confirmation in progress</strong><span>{currentPayHere?.status === "pending" ? "PayHere is processing this transaction. Do not start another payment." : "Your checkout is reserved briefly. Complete it in the PayHere window or contact StHelp to change methods."}</span></div></div></div>
+          ) : data.paymentOptions?.payHere && assignment.payment_status !== "verified" && !bankPaymentPending ? (
             <div className="payhere-option">
               <div className="payhere-option-heading">
                 <span className="payhere-option-icon"><CreditCard size={19}/></span>
-                <div><strong>Pay online securely with PayHere</strong><span>Card details are entered on PayHere and are not stored by StHelp.</span></div>
+                <div><strong>Pay online securely with PayHere</strong><span>Use Visa, Mastercard or another method enabled in PayHere. Card details are never stored by StHelp.</span></div>
               </div>
               {assignment.email ? (
                 <form className="payhere-form" onSubmit={startPayHere}>
@@ -398,6 +449,7 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
               ) : <div className="notice notice-info">Add your email address in Assignment details before using PayHere.</div>}
             </div>
           ) : null}
+          {!payHerePending ? <>
           <div className="payment-method-divider"><span>Bank transfer</span></div>
           <div className="payment-choice">
             <CheckCircle2 size={20}/>
@@ -430,11 +482,15 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
               <p>{data.settings.payment_note}</p>
             </div>
           ) : null}
+          </> : null}
         </section>
       ) : null}
 
-      {quoteAccepted && assignment.payment_status !== "verified" && !payHerePending ? <section className="panel portal-payment-verification portal-section-card"><div className="panel-title"><div><h3>Bank transfer verification</h3><p className="muted small">Use this after paying to one of the bank accounts above.</p></div><FileCheck2/></div>{assignment.payment_status === "rejected" ? <div className="notice notice-error" role="alert">The previous payment could not be verified. Check the latest StHelp message, then submit the corrected reference and slip below.</div> : null}<form className="stack" onSubmit={sendPayment}><div className="field"><label htmlFor="bank-reference">Reference / transaction ID *</label><input id="bank-reference" className="input" value={paymentRef} onChange={(e)=>setPaymentRef(e.target.value)} required/></div><div className="field"><label htmlFor="bank-payment-note">Note</label><textarea id="bank-payment-note" className="textarea" value={paymentNote} onChange={(e)=>setPaymentNote(e.target.value)} placeholder="Payment date, sender name or anything admin should know."/></div><div className="field"><label htmlFor="bank-payment-slip">Bank payment slip * (maximum 5 MB)</label><input id="bank-payment-slip" className="input" type="file" required accept=".pdf,.jpg,.jpeg,.png,.webp" onChange={(e)=>setProof(e.target.files?.[0] || null)}/></div><button className="btn btn-primary" disabled={busy}>{busy ? "Submitting…" : "Send slip for verification"}</button></form>{bankPaymentPending ? <div className="notice notice-info" role="status">Your payment reference and slip are awaiting verification. You may resubmit corrected details.</div> : null}</section> : null}
-      {quoteAccepted && payHerePending && assignment.payment_status !== "verified" ? <div className="notice notice-info portal-payment-state" role="status">PayHere checkout is awaiting confirmation. Retry PayHere above if checkout was not completed, or contact StHelp before switching to bank transfer.</div> : null}
+      {quoteAccepted && assignment.payment_status !== "verified" && !payHerePending && !payHerePaidReview && !payHereChargeback ? <section className="panel portal-payment-verification portal-section-card"><div className="panel-title"><div><h3>Bank transfer verification</h3><p className="muted small">Use this after paying to one of the bank accounts above.</p></div><FileCheck2/></div>{assignment.payment_status === "rejected" ? <div className="notice notice-error" role="alert">The previous payment could not be verified. Check the latest StHelp message, then submit the corrected reference and slip below.</div> : null}<form className="stack" onSubmit={sendPayment}><div className="field"><label htmlFor="bank-reference">Reference / transaction ID *</label><input id="bank-reference" className="input" value={paymentRef} onChange={(e)=>setPaymentRef(e.target.value)} required/></div><div className="field"><label htmlFor="bank-payment-note">Note</label><textarea id="bank-payment-note" className="textarea" value={paymentNote} onChange={(e)=>setPaymentNote(e.target.value)} placeholder="Payment date, sender name or anything admin should know."/></div><div className="field"><label htmlFor="bank-payment-slip">Bank payment slip * (maximum 5 MB)</label><input id="bank-payment-slip" className="input" type="file" required accept=".pdf,.jpg,.jpeg,.png,.webp" onChange={(e)=>setProof(e.target.files?.[0] || null)}/></div><button className="btn btn-primary" disabled={busy}>{busy ? "Submitting…" : "Send slip for verification"}</button></form>{bankPaymentPending ? <div className="notice notice-info" role="status">Your payment reference and slip are awaiting verification. You may resubmit corrected details.</div> : null}</section> : null}
+      {quoteAccepted && payHerePending && assignment.payment_status !== "verified" ? <div className="notice notice-info portal-payment-state" role="status">{data.paymentOptions?.payHere ? "PayHere checkout is awaiting a signed payment result. Do not make a second payment; contact StHelp if you need to change methods." : "An existing PayHere checkout is awaiting confirmation. Online checkout is temporarily unavailable, so contact StHelp before using bank transfer."}</div> : null}
+      {quoteAccepted && payHereFailed && !bankPaymentPending && assignment.payment_status !== "verified" ? <div className="notice notice-error portal-payment-state" role="status">The latest PayHere checkout was not completed. You can retry online payment above or use bank transfer.</div> : null}
+      {quoteAccepted && payHereRefunded && !bankPaymentPending && assignment.payment_status !== "verified" ? <div className="notice notice-info portal-payment-state" role="status">The previous PayHere payment was refunded. You may now choose a new payment method, or contact StHelp if you have questions.</div> : null}
+      {quoteAccepted && payHereChargeback && assignment.payment_status !== "verified" ? <div className="notice notice-error portal-payment-state" role="alert">PayHere reported a chargeback for the online payment. Final files are locked; contact StHelp before making another payment.</div> : null}
 
       {assignment.payment_status === "verified" ? <section className="panel payment-verified-panel" id="portal-payment"><div className="lock-box" style={{background:"#ebf8f2"}}><CheckCircle2 color="#15805d" size={34}/><h3>Payment verified</h3><p className="muted small">Final downloads are {assignment.download_unlocked ? "unlocked" : "waiting for admin release"}.</p></div></section> : null}
     </aside>
@@ -454,7 +510,9 @@ function PortalSectionNav({ hasQuote, quoteAccepted, hasFiles }: { hasQuote: boo
   </nav>;
 }
 
-function PortalSnapshot({ assignment, previewCount, finalCount }: { assignment: any; previewCount: number; finalCount: number }) {
+type PortalPayHereState = "pending" | "review" | "chargeback" | "refunded" | null;
+
+function PortalSnapshot({ assignment, previewCount, finalCount, payHereState }: { assignment: any; previewCount: number; finalCount: number; payHereState: PortalPayHereState }) {
   const quoteLabels: Record<string, string> = {
     draft: "Under review",
     sent: "Ready to review",
@@ -465,6 +523,14 @@ function PortalSnapshot({ assignment, previewCount, finalCount }: { assignment: 
   const quoteTone = assignment.quote_status === "accepted" ? "success" : assignment.quote_status === "sent" ? "attention" : "neutral";
   const paymentLabel = assignment.payment_status === "verified"
     ? "Verified"
+    : payHereState === "review"
+      ? "Payment under review"
+      : payHereState === "chargeback"
+        ? "Chargeback review"
+        : payHereState === "pending"
+          ? "PayHere processing"
+          : payHereState === "refunded"
+            ? "Refunded"
     : assignment.payment_status === "submitted"
       ? "Under verification"
       : assignment.payment_status === "rejected"
@@ -474,6 +540,10 @@ function PortalSnapshot({ assignment, previewCount, finalCount }: { assignment: 
           : "After quote approval";
   const paymentTone = assignment.payment_status === "verified"
     ? "success"
+    : payHereState === "pending" || payHereState === "review"
+      ? "attention"
+    : payHereState === "chargeback"
+      ? "danger"
     : assignment.payment_status === "rejected"
       ? "danger"
       : assignment.quote_status === "accepted"
@@ -489,7 +559,7 @@ function PortalSnapshot({ assignment, previewCount, finalCount }: { assignment: 
     <div className={`portal-snapshot-item ${quoteTone}`}><span className="portal-snapshot-icon"><Banknote size={18}/></span><div><small>Quotation</small><strong>{quoteLabel}</strong></div></div>
     <div className={`portal-snapshot-item ${paymentTone}`}><span className="portal-snapshot-icon"><CreditCard size={18}/></span><div><small>Payment</small><strong>{paymentLabel}</strong></div></div>
     <div className={`portal-snapshot-item ${finalCount || previewCount ? "success" : "neutral"}`}><span className="portal-snapshot-icon"><FileText size={18}/></span><div><small>Documents</small><strong>{documentLabel}</strong></div></div>
-    <div className="portal-snapshot-item next"><span className="portal-snapshot-icon"><Clock3 size={18}/></span><div><small>Next action</small><strong>{nextStep(assignment)}</strong></div></div>
+    <div className="portal-snapshot-item next"><span className="portal-snapshot-icon"><Clock3 size={18}/></span><div><small>Next action</small><strong>{nextStep(assignment,payHereState)}</strong></div></div>
   </section>;
 }
 
@@ -549,13 +619,17 @@ function formatFileSize(value: number | string | null) {
   return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
 }
 
-function nextStep(assignment: any) {
+function nextStep(assignment: any, payHereState: PortalPayHereState = null) {
   if (assignment.status === "cancelled") return "This request is closed";
   if (assignment.quote_status === "sent") return "Review your quote";
   if (assignment.quote_status === "draft") return "We are reviewing your final quote";
   if (assignment.quote_status === "declined") return "Contact StHelp to discuss the quote";
   if (assignment.status === "submitted") return "We are reviewing your request";
   if (assignment.payment_status === "submitted") return "We are verifying your payment";
+  if (payHereState === "review") return "Do not pay again — StHelp is reviewing it";
+  if (payHereState === "chargeback") return "Contact StHelp about the chargeback";
+  if (payHereState === "pending") return "Wait for PayHere confirmation";
+  if (payHereState === "refunded") return "Choose a new payment method if required";
   if (assignment.quote_status === "accepted" && assignment.payment_status !== "verified") return "Choose a payment method";
   if (assignment.status === "client_review" || assignment.status === "revision") return "Review the update and leave comments";
   if (assignment.status === "delivered") return assignment.payment_status === "verified" && assignment.download_unlocked ? "Your final files are ready" : "Final files are locked until verified payment";

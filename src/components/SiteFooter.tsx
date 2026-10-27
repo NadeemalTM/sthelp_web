@@ -20,6 +20,7 @@ const exploreLinks = [
   { href: "/pricing", label: "Pricing" },
   { href: "/assignment-support", label: "Assignment support" },
   { href: "/student-resources", label: "Student resources" },
+  { href: "/feedback", label: "Student feedback" },
   { href: "/place-assignment", label: "Place an assignment" },
   { href: "/access", label: "Track assignment", prefetch: false }
 ];

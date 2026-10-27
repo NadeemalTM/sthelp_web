@@ -3,6 +3,7 @@ import Image from "next/image";
 import { ArrowRight, BarChart3, BookOpenCheck, CheckCircle2, Clock3, Code2, FileLock2, MessageSquareText, Smartphone, UploadCloud } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { FeedbackSection } from "@/components/FeedbackSection";
 import { getPublicContent } from "@/lib/data";
 import { publicSiteUrl } from "@/lib/site-url";
 
@@ -48,7 +49,7 @@ export default async function HomePage() {
 
     <section className="section work-section" id="work" data-public-reveal><div className="container"><div className="work-heading"><div><span className="eyebrow">Work in focus</span><h2>A closer look at<br />what we support.</h2></div><p className="muted">A cross-section of the projects and learning support clients bring to StHelp.</p></div><div className="work-list">{portfolio.map((item: any, index: number) => <article className="work-item" key={item.id}><div className="work-number">{String(index + 1).padStart(2, "0")}</div><div className="work-visual">{item.image_url ? <img src={item.image_url} alt={item.title} loading="lazy" decoding="async" /> : <span>{item.category.slice(0, 1)}</span>}</div><div className="work-copy"><span className="tag">{item.category}</span><h3>{item.title}</h3><p>{item.description}</p></div><span className="work-arrow">↗</span></article>)}</div></div></section>
 
-    <section className="section testimonial-section" id="feedback" data-public-reveal><div className="container"><div className="testimonial-heading"><span className="eyebrow">A note from clients</span><h2>Less uncertainty.<br /><em>More clarity.</em></h2></div><div className="testimonial-stage">{testimonials.map((item: any, index: number) => <article className={`client-note note-${index + 1}`} key={item.id}><div className="note-meta"><span className="stars">{"★".repeat(item.rating || 5)}</span><span>{String(index + 1).padStart(2, "0")}</span></div><p>“{item.feedback}”</p><div><strong>{item.customer_name}</strong>{item.university ? <span> · {item.university}</span> : null}</div></article>)}</div></div></section>
+    <FeedbackSection testimonials={testimonials} />
 
     <section className="closing-section"><div className="container closing-inner"><div><span className="eyebrow" style={{ color: "#ffad9f" }}>A good place to begin</span><h2>Your next step<br />doesn’t have to be <em>messy.</em></h2><p>Send your assignment details when you’re ready. We’ll give the work a clear place to move forward.</p></div><div className="closing-actions"><Link className="btn btn-light" href="/place-assignment">Place an assignment <ArrowRight size={18} /></Link>{whatsapp ? <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noreferrer">Prefer WhatsApp? <span>↗</span></a> : null}</div></div></section>
 

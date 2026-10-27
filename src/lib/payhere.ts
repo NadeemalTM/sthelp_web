@@ -9,6 +9,8 @@ type PayHereConfig = {
   checkoutUrl: string;
 };
 
+type PayHereCredentials = Pick<PayHereConfig, "merchantId" | "merchantSecret">;
+
 function md5(value: string) {
   return createHash("md5").update(value, "utf8").digest("hex").toUpperCase();
 }
@@ -26,13 +28,30 @@ export function isPayHereEnabled() {
     && Boolean(process.env.NEXT_PUBLIC_APP_URL);
 }
 
+/**
+ * Notification verification remains available when new checkouts are paused.
+ * PayHere can deliver a valid callback after the checkout feature is disabled,
+ * so the webhook must depend on credentials rather than the UI feature flag.
+ */
+export function getPayHereCredentials(): PayHereCredentials {
+  const merchantId = process.env.PAYHERE_MERCHANT_ID;
+  const merchantSecret = process.env.PAYHERE_MERCHANT_SECRET;
+  if (!merchantId || !merchantSecret) throw new Error("PayHere credentials are not configured.");
+  return { merchantId, merchantSecret };
+}
+
 export function getPayHereConfig(): PayHereConfig {
   if (!isPayHereEnabled()) throw new Error("PayHere checkout is not enabled.");
-  const sandbox = process.env.PAYHERE_MODE !== "live";
+  const mode = String(process.env.PAYHERE_MODE || "sandbox").trim().toLowerCase();
+  if (!["sandbox", "live"].includes(mode)) throw new Error("PAYHERE_MODE must be sandbox or live.");
+  const sandbox = mode === "sandbox";
+  const credentials = getPayHereCredentials();
+  const appUrl = new URL(process.env.NEXT_PUBLIC_APP_URL!);
+  if (!["http:", "https:"].includes(appUrl.protocol)) throw new Error("NEXT_PUBLIC_APP_URL must be an HTTP or HTTPS URL.");
+  if (!sandbox && appUrl.protocol !== "https:") throw new Error("Live PayHere checkout requires an HTTPS application URL.");
   return {
-    merchantId: process.env.PAYHERE_MERCHANT_ID!,
-    merchantSecret: process.env.PAYHERE_MERCHANT_SECRET!,
-    appUrl: process.env.NEXT_PUBLIC_APP_URL!.replace(/\/$/, ""),
+    ...credentials,
+    appUrl: appUrl.origin,
     checkoutUrl: sandbox
       ? "https://sandbox.payhere.lk/pay/checkout"
       : "https://www.payhere.lk/pay/checkout"

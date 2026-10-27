@@ -6,6 +6,7 @@ import { recordAssignmentActivity } from "@/lib/assignment-activity";
 import { isPayHereEnabled } from "@/lib/payhere";
 import { findDefaultPricingService, getPublicPricingServices } from "@/lib/pricing";
 import { FIVE_MB } from "@/lib/constants";
+import { findUnresolvedPayHereAttempt } from "@/lib/payhere-payment-state";
 
 async function findLink(token: string) {
   const db = getServiceSupabase();
@@ -14,6 +15,18 @@ async function findLink(token: string) {
   if (!data) return null;
   if (data.expires_at && new Date(data.expires_at) < new Date()) return null;
   return data;
+}
+
+function publicPayHereAttempt(attempt: any) {
+  if (!attempt) return null;
+  return {
+    status: attempt.status,
+    method: attempt.payment_method,
+    expiresAt: attempt.expires_at,
+    createdAt: attempt.created_at,
+    paidAt: attempt.paid_at,
+    applied: Boolean(attempt.applied_at)
+  };
 }
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ token: string }> }) {
@@ -33,16 +46,38 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     const safeLink = { client_id: link.client_id, client_name: link.client_name, phone: link.phone, status: link.status };
     if (!assignment) return NextResponse.json({ link: safeLink, assignment: null, settings, portfolio, testimonials, pricingServices });
 
-    const [{ data: progress }, { data: comments }, { data: files }] = await Promise.all([
+    const currentPayHereQuery = assignment.payhere_payment_attempt_id
+      ? db.from("payhere_payment_attempts")
+        .select("id, status, payment_method, expires_at, created_at, paid_at, applied_at")
+        .eq("id", assignment.payhere_payment_attempt_id)
+        .maybeSingle()
+      : Promise.resolve({ data: null, error: null });
+    const [{ data: progress }, { data: comments }, { data: files }, { data: latestPayHereAttempt, error: latestPayHereError }, { data: currentPayHereAttempt, error: currentPayHereError }, unresolvedPayHereAttempt] = await Promise.all([
       db.from("progress_updates").select("*").eq("assignment_id", assignment.id).order("created_at", { ascending: false }),
       db.from("comments").select("*").eq("assignment_id", assignment.id).order("created_at", { ascending: true }),
-      db.from("assignment_files").select("*").eq("assignment_id", assignment.id).order("created_at", { ascending: true })
+      db.from("assignment_files").select("*").eq("assignment_id", assignment.id).order("created_at", { ascending: true }),
+      db.from("payhere_payment_attempts")
+        .select("id, status, payment_method, expires_at, created_at, paid_at, applied_at")
+        .eq("assignment_id", assignment.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      currentPayHereQuery,
+      findUnresolvedPayHereAttempt(db, assignment.id)
     ]);
+    if (latestPayHereError) throw latestPayHereError;
+    if (currentPayHereError) throw currentPayHereError;
+
+    const effectivePayHereAttempt = unresolvedPayHereAttempt || currentPayHereAttempt;
 
     return NextResponse.json({
       link: safeLink,
       assignment,
       paymentOptions: { payHere: isPayHereEnabled() },
+      payHerePayment: {
+        current: publicPayHereAttempt(effectivePayHereAttempt),
+        latest: publicPayHereAttempt(latestPayHereAttempt)
+      },
       settings,
       portfolio,
       testimonials,
@@ -243,6 +278,28 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       if (scopeChanged && ["submitted", "verified"].includes(String(assignment.payment_status))) {
         return apiError("Requirements that affect the quote cannot be changed while payment is awaiting verification or has been verified. Please send StHelp a message instead.", 409);
       }
+      const unresolvedPayHere = scopeChanged
+        ? await findUnresolvedPayHereAttempt(db, assignment.id)
+        : null;
+      if (unresolvedPayHere) {
+        return apiError("Requirements that affect the quote cannot be changed while PayHere is processing or StHelp is reviewing a payment. Please message StHelp instead.", 409);
+      }
+      if (scopeChanged && assignment.payhere_payment_attempt_id) {
+        const { data: currentAttempt, error: attemptError } = await db
+          .from("payhere_payment_attempts")
+          .select("status, expires_at, review_reason")
+          .eq("id", assignment.payhere_payment_attempt_id)
+          .maybeSingle();
+        if (attemptError) throw attemptError;
+        const checkoutActive = Boolean(currentAttempt)
+          && (currentAttempt?.status === "pending"
+            || (currentAttempt?.status === "initiated" && new Date(currentAttempt.expires_at).getTime() > Date.now()));
+        const paidNeedsReview = currentAttempt?.status === "paid";
+        const chargebackNeedsReview = currentAttempt?.status === "charged_back";
+        if (checkoutActive || paidNeedsReview || chargebackNeedsReview) {
+          return apiError("Requirements that affect the quote cannot be changed during an active PayHere checkout or payment review. Please try again later or message StHelp.", 409);
+        }
+      }
 
       const update: Record<string, unknown> = Object.fromEntries(fields.map(([key, value]) => [key, value]));
       if (scopeChanged && assignment.quote_status !== "draft") {
@@ -255,6 +312,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         updateQuery = updateQuery
           .eq("payment_status", assignment.payment_status)
           .eq("quote_status", assignment.quote_status);
+        updateQuery = assignment.payhere_payment_attempt_id
+          ? updateQuery.eq("payhere_payment_attempt_id", assignment.payhere_payment_attempt_id)
+          : updateQuery.is("payhere_payment_attempt_id", null);
       }
       const { data: savedAssignment, error } = await updateQuery.select("id").maybeSingle();
       if (error) throw error;
@@ -297,9 +357,33 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       if (assignment.quote_status !== "accepted") return apiError("Accept the final quotation before submitting payment.", 409);
       const quotedAmount = Number(assignment.quoted_amount);
       if (!Number.isFinite(quotedAmount) || quotedAmount <= 0) return apiError("A valid final quotation is required before payment.", 409);
-      const payHerePending = assignment.payment_status === "submitted"
+      const unresolvedPayHere = await findUnresolvedPayHereAttempt(db, assignment.id);
+      if (unresolvedPayHere?.status === "paid") {
+        return apiError("PayHere has reported a successful payment that StHelp is reviewing. Do not submit another payment.", 409);
+      }
+      if (unresolvedPayHere?.status === "pending") {
+        return apiError("PayHere is still processing an earlier transaction. Contact StHelp before switching to bank transfer.", 409);
+      }
+      let payHerePending = assignment.payment_status === "submitted"
         && !assignment.payment_reference
         && String(assignment.payment_note || "").startsWith("PayHere checkout");
+      if (assignment.payhere_payment_attempt_id) {
+        const { data: activeAttempt, error: attemptError } = await db
+          .from("payhere_payment_attempts")
+          .select("status, expires_at")
+          .eq("id", assignment.payhere_payment_attempt_id)
+          .maybeSingle();
+        if (attemptError) throw attemptError;
+        payHerePending = Boolean(activeAttempt)
+          && (activeAttempt?.status === "pending"
+            || (activeAttempt?.status === "initiated" && new Date(activeAttempt.expires_at).getTime() > Date.now()));
+        if (activeAttempt?.status === "paid") {
+          return apiError("PayHere has reported a successful payment that StHelp is reviewing. Do not submit another payment.", 409);
+        }
+        if (activeAttempt?.status === "charged_back") {
+          return apiError("The PayHere transaction has a chargeback under review. Contact StHelp before submitting another payment.", 409);
+        }
+      }
       if (payHerePending) return apiError("PayHere checkout is already in progress. Contact StHelp before switching to bank transfer.", 409);
       const reference = requiredText(body.reference, "Payment reference", 250);
       const file = body.proofFile;
@@ -315,7 +399,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         payment_reference: reference,
         payment_note: optionalText(body.note, 1500),
         payment_status: "submitted",
-        payment_submitted_at: new Date().toISOString()
+        payment_submitted_at: new Date().toISOString(),
+        payhere_payment_attempt_id: null
       };
       const { data: proofRecord, error: fileError } = await db.from("assignment_files").insert({
         assignment_id: assignment.id,
@@ -327,16 +412,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       }).select("id").single();
       if (fileError) throw fileError;
 
-      const { data: paymentLocked, error } = await db
+      let paymentQuery = db
         .from("assignments")
         .update(update)
         .eq("id", assignment.id)
         .eq("status", assignment.status)
         .eq("quote_status", "accepted")
         .eq("quoted_amount", assignment.quoted_amount)
-        .eq("payment_status", assignment.payment_status)
-        .select("id")
-        .maybeSingle();
+        .eq("payment_status", assignment.payment_status);
+      paymentQuery = assignment.payhere_payment_attempt_id
+        ? paymentQuery.eq("payhere_payment_attempt_id", assignment.payhere_payment_attempt_id)
+        : paymentQuery.is("payhere_payment_attempt_id", null);
+      const { data: paymentLocked, error } = await paymentQuery.select("id").maybeSingle();
       if (error || !paymentLocked) {
         await db.from("assignment_files").delete().eq("id", proofRecord.id);
         await db.storage.from("assignment-files").remove([path]);

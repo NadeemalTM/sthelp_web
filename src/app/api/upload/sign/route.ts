@@ -4,6 +4,7 @@ import { ACCEPTED_SUPPORT_TYPES, FIVE_MB, TWENTY_FIVE_MB } from "@/lib/constants
 import { requireAdminApi } from "@/lib/auth";
 import { randomPathSegment, safeFileName } from "@/lib/security";
 import { getServiceSupabase } from "@/lib/supabase-server";
+import { findUnresolvedPayHereAttempt } from "@/lib/payhere-payment-state";
 
 const previewTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 const paymentTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
@@ -58,13 +59,40 @@ export async function POST(request: NextRequest) {
       const token = String(body.token || "");
       const { data: link } = await db.from("client_links").select("id").eq("token", token).maybeSingle();
       if (!link) return apiError("Invalid client link.", 401);
-      const { data: assignment } = await db.from("assignments").select("id, status, quote_status, quoted_amount, payment_status, payment_reference, payment_note").eq("client_link_id", link.id).maybeSingle();
+      const { data: assignment } = await db.from("assignments").select("id, status, quote_status, quoted_amount, payment_status, payment_reference, payment_note, payhere_payment_attempt_id").eq("client_link_id", link.id).maybeSingle();
       if (!assignment) return apiError("Assignment not found.", 404);
       if (assignment.status === "cancelled") return apiError("This assignment has been cancelled and cannot accept payment.", 409);
       if (assignment.quote_status !== "accepted") return apiError("Accept the final quotation before uploading a payment slip.", 409);
       if (!Number.isFinite(Number(assignment.quoted_amount)) || Number(assignment.quoted_amount) <= 0) return apiError("A valid final quotation is required before payment.", 409);
       if (assignment.payment_status === "verified") return apiError("This payment has already been verified.", 409);
-      if (assignment.payment_status === "submitted" && !assignment.payment_reference && String(assignment.payment_note || "").startsWith("PayHere checkout")) {
+      const unresolvedPayHere = await findUnresolvedPayHereAttempt(db, assignment.id);
+      if (unresolvedPayHere?.status === "paid") {
+        return apiError("PayHere has reported a successful payment that StHelp is reviewing. Do not upload another payment.", 409);
+      }
+      if (unresolvedPayHere?.status === "pending") {
+        return apiError("PayHere is still processing an earlier transaction. Contact StHelp before switching to bank transfer.", 409);
+      }
+      let payHerePending = assignment.payment_status === "submitted"
+        && !assignment.payment_reference
+        && String(assignment.payment_note || "").startsWith("PayHere checkout");
+      if (assignment.payhere_payment_attempt_id) {
+        const { data: activeAttempt, error: attemptError } = await db
+          .from("payhere_payment_attempts")
+          .select("status, expires_at")
+          .eq("id", assignment.payhere_payment_attempt_id)
+          .maybeSingle();
+        if (attemptError) throw attemptError;
+        payHerePending = Boolean(activeAttempt)
+          && (activeAttempt?.status === "pending"
+            || (activeAttempt?.status === "initiated" && new Date(activeAttempt.expires_at).getTime() > Date.now()));
+        if (activeAttempt?.status === "paid") {
+          return apiError("PayHere has reported a successful payment that StHelp is reviewing. Do not submit another payment.", 409);
+        }
+        if (activeAttempt?.status === "charged_back") {
+          return apiError("The PayHere transaction has a chargeback under review. Contact StHelp before submitting another payment.", 409);
+        }
+      }
+      if (payHerePending) {
         return apiError("PayHere checkout is already in progress. Contact StHelp before switching to bank transfer.", 409);
       }
       allowed = paymentTypes;

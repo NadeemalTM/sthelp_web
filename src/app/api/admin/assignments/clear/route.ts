@@ -27,6 +27,14 @@ export async function POST(request: NextRequest) {
     }
 
     const db = getServiceSupabase();
+    const { count: payHereRecordCount, error: payHereCountError } = await db
+      .from("payhere_payment_attempts")
+      .select("id", { count: "exact", head: true });
+    if (payHereCountError) throw payHereCountError;
+    if ((payHereRecordCount || 0) > 0) {
+      return apiError("Assignment data with PayHere financial records cannot be bulk-deleted. Keep these records for payment, refund and chargeback reconciliation.", 409);
+    }
+
     const [{ data: assignments, error: assignmentsError }, { data: links, error: linksError }, { data: files, error: filesError }] = await Promise.all([
       db.from("assignments").select("id"),
       db.from("client_links").select("id"),
