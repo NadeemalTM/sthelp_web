@@ -87,6 +87,6 @@ export function PublicAssignmentForm({
       <div className="website-field" aria-hidden="true"><label htmlFor="website">Website</label><input id="website" name="website" tabIndex={-1} autoComplete="off" /></div>
       <label className="checkbox-row field full"><input type="checkbox" required /><span>I confirm that these details are correct and that I will follow my institution’s academic-integrity and submission rules.</span></label>
     </div>
-    <div className="request-submit"><button className="btn btn-primary" disabled={busy || !availableServices.length}>{busy ? <><Loader2 className="spinner" size={18} /> Creating your private portal…</> : <><UploadCloud size={18} /> Submit assignment request</>}</button><span className="help"><ShieldCheck size={15} /> Your details are sent to a private tracking portal.</span></div>
+    <div className="request-submit"><button className="btn btn-primary" disabled={busy || !availableServices.length}>{busy ? <><Loader2 className="spinner" size={18} /> Creating your private portal…</> : <><UploadCloud size={18} /> Submit assignment request</>}</button><span className="help"><ShieldCheck size={15} /> 100% Confidential · Free Turnitin AI & similarity check included · No payment required now</span></div>
   </form>;
 }

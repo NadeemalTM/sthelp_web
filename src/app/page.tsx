@@ -4,6 +4,9 @@ import { ArrowRight, BarChart3, BookOpenCheck, CheckCircle2, Clock3, Code2, File
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { FeedbackSection } from "@/components/FeedbackSection";
+import { UrgentDeadlineBanner } from "@/components/UrgentDeadlineBanner";
+import { TrustGuarantees } from "@/components/TrustGuarantees";
+import { InstantQuoteEstimator } from "@/components/InstantQuoteEstimator";
 import { getPublicContent } from "@/lib/data";
 import { publicSiteUrl } from "@/lib/site-url";
 
@@ -39,7 +42,11 @@ export default async function HomePage() {
       </div>
     </section>
 
+    {whatsapp ? <UrgentDeadlineBanner whatsapp={whatsapp} /> : null}
+
     <section className="signal-strip" aria-label="StHelp service highlights"><div className="container signal-track"><span><b>01</b> Brief-led support</span><span><b>02</b> Reviewed quotation</span><span><b>03</b> Private progress</span><span><b>04</b> Connected revisions</span></div></section>
+
+    <TrustGuarantees />
 
     <section className="resource-home-teaser" data-public-reveal><div className="container resource-home-teaser-inner"><figure className="resource-home-image"><Image src="/images/public/sthelp-study-process.webp" alt="A university student comparing research notes and diagrams while studying" fill sizes="(max-width: 760px) 100vw, 42vw"/><figcaption><span>Study note / 01</span><strong>Use the right tool.<br/>Keep your judgment.</strong></figcaption></figure><div className="resource-home-copy"><span className="eyebrow">Free student toolkit</span><h2>Not every study problem needs paid support.</h2><p>Explore useful research, citation, writing, coding and data tools selected for Sri Lankan university students.</p><Link className="btn btn-dark" href="/student-resources">Browse student resources <ArrowRight size={17}/></Link></div><div className="resource-home-topics"><span><BookOpenCheck size={20}/><strong>Research & references</strong><small>Find papers and build cleaner citations.</small></span><span><BarChart3 size={20}/><strong>Data & surveys</strong><small>Collect, analyse and present evidence.</small></span><span><Code2 size={20}/><strong>Coding & productivity</strong><small>Build projects and organise group work.</small></span></div></div></section>
 
@@ -47,11 +54,13 @@ export default async function HomePage() {
 
     <section className="section service-showcase" id="services" data-public-reveal><div className="container"><div className="service-heading"><span className="eyebrow">Support, shaped around the work</span><h2>Where you need momentum,<br />we bring structure.</h2><Link className="text-action pricing-inline-link" href="/pricing">View starting prices <span>↗</span></Link></div><div className="service-bento"><article className="bento-main"><span className="bento-index">01 / Technical</span><div><h3>Software &<br /><em>web projects</em></h3><p>Planning, development guidance, debugging, documentation and project presentation support.</p></div><span className="bento-arrow">↗</span></article><article className="bento-side bento-warm"><span className="bento-index">02 / Written</span><h3>Research<br />& reports</h3><p>Better structure, editing, formatting and reference guidance for academic work.</p></article><article className="bento-side bento-dark"><span className="bento-index">03 / Analytical</span><h3>Data, Excel<br />& slides</h3><p>Spreadsheets, dashboards, analysis and presentation support made clearer.</p></article><div className="bento-note"><span className="note-spark">✦</span><p>Support is always aligned with your institution’s academic-integrity rules.</p></div></div></div></section>
 
+    <InstantQuoteEstimator whatsapp={whatsapp} />
+
     <section className="section work-section" id="work" data-public-reveal><div className="container"><div className="work-heading"><div><span className="eyebrow">Work in focus</span><h2>A closer look at<br />what we support.</h2></div><p className="muted">A cross-section of the projects and learning support clients bring to StHelp.</p></div><div className="work-list">{portfolio.map((item: any, index: number) => <article className="work-item" key={item.id}><div className="work-number">{String(index + 1).padStart(2, "0")}</div><div className="work-visual">{item.image_url ? <img src={item.image_url} alt={item.title} loading="lazy" decoding="async" /> : <span>{item.category.slice(0, 1)}</span>}</div><div className="work-copy"><span className="tag">{item.category}</span><h3>{item.title}</h3><p>{item.description}</p></div><span className="work-arrow">↗</span></article>)}</div></div></section>
 
     <FeedbackSection testimonials={testimonials} />
 
-    <section className="closing-section"><div className="container closing-inner"><div><span className="eyebrow" style={{ color: "#ffad9f" }}>A good place to begin</span><h2>Your next step<br />doesn’t have to be <em>messy.</em></h2><p>Send your assignment details when you’re ready. We’ll give the work a clear place to move forward.</p></div><div className="closing-actions"><Link className="btn btn-light" href="/place-assignment">Place an assignment <ArrowRight size={18} /></Link>{whatsapp ? <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noreferrer">Prefer WhatsApp? <span>↗</span></a> : null}</div></div></section>
+    <section className="closing-section"><div className="container closing-inner"><div><span className="eyebrow" style={{ color: "#ffad9f" }}>A good place to begin</span><h2>Your next step<br />doesn’t have to be <em>messy.</em></h2><p>Send your assignment details when you’re ready. We’ll give the work a clear place to move forward.</p></div><div className="closing-actions"><Link className="btn btn-light" href="/place-assignment">Place an assignment <ArrowRight size={18} /></Link>{whatsapp ? <a href={`https://wa.me/${whatsapp}?text=${encodeURIComponent("Hi StHelp! I need assignment support. Can you review my brief and send a quote?")}`} target="_blank" rel="noreferrer">Prefer WhatsApp? <span>↗</span></a> : null}</div></div></section>
 
     <SiteFooter settings={settings}/>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@graph": [

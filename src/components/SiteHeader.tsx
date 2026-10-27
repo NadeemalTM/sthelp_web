@@ -41,6 +41,18 @@ export function SiteHeader({ whatsapp, suppressFloatingCtaNear }: { whatsapp?: s
       </div>
     </header>
     <FloatingAssignmentCta watchSelector={suppressFloatingCtaNear}/>
-    {wa ? <a className="floating-whatsapp" href={`https://wa.me/${wa}`} target="_blank" rel="noreferrer" aria-label={`Chat with StHelp on WhatsApp at ${displayedWhatsapp}`} title={`WhatsApp ${displayedWhatsapp}`}><WhatsAppIcon/><span className="sr-only">WhatsApp {displayedWhatsapp}</span></a> : null}
+    {wa ? (
+      <a
+        className="floating-whatsapp"
+        href={`https://wa.me/${wa}?text=${encodeURIComponent("Hi StHelp! I need university assignment support. Can you review my requirements and provide a quote?")}`}
+        target="_blank"
+        rel="noreferrer"
+        aria-label={`Chat with StHelp on WhatsApp at ${displayedWhatsapp}`}
+        title={`WhatsApp ${displayedWhatsapp}`}
+      >
+        <WhatsAppIcon />
+        <span className="sr-only">WhatsApp {displayedWhatsapp}</span>
+      </a>
+    ) : null}
   </>;
 }
