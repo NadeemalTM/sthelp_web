@@ -17,6 +17,8 @@ export interface CalculatorEstimateData {
   maxPrice?: string;
   turnaround?: string;
   addons?: string;
+  rawMin?: string;
+  rawMax?: string;
 }
 
 function getDefaultDeadline(urgencyTag?: string): string {
@@ -58,12 +60,9 @@ export function PublicAssignmentForm({
   const [notice, setNotice] = useState<string | null>(null);
   const selectedService = availableServices.find((service) => service.slug === selectedServiceSlug) || null;
 
-  // Defaults derived from calculator estimate
-  const defaultAssignmentTitle = useMemo(() => {
-    if (!calcEstimate?.title) return "";
-    const prefix = calcEstimate.categoryLabel ? `[${calcEstimate.categoryLabel}] ` : "";
-    return `${prefix}${calcEstimate.title}`;
-  }, [calcEstimate]);
+  // Title, Description and Special Instructions are for customer inputs only.
+  // We do not pre-fill them with calculator text so the customer enters their actual requirements.
+  const defaultAssignmentTitle = "";
 
   const defaultAcademicLevel = useMemo(() => {
     if (!calcEstimate?.level) return "";
@@ -79,27 +78,8 @@ export function PublicAssignmentForm({
     return getDefaultDeadline(calcEstimate?.urgency || calcEstimate?.turnaround);
   }, [calcEstimate]);
 
-  const defaultDescription = useMemo(() => {
-    if (!calcEstimate?.fromCalc) return "";
-    const lines = [
-      `[Website Calculator Estimate]`,
-      `• Assignment Area: ${calcEstimate.categoryLabel || "General"}`,
-      `• Selected Scope: ${calcEstimate.title || "Custom"}`,
-      `• Academic Level: ${calcEstimate.level || "Undergraduate"}`,
-      `• Required Pace: ${calcEstimate.turnaround || "Standard"}`,
-      `• Included Add-ons: ${calcEstimate.addons || "None"}`,
-      `• Quoted Estimate: LKR ${calcEstimate.minPrice} – ${calcEstimate.maxPrice}`,
-      ``,
-      `Task Requirements & Specific Instructions:`,
-      ``
-    ];
-    return lines.join("\n");
-  }, [calcEstimate]);
-
-  const defaultSpecialInstructions = useMemo(() => {
-    if (!calcEstimate?.fromCalc) return "";
-    return `Website calculator quote: LKR ${calcEstimate.minPrice} – ${calcEstimate.maxPrice}. Add-ons: ${calcEstimate.addons || "None"}.`;
-  }, [calcEstimate]);
+  const defaultDescription = "";
+  const defaultSpecialInstructions = "";
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -149,7 +129,22 @@ export function PublicAssignmentForm({
           groupMembers: isGroup ? Number(form.get("groupMembers")) : null,
           description: form.get("description"),
           specialInstructions: form.get("specialInstructions"),
-          supportFiles: supportFilesMeta
+          supportFiles: supportFilesMeta,
+          calculationDetails: calcEstimate?.fromCalc ? {
+            fromCalc: true,
+            category: calcEstimate.category || "",
+            categoryLabel: calcEstimate.categoryLabel || "",
+            scope: calcEstimate.title || "",
+            level: calcEstimate.level || "",
+            urgency: calcEstimate.urgency || "",
+            turnaround: calcEstimate.turnaround || "",
+            addons: calcEstimate.addons || "",
+            minPrice: calcEstimate.minPrice || "",
+            maxPrice: calcEstimate.maxPrice || "",
+            rawMin: calcEstimate.rawMin || "",
+            rawMax: calcEstimate.rawMax || "",
+            estimateRange: `LKR ${calcEstimate.minPrice} – ${calcEstimate.maxPrice}`
+          } : null
         })
       });
       const payload = await response.json();
@@ -183,7 +178,7 @@ export function PublicAssignmentForm({
             </div>
           </div>
           <p className="estimate-hint">
-            ✓ Your calculated estimate is pre-filled below. Complete your student info to lock this rate with StHelp.
+            ✓ Your calculated rate of LKR {calcEstimate.minPrice} – {calcEstimate.maxPrice} is locked. Enter your assignment title and description below to submit your request.
           </p>
         </div>
       ) : null}

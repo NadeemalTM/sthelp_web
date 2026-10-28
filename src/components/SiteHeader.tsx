@@ -45,7 +45,7 @@ export function SiteHeader({ whatsapp, suppressFloatingCtaNear }: { whatsapp?: s
     {wa ? (
       <a
         className="floating-whatsapp"
-        href={`https://wa.me/${wa}?text=${encodeURIComponent("Hi StHelp! I need university assignment support. Can you review my requirements and provide a quote?")}`}
+        href={`https://wa.me/${wa}?text=${encodeURIComponent("👋 *Hello StHelp Academic Support!*\n\nI need assistance with a university assignment.\nCould you please review my requirements and provide a quotation? Thank you!")}`}
         target="_blank"
         rel="noreferrer"
         aria-label={`Chat with StHelp on WhatsApp at ${displayedWhatsapp}`}

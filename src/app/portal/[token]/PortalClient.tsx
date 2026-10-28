@@ -21,6 +21,7 @@ import {
   Send,
   ShieldCheck,
   Star,
+  Sparkles,
   UploadCloud,
   Zap,
   X
@@ -257,36 +258,42 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
     data.settings.bank_branch_2
   ].some(Boolean);
   const whatsapp = normalizeWhatsAppNumber(data.settings.whatsapp_number);
+  const effectiveToken = token || data.link?.token || "";
+  const portalUrl = typeof window !== "undefined"
+    ? `${window.location.origin}/portal/${effectiveToken}`
+    : `https://www.sthelp.edu.lk/portal/${effectiveToken}`;
+
+  const calcDetails = assignment.calculation_details;
   const calcEstimateMatch = `${assignment.description || ""}\n${assignment.special_instructions || ""}`
     .match(/(?:Quoted Estimate|Website calculator quote|Website Estimate Range):\s*(LKR\s*[\d,]+\s*[–-]\s*[\d,]+)/i);
-  const calcEstimateRange = calcEstimateMatch ? calcEstimateMatch[1] : null;
-
-  const portalUrl = typeof window !== "undefined"
-    ? `${window.location.origin}/portal/${data.link.token}`
-    : `https://www.sthelp.edu.lk/portal/${data.link.token}`;
+  const calcEstimateRange = calcDetails?.estimateRange || (calcEstimateMatch ? calcEstimateMatch[1] : null);
+  const paymentValueDisplay = assignment.quoted_amount
+    ? formatMoney(assignment.quoted_amount, assignment.currency || data.settings?.currency || "LKR")
+    : null;
 
   const urgentDetails = [
-    `• *Client ID:* ${data.link.client_id}`,
-    `• *Assignment:* ${assignment.assignment_title}`,
-    assignment.module_name ? `• *Module:* ${assignment.module_name}` : null,
-    `• *Deadline:* ${formatDate(assignment.deadline)}`,
-    calcEstimateRange ? `• *Website Estimate:* ${calcEstimateRange}` : null,
-  ].filter(Boolean).join("\r\n");
+    `🆔 *Client ID:* ${data.link?.client_id || "STH-CLIENT"}`,
+    `📖 *Assignment:* ${assignment.assignment_title}`,
+    assignment.module_name ? `📚 *Module:* ${assignment.module_name}` : null,
+    `⏰ *Deadline:* ${formatDate(assignment.deadline)}`,
+    calcEstimateRange ? `📊 *Website Estimate:* ${calcEstimateRange}` : null,
+    paymentValueDisplay ? `💰 *Payment / Quoted Value:* ${paymentValueDisplay}` : null
+  ].filter(Boolean).join("\n");
 
   const urgentMessage = [
-    "*URGENT ASSIGNMENT REQUEST - StHelp*",
+    "⚡ *URGENT ASSIGNMENT REQUEST — StHelp*",
     "",
-    "Hello StHelp Team,",
-    "I need quick action for an urgent university assignment.",
+    "👋 *Hello StHelp Team,*",
+    "I need priority action for an urgent university assignment.",
     "",
-    "*Assignment Details:*",
+    "📋 *Urgent Assignment Details:*",
     urgentDetails,
     "",
-    "*Private Portal Link:*",
+    "🔗 *Private Portal Tracking Link:*",
     portalUrl,
     "",
-    "Please review my portal requirements immediately and respond as soon as possible. Thank you!"
-  ].join("\r\n");
+    "🚨 *Please review my portal requirements immediately and respond as soon as possible. Thank you!*"
+  ].join("\n");
   const urgentWhatsAppHref = whatsapp
     ? `https://wa.me/${whatsapp}?text=${encodeURIComponent(urgentMessage)}`
     : null;
@@ -295,27 +302,29 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
     && assignment.status !== "cancelled";
 
   const orderDetails = [
-    `• *Client ID:* ${data.link.client_id}`,
-    `• *Assignment:* ${assignment.assignment_title}`,
-    assignment.module_name ? `• *Module:* ${assignment.module_name}` : null,
-    `• *Deadline:* ${formatDate(assignment.deadline)}`,
-    calcEstimateRange ? `• *Calculator Estimate:* ${calcEstimateRange}` : null,
-  ].filter(Boolean).join("\r\n");
+    `🆔 *Client ID:* ${data.link?.client_id || "STH-CLIENT"}`,
+    `📖 *Assignment:* ${assignment.assignment_title}`,
+    assignment.module_name ? `📚 *Module:* ${assignment.module_name}` : null,
+    assignment.academic_level ? `🎓 *Level:* ${assignment.academic_level}` : null,
+    `📅 *Deadline:* ${formatDate(assignment.deadline)}`,
+    calcEstimateRange ? `📊 *Calculator Estimate:* ${calcEstimateRange}` : null,
+    paymentValueDisplay ? `💰 *Payment / Quoted Value:* ${paymentValueDisplay}` : null
+  ].filter(Boolean).join("\n");
 
   const orderWhatsAppMessage = [
-    "*New Assignment Order - StHelp*",
+    "🚀 *New Assignment Order — StHelp*",
     "",
-    "Hello StHelp Team,",
+    "👋 *Hello StHelp Team,*",
     "I just placed an assignment order on your website.",
     "",
-    "*Assignment Details:*",
+    "📋 *Order Details:*",
     orderDetails,
     "",
-    "*Private Portal Link:*",
+    "🔗 *Private Portal Tracking Link:*",
     portalUrl,
     "",
-    "Please review my assignment requirements and confirm availability. Thank you!"
-  ].join("\r\n");
+    "💬 *Please review my assignment requirements and confirm availability. Thank you!*"
+  ].join("\n");
   const orderWhatsAppHref = whatsapp
     ? `https://wa.me/${whatsapp}?text=${encodeURIComponent(orderWhatsAppMessage)}`
     : null;
@@ -459,7 +468,27 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
         ) : null}
       </section>
 
-      {assignment.quote_status === "draft" && assignment.starting_price_snapshot ? <section className="panel quote-panel" id="portal-quote"><div className="panel-title"><div><span className="eyebrow">Starting estimate</span><h3 style={{marginTop:6}}>Final quotation under review</h3></div><Clock3/></div><div className="quote-amount">From {formatMoney(assignment.starting_price_snapshot, assignment.starting_currency_snapshot || assignment.currency || data.settings.currency)}</div><p className="muted small">This is the public starting price saved when you ordered. StHelp will review the scope and send the final amount for your approval before payment.</p></section> : null}
+      {assignment.quote_status === "draft" && (assignment.quoted_amount || assignment.starting_price_snapshot) ? (
+        <section className="panel quote-panel" id="portal-quote">
+          <div className="panel-title">
+            <div>
+              <span className="eyebrow">{calcDetails ? "Calculated estimate" : "Starting estimate"}</span>
+              <h3 style={{ marginTop: 6 }}>Final quotation under review</h3>
+            </div>
+            <Clock3 />
+          </div>
+          <div className="quote-amount">
+            {calcDetails?.estimateRange
+              ? calcDetails.estimateRange
+              : `From ${formatMoney(assignment.quoted_amount || assignment.starting_price_snapshot, assignment.currency || data.settings.currency)}`}
+          </div>
+          <p className="muted small">
+            {calcDetails
+              ? `Estimated payment value of ${formatMoney(assignment.quoted_amount, assignment.currency || data.settings.currency)} recorded from your calculator selections. StHelp will review your brief and confirm this quotation before payment.`
+              : "This is the public starting price saved when you ordered. StHelp will review the scope and send the final amount for your approval before payment."}
+          </p>
+        </section>
+      ) : null}
       {assignment.quote_status === "sent" && assignment.status !== "cancelled" ? <section className="panel quote-panel" id="portal-quote"><div className="panel-title"><div><span className="eyebrow">Quote ready</span><h3 style={{marginTop:6}}>Review your support quote</h3></div><Banknote/></div><div className="quote-amount">{formatMoney(assignment.quoted_amount, assignment.currency || data.settings.currency)}</div>{assignment.quote_note ? <p className="muted" style={{whiteSpace:"pre-wrap"}}>{assignment.quote_note}</p> : <p className="muted small">Please review the quote and confirm whether you would like StHelp to proceed.</p>}<div className="quote-actions"><button className="btn btn-primary" disabled={busy} onClick={()=>respondToQuote(true)}><CheckCircle2 size={17}/> Accept quote</button><button className="btn btn-soft" disabled={busy} onClick={()=>respondToQuote(false)}>Decline</button></div></section> : null}
       {assignment.status === "cancelled" ? <div className="notice notice-info">This assignment request was cancelled. No new quotation or payment can be submitted for it.</div> : assignment.quote_status === "declined" ? <div className="notice notice-info">You declined the latest quote. Send StHelp a message if you would like to discuss the scope or receive a revised quotation.</div> : null}
 
@@ -493,6 +522,53 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
           <div className="field"><label>Special instructions</label><textarea className="textarea" name="specialInstructions" defaultValue={assignment.special_instructions || ""}/></div>
           <div className="client-edit-actions"><button className="btn btn-primary btn-sm" disabled={busy}><Save size={15}/> Save details</button><button type="button" className="btn btn-soft btn-sm" disabled={busy} onClick={()=>setEditingDetails(false)}><X size={15}/> Cancel</button></div>
         </form> : <div className="detail-list"><div className="detail-row"><span>Student</span><strong>{assignment.student_name}</strong></div><div className="detail-row"><span>Contact</span><strong>{assignment.contact_number}</strong></div><div className="detail-row"><span>Email</span><strong>{assignment.email || "—"}</strong></div><div className="detail-row"><span>University</span><strong>{assignment.university}</strong></div><div className="detail-row"><span>Programme</span><strong>{assignment.programme || "—"}</strong></div><div className="detail-row"><span>Module</span><strong>{assignment.module_name || "—"}</strong></div><div className="detail-row"><span>Deadline</span><strong>{formatDate(assignment.deadline)}</strong></div><div className="detail-row"><span>Group</span><strong>{assignment.is_group ? `Yes · ${assignment.group_members} members` : "No"}</strong></div><div className="detail-row"><span>Submitted</span><strong>{formatDate(assignment.created_at)}</strong></div></div>}
+
+        {!editingDetails ? (
+          <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--line, rgba(0,0,0,0.08))" }}>
+            <div style={{ marginBottom: 12 }}>
+              <span className="tiny muted" style={{ fontWeight: 700, textTransform: "uppercase", letterSpacing: ".06em", display: "block", marginBottom: 3 }}>
+                Assignment / Project Title
+              </span>
+              <strong>{assignment.assignment_title}</strong>
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <span className="tiny muted" style={{ fontWeight: 700, textTransform: "uppercase", letterSpacing: ".06em", display: "block", marginBottom: 3 }}>
+                Task Description & Requirements
+              </span>
+              <p className="muted small" style={{ whiteSpace: "pre-wrap", margin: 0 }}>
+                {assignment.description || "—"}
+              </p>
+            </div>
+            {assignment.special_instructions ? (
+              <div>
+                <span className="tiny muted" style={{ fontWeight: 700, textTransform: "uppercase", letterSpacing: ".06em", display: "block", marginBottom: 3 }}>
+                  Special Instructions
+                </span>
+                <p className="muted small" style={{ whiteSpace: "pre-wrap", margin: 0 }}>
+                  {assignment.special_instructions}
+                </p>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        {calcDetails ? (
+          <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--line, rgba(0,0,0,0.08))" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+              <Sparkles size={16} style={{ color: "var(--success, #15805d)" }} />
+              <strong style={{ fontSize: "0.88rem", color: "var(--success, #15805d)" }}>Website Calculator Details</strong>
+            </div>
+            <div className="detail-list" style={{ fontSize: "0.85rem" }}>
+              <div className="detail-row"><span>Service Area</span><strong>{calcDetails.categoryLabel || assignment.service_type}</strong></div>
+              <div className="detail-row"><span>Calculated Scope</span><strong>{calcDetails.scope || "—"}</strong></div>
+              <div className="detail-row"><span>Academic Level</span><strong>{calcDetails.level || assignment.academic_level || "—"}</strong></div>
+              <div className="detail-row"><span>Turnaround</span><strong>{calcDetails.turnaround || "—"}</strong></div>
+              <div className="detail-row"><span>Included Add-ons</span><strong>{calcDetails.addons || "None"}</strong></div>
+              <div className="detail-row"><span>Estimated Range</span><strong style={{ color: "var(--success, #15805d)" }}>{calcDetails.estimateRange || `LKR ${calcDetails.minPrice} – ${calcDetails.maxPrice}`}</strong></div>
+              <div className="detail-row"><span>Assigned Value</span><strong style={{ color: "var(--success, #15805d)" }}>{formatMoney(assignment.quoted_amount, assignment.currency || data.settings?.currency || "LKR")}</strong></div>
+            </div>
+          </div>
+        ) : null}
 
         {submittedDocuments.length ? <div className="submitted-documents"><div className="submitted-documents-heading"><strong>Your submitted documents</strong><span>You can download a copy at any time.</span></div>{submittedDocuments.map((file:any)=><div className="submitted-document" key={file.id}><div className="file-name"><strong>{file.original_name}</strong><span className="tiny muted">{file.kind === "payment_proof" ? "Payment proof" : "Support document"} · {formatFileSize(file.size_bytes)}</span></div><a className="btn btn-soft btn-sm" href={`/api/client/${token}/download/${file.id}`}><Download size={14}/> Download</a></div>)}</div> : null}
       </section>

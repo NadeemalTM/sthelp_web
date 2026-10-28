@@ -34,6 +34,8 @@ export default async function PlaceAssignmentPage({
     max?: string | string[];
     turnaround?: string | string[];
     addons?: string | string[];
+    rawMin?: string | string[];
+    rawMax?: string | string[];
   }>;
 }) {
   const [{ settings }, pricingServices, query] = await Promise.all([
@@ -57,7 +59,9 @@ export default async function PlaceAssignmentPage({
         minPrice: getFirst(query.min),
         maxPrice: getFirst(query.max),
         turnaround: getFirst(query.turnaround),
-        addons: getFirst(query.addons)
+        addons: getFirst(query.addons),
+        rawMin: getFirst(query.rawMin),
+        rawMax: getFirst(query.rawMax)
       }
     : undefined;
 

@@ -116,7 +116,8 @@ alter table public.assignments
   add column if not exists pricing_service_id uuid references public.pricing_services(id) on delete set null,
   add column if not exists pricing_name_snapshot text,
   add column if not exists starting_price_snapshot numeric(12,2),
-  add column if not exists starting_currency_snapshot text;
+  add column if not exists starting_currency_snapshot text,
+  add column if not exists calculation_details jsonb;
 
 create table if not exists public.assignment_files (
   id uuid primary key default gen_random_uuid(),

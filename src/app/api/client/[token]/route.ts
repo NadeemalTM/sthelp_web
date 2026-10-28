@@ -43,7 +43,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     const { data: assignment, error } = await db.from("assignments").select("*").eq("client_link_id", link.id).maybeSingle();
     if (error) throw error;
 
-    const safeLink = { client_id: link.client_id, client_name: link.client_name, phone: link.phone, status: link.status };
+    const safeLink = { token: link.token, client_id: link.client_id, client_name: link.client_name, phone: link.phone, status: link.status };
     if (!assignment) return NextResponse.json({ link: safeLink, assignment: null, settings, portfolio, testimonials, pricingServices });
 
     const currentPayHereQuery = assignment.payhere_payment_attempt_id
@@ -168,7 +168,19 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       const currency = String(pricingService.currency || "LKR").trim().toUpperCase();
       if (!/^[A-Z]{3}$/.test(currency)) return apiError("This service has an invalid currency configuration.", 409);
 
-      const assignmentInsert = {
+      // Parse calculated payment value from calculator process if present
+      const calcDetails = body.calculationDetails && typeof body.calculationDetails === "object" ? body.calculationDetails : null;
+      let calculatedPaymentValue: number | null = null;
+      if (calcDetails) {
+        const rawNum = Number(String(calcDetails.rawMin || calcDetails.minPrice || "").replace(/[^\d.]/g, ""));
+        if (Number.isFinite(rawNum) && rawNum > 0) {
+          calculatedPaymentValue = rawNum;
+        }
+      }
+
+      const assignedPaymentValue = calculatedPaymentValue ?? startingPrice;
+
+      const assignmentInsert: Record<string, unknown> = {
         client_link_id: link.id,
         student_name: requiredText(body.studentName, "Full name", 150),
         contact_number: requiredText(body.contactNumber, "Contact number", 50),
@@ -184,15 +196,19 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         group_members: groupMembers,
         description: requiredText(body.description, "Task description", 10000),
         special_instructions: optionalText(body.specialInstructions, 5000),
-        quoted_amount: startingPrice,
+        quoted_amount: assignedPaymentValue,
         currency,
         status: "submitted",
         progress: 0
       };
-      const pricingSnapshot = {
+      if (calcDetails) {
+        assignmentInsert.calculation_details = calcDetails;
+      }
+
+      const pricingSnapshot: Record<string, unknown> = {
         pricing_service_id: pricingService.id || null,
         pricing_name_snapshot: serviceName,
-        starting_price_snapshot: startingPrice,
+        starting_price_snapshot: assignedPaymentValue,
         starting_currency_snapshot: currency
       };
       let insertResult = await db.from("assignments").insert({
@@ -203,10 +219,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       if (insertResult.error) {
         const insertError = insertResult.error as { code?: unknown; message?: unknown; details?: unknown; hint?: unknown };
         const insertErrorText = `${String(insertError.message || "")} ${String(insertError.details || "")} ${String(insertError.hint || "")}`.toLowerCase();
+        const retryInsert = { ...assignmentInsert };
+        delete retryInsert.calculation_details;
         const missingPricingColumns = ["PGRST204", "42703"].includes(String(insertError.code || ""))
-          && ["pricing_service_id", "pricing_name_snapshot", "starting_price_snapshot", "starting_currency_snapshot"].some((column) => insertErrorText.includes(column));
+          && ["pricing_service_id", "pricing_name_snapshot", "starting_price_snapshot", "starting_currency_snapshot", "calculation_details"].some((column) => insertErrorText.includes(column));
         if (missingPricingColumns) {
-          insertResult = await db.from("assignments").insert(assignmentInsert).select("id").single();
+          insertResult = await db.from("assignments").insert(retryInsert).select("id").single();
         }
       }
 
@@ -233,6 +251,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       }
       await db.from("client_links").update({ status: "submitted", client_name: body.studentName, phone: body.contactNumber }).eq("id", link.id);
       await recordAssignmentActivity(db, { assignmentId: created.id, actor: "client", visibility: "both", eventType: "request_submitted", summary: "You submitted the assignment requirements." });
+      if (calcDetails) {
+        const estimateSummary = calcDetails.estimateRange || (calcDetails.minPrice && calcDetails.maxPrice ? `LKR ${calcDetails.minPrice} – ${calcDetails.maxPrice}` : "");
+        await recordAssignmentActivity(db, {
+          assignmentId: created.id,
+          actor: "system",
+          visibility: "both",
+          eventType: "calculator_estimate",
+          summary: `Website Calculator Estimate: ${estimateSummary || "Estimate recorded"} • ${calcDetails.categoryLabel || "Area"}: ${calcDetails.scope || ""}`.trim()
+        });
+      }
       if (supportFiles.length) {
         await recordAssignmentActivity(db, {
           assignmentId: created.id,

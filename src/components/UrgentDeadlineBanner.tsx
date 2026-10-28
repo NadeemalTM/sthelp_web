@@ -4,7 +4,10 @@ import { WhatsAppIcon } from "@/components/WhatsAppIcon";
 export function UrgentDeadlineBanner({ whatsapp }: { whatsapp: string }) {
   const wa = whatsapp.replace(/\D/g, "");
   const urgentText = encodeURIComponent(
-    "Hi StHelp! I have an URGENT assignment due in 24-48 hours. Can you review my brief and let me know if you can take this on immediately?"
+    `⚡ *Urgent Assignment Support Request — StHelp*\n\n` +
+      `👋 *Hello StHelp Urgent Desk,*\n` +
+      `I have an URGENT university assignment due within 24–48 hours.\n\n` +
+      `🚨 *Can you please review my brief immediately and confirm availability?* Thank you!`
   );
   const urgentHref = wa ? `https://wa.me/${wa}?text=${urgentText}` : "#";
 

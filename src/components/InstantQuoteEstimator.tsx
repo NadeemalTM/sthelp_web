@@ -722,6 +722,8 @@ export function InstantQuoteEstimator({ whatsapp }: { whatsapp: string }) {
     return {
       min: finalMin.toLocaleString("en-LK"),
       max: finalMax.toLocaleString("en-LK"),
+      rawMin: finalMin,
+      rawMax: finalMax,
       summary: categorySummary,
       turnaround: turnaroundText
     };
@@ -788,19 +790,21 @@ export function InstantQuoteEstimator({ whatsapp }: { whatsapp: string }) {
     addOnsList.push("Official Turnitin Certificate");
   }
 
-  const addOnsText = addOnsList.length > 0 ? `\r\n• *Add-ons:* ${addOnsList.join(", ")}` : "";
+  const addOnsLines = addOnsList.length > 0 ? `➕ *Add-ons:* ${addOnsList.join(", ")}\n` : "";
+  const levelLine = category === "report" || activeLevelMeta.label ? `🎓 *Level:* ${activeLevelMeta.label}\n` : "";
 
   const prefilledWaMessage = encodeURIComponent(
-    `*Instant Price Calculator Inquiry - StHelp*\r\n\r\n` +
-      `Hello StHelp Team,\r\n` +
-      `I used the price calculator on your website and would like to confirm availability:\r\n\r\n` +
-      `*Estimate Details:*\r\n` +
-      `• *Category:* ${activeCategoryMeta.label}\r\n` +
-      `• *Details:* ${calculation.summary}\r\n` +
-      (category === "report" ? `• *Level:* ${activeLevelMeta.label}\r\n` : "") +
-      `• *Timeline:* ${activeUrgencyMeta.tag}${addOnsText}\r\n` +
-      `• *Estimated Price:* LKR ${calculation.min} – ${calculation.max}\r\n\r\n` +
-      `Can I share my assignment brief with you for an exact quotation?`
+    `✨ *StHelp Academic Support — Price Calculator Inquiry*\n\n` +
+      `👋 *Hello StHelp Team,*\n` +
+      `I used the instant price calculator on your website and would like to check availability for my assignment:\n\n` +
+      `📋 *Estimate Details:*\n` +
+      `📂 *Category:* ${activeCategoryMeta.label}\n` +
+      `📝 *Scope:* ${calculation.summary}\n` +
+      levelLine +
+      `⏱️ *Timeline:* ${activeUrgencyMeta.tag} (${calculation.turnaround})\n` +
+      addOnsLines +
+      `💰 *Estimated Price:* LKR ${calculation.min} – ${calculation.max}\n\n` +
+      `💬 *Can I share my assignment brief with you for an exact quotation?* Thank you!`
   );
 
   const whatsappHref = wa ? `https://wa.me/${wa}?text=${prefilledWaMessage}` : "#";
@@ -815,7 +819,9 @@ export function InstantQuoteEstimator({ whatsapp }: { whatsapp: string }) {
     min: calculation.min,
     max: calculation.max,
     turnaround: calculation.turnaround,
-    addons: addOnsList.join(", ")
+    addons: addOnsList.join(", "),
+    rawMin: String(calculation.rawMin),
+    rawMax: String(calculation.rawMax)
   });
   const orderHref = `/place-assignment?${orderParams.toString()}`;
 
