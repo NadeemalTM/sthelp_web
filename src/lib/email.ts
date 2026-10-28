@@ -28,15 +28,16 @@ export type AssignmentNotificationParams = {
   whatsappNumber?: string | null;
 };
 
+// Returns SMTP configuration with environment variable support and fallback
 function getSmtpConfig() {
-  const host = process.env.SMTP_HOST || (process.env.GMAIL_USER ? "smtp.gmail.com" : "");
+  const host = process.env.SMTP_HOST || "smtp.gmail.com";
   const port = Number(process.env.SMTP_PORT || (host === "smtp.gmail.com" ? 465 : 587));
-  const user = (process.env.SMTP_USER || process.env.GMAIL_USER || "").trim();
-  const rawPass = (process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || "").trim();
+  const user = (process.env.SMTP_USER || process.env.GMAIL_USER || "assignment.sthelp@gmail.com").trim();
+  const rawPass = (process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || "lzvlslxrzlmgspth").trim();
   const pass = host === "smtp.gmail.com" ? rawPass.replace(/\s+/g, "") : rawPass;
   const secure = process.env.SMTP_SECURE === "true" || port === 465;
   const senderName = process.env.SMTP_NAME || "StHelp";
-  const from = process.env.SMTP_FROM || (user ? `"${senderName}" <${user}>` : "");
+  const from = process.env.SMTP_FROM || `"${senderName}" <${user}>`;
 
   if (!host || !user || !pass) {
     return null;
@@ -78,12 +79,14 @@ export async function sendEmail({
   to,
   subject,
   html,
-  text
+  text,
+  replyTo
 }: {
   to: string;
   subject: string;
   html: string;
   text: string;
+  replyTo?: string;
 }): Promise<boolean> {
   const targetEmail = to.trim();
   if (!targetEmail || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(targetEmail)) {
@@ -115,24 +118,29 @@ export async function sendEmail({
         }
       });
 
-      await transporter.sendMail({
+      const info = await transporter.sendMail({
         from: smtp.from,
         to: targetEmail,
+        replyTo: replyTo || smtp.user,
         subject,
         html,
-        text
+        text,
+        headers: {
+          "X-Entity-Ref-ID": targetEmail,
+          "List-Unsubscribe": `<mailto:${smtp.user}?subject=unsubscribe>`
+        }
       });
 
+      console.log(`[Email Notification] Email sent successfully to ${targetEmail} (Message ID: ${info.messageId})`);
       return true;
     } catch (error) {
-      console.error("[Email Notification] SMTP sending failed:", error);
+      console.error(`[Email Notification] SMTP send error to ${targetEmail}:`, error);
       return false;
     }
   }
 
   console.warn(
-    `[Email Notification] Email not sent to ${targetEmail} — No free SMTP or Resend credentials configured. ` +
-    `Add SMTP_USER & SMTP_PASS (or GMAIL_USER & GMAIL_APP_PASSWORD) in your environment to enable automatic emails.`
+    `[Email Notification] Email not sent to ${targetEmail} — No SMTP credentials configured.`
   );
   return false;
 }
@@ -150,7 +158,7 @@ function emailWrapper(content: string, previewText: string): string {
     .card { background: #ffffff; border-radius: 14px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.04); }
     .header { background: #15805d; padding: 24px; text-align: center; color: #ffffff; }
     .header h1 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
-    .header p { margin: 6px 0 0 0; font-size: 13px; opacity: 0.9; }
+    .header p { margin: 6px 0 0 0; font-size: 13px; opacity: 0.95; }
     .content { padding: 28px 24px; }
     .badge { display: inline-block; background: #dcfce7; color: #166534; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
     .highlight-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 16px 20px; margin: 20px 0; }
@@ -163,7 +171,7 @@ function emailWrapper(content: string, previewText: string): string {
     .button-container { text-align: center; margin: 28px 0 16px; }
     .button { display: inline-block; background: #15805d; color: #ffffff !important; text-decoration: none; font-weight: 700; font-size: 15px; padding: 14px 28px; border-radius: 8px; box-shadow: 0 4px 12px rgba(21, 128, 93, 0.25); }
     .button-secondary { display: inline-block; background: #f1f5f9; color: #334155 !important; text-decoration: none; font-weight: 600; font-size: 14px; padding: 10px 20px; border-radius: 6px; margin: 4px; }
-    .footer { padding: 20px; text-align: center; font-size: 12px; color: #94a3b8; }
+    .footer { padding: 20px; text-align: center; font-size: 12px; color: #94a3b8; line-height: 1.5; }
     .footer a { color: #64748b; text-decoration: underline; }
   </style>
 </head>
@@ -182,7 +190,8 @@ function emailWrapper(content: string, previewText: string): string {
       </div>
     </div>
     <div class="footer">
-      <p style="margin: 0 0 6px 0;">StHelp Academic Support Services · Sri Lanka</p>
+      <p style="margin: 0 0 6px 0;">StHelp Academic Support Services · Colombo, Sri Lanka</p>
+      <p style="margin: 0 0 6px 0;">WhatsApp: +94 78 206 7550 · Email: assignment.sthelp@gmail.com</p>
       <p style="margin: 0;">Online academic research, software & coursework assistance</p>
     </div>
   </div>
@@ -190,29 +199,33 @@ function emailWrapper(content: string, previewText: string): string {
 </html>`;
 }
 
-export async function sendAssignmentNotifications(params: AssignmentNotificationParams) {
+export async function sendAssignmentNotifications(params: AssignmentNotificationParams): Promise<{ customerSent: boolean; adminSent: boolean }> {
   const baseUrl = publicSiteUrl();
   const portalUrl = `${baseUrl}/portal/${params.token}`;
   const adminUrl = `${baseUrl}/admin/assignments/${params.assignmentId}`;
   const currency = params.currency || "LKR";
+  const cleanWa = (params.whatsappNumber || "94782067550").replace(/\D/g, "");
 
   const priceText = params.priceRange || (params.quotedAmount ? formatMoney(params.quotedAmount, currency) : "Quotation under review");
 
+  const results = { customerSent: false, adminSent: false };
+  const sendJobs: Promise<void>[] = [];
+
   // 1. Send confirmation email to Customer (if email was provided)
-  if (params.studentEmail) {
-    const preview = `Your assignment order (${params.clientId}) has been received. Track your quote & progress in your client portal.`;
+  if (params.studentEmail && params.studentEmail.trim()) {
+    const preview = `Your assignment order (${params.clientId}) has been received. Track your quotation & progress in your private client portal.`;
     const customerHtmlContent = `
       <span class="badge">Order Confirmed</span>
-      <h2 style="margin: 0 0 10px 0; font-size: 20px; color: #0f172a;">Hello, ${escapeHtml(params.studentName)}! 👋</h2>
+      <h2 style="margin: 0 0 10px 0; font-size: 20px; color: #0f172a;">Hello ${escapeHtml(params.studentName)},</h2>
       <p style="margin: 0 0 16px 0; color: #475569; font-size: 15px;">
-        Thank you for submitting your assignment support request to <strong>StHelp</strong>. We have successfully registered your request and created your private client portal.
+        Thank you for submitting your assignment support request to <strong>StHelp</strong>. We have registered your order and prepared your private client portal.
       </p>
 
       <div class="highlight-box">
         <div class="highlight-title">Estimated Price Range / Initial Value</div>
         <div class="highlight-value">${escapeHtml(priceText)}</div>
         <div style="font-size: 12px; color: #475569; margin-top: 4px;">
-          Our academic team is reviewing your requirements. We will confirm the final quote directly in your portal before any payment is required.
+          Our academic team is reviewing your requirements and will confirm the final quotation directly in your portal before any payment is requested.
         </div>
       </div>
 
@@ -234,41 +247,50 @@ export async function sendAssignmentNotifications(params: AssignmentNotification
 
       <div class="button-container">
         <a href="${portalUrl}" class="button" target="_blank">
-          🚀 Open My Private Client Portal
+          Open My Private Client Portal
         </a>
       </div>
 
       <p style="font-size: 13px; color: #64748b; text-align: center; margin: 12px 0 20px 0;">
-        Bookmark your portal link to check status, review quotation, download files, and send feedback.
+        Direct link: <a href="${portalUrl}" style="color: #15805d;">${portalUrl}</a><br>
+        Bookmark your portal link to review quotations, verify files, request revisions, and send feedback.
       </p>
 
       <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 16px; margin: 20px 0; text-align: center;">
-        <strong style="color: #166534; font-size: 14px; display: block; margin-bottom: 6px;">Need quick answers or want to discuss your brief?</strong>
-        <p style="font-size: 13px; color: #334155; margin: 0 0 12px 0;">Our academic support team is available on WhatsApp:</p>
-        <a href="https://wa.me/${(params.whatsappNumber || "94782067550").replace(/\D/g, "")}?text=${encodeURIComponent(`Hello StHelp Team, I just placed an assignment order. My Client ID is ${params.clientId}.`)}" style="display: inline-block; background: #25D366; color: #ffffff !important; text-decoration: none; font-weight: 700; font-size: 14px; padding: 12px 22px; border-radius: 8px; box-shadow: 0 4px 10px rgba(37, 211, 102, 0.25);" target="_blank">
-          💬 Chat on WhatsApp (+${(params.whatsappNumber || "94782067550").replace(/\D/g, "")})
+        <strong style="color: #166534; font-size: 14px; display: block; margin-bottom: 6px;">Need fast answers or want to discuss details?</strong>
+        <p style="font-size: 13px; color: #334155; margin: 0 0 12px 0;">Our academic support team is ready on WhatsApp:</p>
+        <a href="https://wa.me/${cleanWa}?text=${encodeURIComponent(`Hello StHelp Team, I placed an assignment order. My Client ID is ${params.clientId}.`)}" style="display: inline-block; background: #25D366; color: #ffffff !important; text-decoration: none; font-weight: 700; font-size: 14px; padding: 12px 24px; border-radius: 8px; box-shadow: 0 4px 10px rgba(37, 211, 102, 0.25);" target="_blank">
+          Chat on WhatsApp (+${cleanWa})
         </a>
       </div>
     `;
 
     const customerHtml = emailWrapper(customerHtmlContent, preview);
     const customerText = `Hello ${params.studentName},\n\n` +
-      `Thank you for placing your assignment request with StHelp.\n\n` +
-      `Order Details:\n` +
+      `Thank you for placing your assignment support request with StHelp.\n\n` +
+      `Order Summary:\n` +
       `• Client ID: ${params.clientId}\n` +
       `• Assignment: ${params.assignmentTitle}\n` +
       `• Deadline: ${formatDate(params.deadline)}\n` +
       `• Estimated Price: ${priceText}\n\n` +
-      `Access your private client portal here:\n${portalUrl}\n\n` +
-      `WhatsApp Support: +${(params.whatsappNumber || "94782067550").replace(/\D/g, "")}\n\n` +
+      `Your Assignment Brief:\n${params.description}\n\n` +
+      `Access your private client portal:\n${portalUrl}\n\n` +
+      `WhatsApp Support: +${cleanWa}\n\n` +
       `Best regards,\nStHelp Academic Team`;
 
-    sendEmail({
-      to: params.studentEmail,
-      subject: `Order Confirmation: ${params.assignmentTitle} [${params.clientId}] — StHelp`,
-      html: customerHtml,
-      text: customerText
-    }).catch((err) => console.error("[Email Notification] Error sending to customer:", err));
+    sendJobs.push(
+      sendEmail({
+        to: params.studentEmail,
+        subject: `Order Confirmation: ${params.assignmentTitle} (#${params.clientId}) - StHelp`,
+        html: customerHtml,
+        text: customerText,
+        replyTo: "assignment.sthelp@gmail.com"
+      }).then((ok) => {
+        results.customerSent = ok;
+      }).catch((err) => {
+        console.error("[Email Notification] Failed to send customer email:", err);
+      })
+    );
   }
 
   // 2. Send notification email to Admin ("To me")
@@ -291,7 +313,7 @@ export async function sendAssignmentNotifications(params: AssignmentNotification
       <span class="badge" style="background:#fef3c7; color:#92400e;">New Assignment Request</span>
       <h2 style="margin: 0 0 10px 0; font-size: 20px; color: #0f172a;">New Order: ${escapeHtml(params.studentName)}</h2>
       <p style="margin: 0 0 16px 0; color: #475569; font-size: 14px;">
-        A new assignment support request was just submitted online.
+        A new assignment support request was just placed online.
       </p>
 
       <div class="highlight-box">
@@ -302,7 +324,7 @@ export async function sendAssignmentNotifications(params: AssignmentNotification
       <table class="table-details">
         <tr><td class="label">Client ID</td><td class="value">${escapeHtml(params.clientId)}</td></tr>
         <tr><td class="label">Student Name</td><td class="value">${escapeHtml(params.studentName)}</td></tr>
-        <tr><td class="label">Phone / WhatsApp</td><td class="value"><a href="https://wa.me/${params.contactNumber.replace(/\D/g, "")}" style="color:#15805d;">${escapeHtml(params.contactNumber)}</a></td></tr>
+        <tr><td class="label">Phone / WhatsApp</td><td class="value"><a href="https://wa.me/${params.contactNumber.replace(/\D/g, "")}" style="color:#15805d; font-weight:700;">${escapeHtml(params.contactNumber)}</a></td></tr>
         <tr><td class="label">Student Email</td><td class="value">${escapeHtml(params.studentEmail || "Not provided")}</td></tr>
         <tr><td class="label">University</td><td class="value">${escapeHtml(params.university)}</td></tr>
         ${params.programme ? `<tr><td class="label">Programme</td><td class="value">${escapeHtml(params.programme)}</td></tr>` : ""}
@@ -316,42 +338,55 @@ export async function sendAssignmentNotifications(params: AssignmentNotification
 
       <div style="margin: 18px 0; font-size: 13px;">
         <strong>Task Description:</strong>
-        <p style="whiteSpace: pre-wrap; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; margin: 4px 0 12px 0;">${escapeHtml(params.description)}</p>
+        <p style="white-space: pre-wrap; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; margin: 4px 0 12px 0;">${escapeHtml(params.description)}</p>
         ${params.specialInstructions ? `
           <strong>Special Instructions:</strong>
-          <p style="whiteSpace: pre-wrap; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; margin: 4px 0;">${escapeHtml(params.specialInstructions)}</p>
+          <p style="white-space: pre-wrap; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; margin: 4px 0;">${escapeHtml(params.specialInstructions)}</p>
         ` : ""}
       </div>
 
       <div class="button-container">
         <a href="${adminUrl}" class="button" target="_blank" style="margin-right: 8px;">
-          🛠️ Open in Admin Dashboard
+          Open in Admin Dashboard
         </a>
         <a href="${portalUrl}" class="button-secondary" target="_blank">
-          👁️ Client View
+          View Client Portal
         </a>
       </div>
     `;
 
     const adminHtml = emailWrapper(adminHtmlContent, adminPreview);
-    const adminText = `🚨 New Assignment Order Received!\n\n` +
+    const adminText = `[New Assignment Order Received]\n\n` +
       `Client ID: ${params.clientId}\n` +
       `Student: ${params.studentName} (${params.contactNumber})\n` +
-      `Email: ${params.studentEmail || "None"}\n` +
+      `Email: ${params.studentEmail || "Not provided"}\n` +
       `University: ${params.university}\n` +
       `Assignment: ${params.assignmentTitle}\n` +
       `Deadline: ${formatDate(params.deadline)}\n` +
       `Estimated Price: ${priceText}\n\n` +
+      `Task Description:\n${params.description}\n\n` +
       `Admin Dashboard: ${adminUrl}\n` +
       `Client Portal: ${portalUrl}`;
 
-    sendEmail({
-      to: adminEmail,
-      subject: `🚨 [New Order] ${params.studentName} — ${params.assignmentTitle} (${params.clientId})`,
-      html: adminHtml,
-      text: adminText
-    }).catch((err) => console.error("[Email Notification] Error sending to admin:", err));
+    sendJobs.push(
+      sendEmail({
+        to: adminEmail,
+        subject: `[New Order] ${params.studentName} - ${params.assignmentTitle} (#${params.clientId})`,
+        html: adminHtml,
+        text: adminText,
+        replyTo: params.studentEmail || undefined
+      }).then((ok) => {
+        results.adminSent = ok;
+      }).catch((err) => {
+        console.error("[Email Notification] Failed to send admin email:", err);
+      })
+    );
   }
+
+  // Wait for both emails to finish sending
+  await Promise.allSettled(sendJobs);
+
+  return results;
 }
 
 function escapeHtml(str?: string | null): string {

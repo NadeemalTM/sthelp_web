@@ -292,31 +292,35 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       const calcEstimateRange = calcDetails?.estimateRange
         || (calcDetails?.minPrice && calcDetails?.maxPrice ? `LKR ${calcDetails.minPrice} – ${calcDetails.maxPrice}` : null);
 
-      sendAssignmentNotifications({
-        assignmentId: created.id,
-        clientId: link.client_id,
-        token: link.token,
-        studentName: String(body.studentName || ""),
-        studentEmail: body.email ? String(body.email) : null,
-        contactNumber: String(body.contactNumber || ""),
-        university: String(body.university || ""),
-        programme: body.programme ? String(body.programme) : null,
-        moduleName: body.moduleName ? String(body.moduleName) : null,
-        assignmentTitle: String(body.assignmentTitle || ""),
-        serviceType: serviceName,
-        academicLevel: body.academicLevel ? String(body.academicLevel) : null,
-        deadline: deadline.toISOString(),
-        isGroup,
-        groupMembers,
-        description: String(body.description || ""),
-        specialInstructions: body.specialInstructions ? String(body.specialInstructions) : null,
-        priceRange: calcEstimateRange,
-        quotedAmount: assignedPaymentValue,
-        currency,
-        calcDetails,
-        businessEmail: dbSettings?.business_email,
-        whatsappNumber: dbSettings?.whatsapp_number
-      }).catch((err) => console.error("[Email Notification] Background send error:", err));
+      try {
+        await sendAssignmentNotifications({
+          assignmentId: created.id,
+          clientId: link.client_id,
+          token: link.token,
+          studentName: String(body.studentName || ""),
+          studentEmail: body.email ? String(body.email).trim() : null,
+          contactNumber: String(body.contactNumber || ""),
+          university: String(body.university || ""),
+          programme: body.programme ? String(body.programme) : null,
+          moduleName: body.moduleName ? String(body.moduleName) : null,
+          assignmentTitle: String(body.assignmentTitle || ""),
+          serviceType: serviceName,
+          academicLevel: body.academicLevel ? String(body.academicLevel) : null,
+          deadline: deadline.toISOString(),
+          isGroup,
+          groupMembers,
+          description: String(body.description || ""),
+          specialInstructions: body.specialInstructions ? String(body.specialInstructions) : null,
+          priceRange: calcEstimateRange,
+          quotedAmount: assignedPaymentValue,
+          currency,
+          calcDetails,
+          businessEmail: dbSettings?.business_email,
+          whatsappNumber: dbSettings?.whatsapp_number
+        });
+      } catch (err) {
+        console.error("[Email Notification] Failed to send assignment notifications:", err);
+      }
 
       return NextResponse.json({ ok: true });
     }

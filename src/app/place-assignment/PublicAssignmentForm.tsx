@@ -211,9 +211,9 @@ export function PublicAssignmentForm({
           <input id="contact-number" className="input" name="contactNumber" type="tel" autoComplete="tel" placeholder="e.g. 077 123 4567" required />
         </div>
         <div className="field">
-          <label htmlFor="email">Email address</label>
-          <input id="email" className="input" name="email" type="email" autoComplete="email" placeholder="e.g. name@student.ac.lk" />
-          <span className="help">Required if you plan to use PayHere online payment.</span>
+          <label htmlFor="email">Email address *</label>
+          <input id="email" className="input" name="email" type="email" autoComplete="email" placeholder="e.g. name@student.ac.lk" required />
+          <span className="help">Your order confirmation, quotation and private portal link will be sent to this email.</span>
         </div>
         <div className="field">
           <label htmlFor="university">University / institute *</label>
