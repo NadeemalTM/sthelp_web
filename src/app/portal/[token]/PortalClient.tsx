@@ -263,12 +263,34 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
     ? `${window.location.origin}/portal/${effectiveToken}`
     : `https://www.sthelp.edu.lk/portal/${effectiveToken}`;
 
-  const calcDetails = assignment.calculation_details;
+  let calcDetails = assignment.calculation_details;
+  if (!calcDetails && assignment.special_instructions) {
+    const match = assignment.special_instructions.match(/<!--CALC_DETAILS:([\s\S]*?)-->/);
+    if (match) {
+      try {
+        calcDetails = JSON.parse(match[1]);
+      } catch {}
+    }
+  }
+  const cleanSpecialInstructions = (assignment.special_instructions || "").replace(/<!--CALC_DETAILS:[\s\S]*?-->/g, "").trim();
   const calcEstimateMatch = `${assignment.description || ""}\n${assignment.special_instructions || ""}`
     .match(/(?:Quoted Estimate|Website calculator quote|Website Estimate Range):\s*(LKR\s*[\d,]+\s*[–-]\s*[\d,]+)/i);
-  const calcEstimateRange = calcDetails?.estimateRange || (calcEstimateMatch ? calcEstimateMatch[1] : null);
+  const calcEstimateRange =
+    calcDetails?.estimateRange ||
+    (calcDetails?.minPrice && calcDetails?.maxPrice ? `LKR ${calcDetails.minPrice} – ${calcDetails.maxPrice}` : null) ||
+    (calcDetails?.rawMin && calcDetails?.rawMax ? `LKR ${Number(calcDetails.rawMin).toLocaleString()} – ${Number(calcDetails.rawMax).toLocaleString()}` : null) ||
+    (calcEstimateMatch ? calcEstimateMatch[1] : null);
+
+  const currency = assignment.currency || data.settings?.currency || "LKR";
+  const baseValue = Number(assignment.quoted_amount || assignment.starting_price_snapshot || 0);
+  const rangePriceDisplay = calcEstimateRange
+    ? calcEstimateRange
+    : baseValue > 0
+      ? `${formatMoney(baseValue, currency)} – ${formatMoney(Math.round(baseValue * 1.35), currency)}`
+      : null;
+
   const paymentValueDisplay = assignment.quoted_amount
-    ? formatMoney(assignment.quoted_amount, assignment.currency || data.settings?.currency || "LKR")
+    ? formatMoney(assignment.quoted_amount, currency)
     : null;
 
   const urgentDetails = [
@@ -276,8 +298,7 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
     `📖 *Assignment:* ${assignment.assignment_title}`,
     assignment.module_name ? `📚 *Module:* ${assignment.module_name}` : null,
     `⏰ *Deadline:* ${formatDate(assignment.deadline)}`,
-    calcEstimateRange ? `📊 *Website Estimate:* ${calcEstimateRange}` : null,
-    paymentValueDisplay ? `💰 *Payment / Quoted Value:* ${paymentValueDisplay}` : null
+    rangePriceDisplay ? `💰 *Estimated Price Range:* ${rangePriceDisplay}` : null
   ].filter(Boolean).join("\n");
 
   const urgentMessage = [
@@ -307,8 +328,7 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
     assignment.module_name ? `📚 *Module:* ${assignment.module_name}` : null,
     assignment.academic_level ? `🎓 *Level:* ${assignment.academic_level}` : null,
     `📅 *Deadline:* ${formatDate(assignment.deadline)}`,
-    calcEstimateRange ? `📊 *Calculator Estimate:* ${calcEstimateRange}` : null,
-    paymentValueDisplay ? `💰 *Payment / Quoted Value:* ${paymentValueDisplay}` : null
+    rangePriceDisplay ? `💰 *Estimated Price Range:* ${rangePriceDisplay}` : null
   ].filter(Boolean).join("\n");
 
   const orderWhatsAppMessage = [
@@ -468,24 +488,22 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
         ) : null}
       </section>
 
-      {assignment.quote_status === "draft" && (assignment.quoted_amount || assignment.starting_price_snapshot) ? (
+      {assignment.quote_status === "draft" && (rangePriceDisplay || assignment.quoted_amount || assignment.starting_price_snapshot) ? (
         <section className="panel quote-panel" id="portal-quote">
           <div className="panel-title">
             <div>
-              <span className="eyebrow">{calcDetails ? "Calculated estimate" : "Starting estimate"}</span>
+              <span className="eyebrow">{calcDetails ? "Calculated estimate range" : "Estimated price range"}</span>
               <h3 style={{ marginTop: 6 }}>Final quotation under review</h3>
             </div>
             <Clock3 />
           </div>
           <div className="quote-amount">
-            {calcDetails?.estimateRange
-              ? calcDetails.estimateRange
-              : `From ${formatMoney(assignment.quoted_amount || assignment.starting_price_snapshot, assignment.currency || data.settings.currency)}`}
+            {rangePriceDisplay}
           </div>
           <p className="muted small">
             {calcDetails
-              ? `Estimated payment value of ${formatMoney(assignment.quoted_amount, assignment.currency || data.settings.currency)} recorded from your calculator selections. StHelp will review your brief and confirm this quotation before payment.`
-              : "This is the public starting price saved when you ordered. StHelp will review the scope and send the final amount for your approval before payment."}
+              ? "Estimated price range recorded from your calculator selections. StHelp will review your brief and confirm the exact quotation before payment."
+              : "Estimated price range based on your assignment brief. StHelp will review the scope and send the final quotation for your approval before payment."}
           </p>
         </section>
       ) : null}
@@ -539,13 +557,13 @@ function DashboardView({ token, data, busy, setBusy, post, reload, setNotice }: 
                 {assignment.description || "—"}
               </p>
             </div>
-            {assignment.special_instructions ? (
+            {cleanSpecialInstructions ? (
               <div>
                 <span className="tiny muted" style={{ fontWeight: 700, textTransform: "uppercase", letterSpacing: ".06em", display: "block", marginBottom: 3 }}>
                   Special Instructions
                 </span>
                 <p className="muted small" style={{ whiteSpace: "pre-wrap", margin: 0 }}>
-                  {assignment.special_instructions}
+                  {cleanSpecialInstructions}
                 </p>
               </div>
             ) : null}

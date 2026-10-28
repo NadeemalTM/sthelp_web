@@ -34,6 +34,19 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     if (payHereAttemptsError && !isMissingRelationError(payHereAttemptsError)) {
       console.warn("Unable to load PayHere attempts:", payHereAttemptsError.message || payHereAttemptsError);
     }
+    if (assignment) {
+      if (!assignment.calculation_details && assignment.special_instructions?.includes("<!--CALC_DETAILS:")) {
+        const match = assignment.special_instructions.match(/<!--CALC_DETAILS:([\s\S]*?)-->/);
+        if (match) {
+          try {
+            assignment.calculation_details = JSON.parse(match[1]);
+          } catch {}
+        }
+      }
+      if (assignment.special_instructions) {
+        assignment.special_instructions = assignment.special_instructions.replace(/<!--CALC_DETAILS:[\s\S]*?-->/g, "").trim();
+      }
+    }
     return NextResponse.json({ assignment, link, progress: progress || [], comments: comments || [], files: files || [], settings, activity: activity || [], payHereAttempts: payHereAttempts || [] });
   } catch (error) {
     logApiError(error);

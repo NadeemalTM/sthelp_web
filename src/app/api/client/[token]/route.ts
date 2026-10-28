@@ -45,6 +45,17 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
     const safeLink = { token: link.token, client_id: link.client_id, client_name: link.client_name, phone: link.phone, status: link.status };
     if (!assignment) return NextResponse.json({ link: safeLink, assignment: null, settings, portfolio, testimonials, pricingServices });
+    if (!assignment.calculation_details && assignment.special_instructions?.includes("<!--CALC_DETAILS:")) {
+      const match = assignment.special_instructions.match(/<!--CALC_DETAILS:([\s\S]*?)-->/);
+      if (match) {
+        try {
+          assignment.calculation_details = JSON.parse(match[1]);
+        } catch {}
+      }
+    }
+    if (assignment.special_instructions) {
+      assignment.special_instructions = assignment.special_instructions.replace(/<!--CALC_DETAILS:[\s\S]*?-->/g, "").trim();
+    }
 
     const currentPayHereQuery = assignment.payhere_payment_attempt_id
       ? db.from("payhere_payment_attempts")
@@ -195,7 +206,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         is_group: isGroup,
         group_members: groupMembers,
         description: requiredText(body.description, "Task description", 10000),
-        special_instructions: optionalText(body.specialInstructions, 5000),
+        special_instructions: (optionalText(body.specialInstructions, 5000) || "") + (calcDetails ? `\n\n<!--CALC_DETAILS:${JSON.stringify(calcDetails)}-->` : "") || null,
         quoted_amount: assignedPaymentValue,
         currency,
         status: "submitted",
@@ -219,8 +230,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       if (insertResult.error) {
         const insertError = insertResult.error as { code?: unknown; message?: unknown; details?: unknown; hint?: unknown };
         const insertErrorText = `${String(insertError.message || "")} ${String(insertError.details || "")} ${String(insertError.hint || "")}`.toLowerCase();
-        const retryInsert = { ...assignmentInsert };
+        const retryInsert: Record<string, unknown> = { ...assignmentInsert, ...pricingSnapshot };
         delete retryInsert.calculation_details;
+        if (["pricing_service_id", "starting_price_snapshot"].some((col) => insertErrorText.includes(col))) {
+          delete retryInsert.pricing_service_id;
+          delete retryInsert.pricing_name_snapshot;
+          delete retryInsert.starting_price_snapshot;
+          delete retryInsert.starting_currency_snapshot;
+        }
         const missingPricingColumns = ["PGRST204", "42703"].includes(String(insertError.code || ""))
           && ["pricing_service_id", "pricing_name_snapshot", "starting_price_snapshot", "starting_currency_snapshot", "calculation_details"].some((column) => insertErrorText.includes(column));
         if (missingPricingColumns) {
