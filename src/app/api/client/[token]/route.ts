@@ -7,6 +7,7 @@ import { isPayHereEnabled } from "@/lib/payhere";
 import { findDefaultPricingService, getPublicPricingServices } from "@/lib/pricing";
 import { FIVE_MB } from "@/lib/constants";
 import { findUnresolvedPayHereAttempt, isMissingRelationError } from "@/lib/payhere-payment-state";
+import { sendAssignmentNotifications } from "@/lib/email";
 
 async function findLink(token: string) {
   const db = getServiceSupabase();
@@ -287,6 +288,36 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           summary: `You submitted ${supportFiles.length} support document${supportFiles.length === 1 ? "" : "s"}.`
         });
       }
+      const { data: dbSettings } = await db.from("settings").select("business_email, whatsapp_number, currency").eq("id", 1).maybeSingle();
+      const calcEstimateRange = calcDetails?.estimateRange
+        || (calcDetails?.minPrice && calcDetails?.maxPrice ? `LKR ${calcDetails.minPrice} – ${calcDetails.maxPrice}` : null);
+
+      sendAssignmentNotifications({
+        assignmentId: created.id,
+        clientId: link.client_id,
+        token: link.token,
+        studentName: String(body.studentName || ""),
+        studentEmail: body.email ? String(body.email) : null,
+        contactNumber: String(body.contactNumber || ""),
+        university: String(body.university || ""),
+        programme: body.programme ? String(body.programme) : null,
+        moduleName: body.moduleName ? String(body.moduleName) : null,
+        assignmentTitle: String(body.assignmentTitle || ""),
+        serviceType: serviceName,
+        academicLevel: body.academicLevel ? String(body.academicLevel) : null,
+        deadline: deadline.toISOString(),
+        isGroup,
+        groupMembers,
+        description: String(body.description || ""),
+        specialInstructions: body.specialInstructions ? String(body.specialInstructions) : null,
+        priceRange: calcEstimateRange,
+        quotedAmount: assignedPaymentValue,
+        currency,
+        calcDetails,
+        businessEmail: dbSettings?.business_email,
+        whatsappNumber: dbSettings?.whatsapp_number
+      }).catch((err) => console.error("[Email Notification] Background send error:", err));
+
       return NextResponse.json({ ok: true });
     }
 
