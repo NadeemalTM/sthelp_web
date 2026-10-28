@@ -1,5 +1,4 @@
 import nodemailer from "nodemailer";
-import { publicSiteUrl } from "@/lib/site-url";
 import { formatDate, formatMoney } from "@/lib/format";
 
 export type AssignmentNotificationParams = {
@@ -37,42 +36,13 @@ function getSmtpConfig() {
   const pass = host === "smtp.gmail.com" ? rawPass.replace(/\s+/g, "") : rawPass;
   const secure = process.env.SMTP_SECURE === "true" || port === 465;
   const senderName = process.env.SMTP_NAME || "StHelp";
-  const from = process.env.SMTP_FROM || `"${senderName}" <${user}>`;
+  const from = `"${senderName}" <${user}>`;
 
   if (!host || !user || !pass) {
     return null;
   }
 
   return { host, port, secure, user, pass, from };
-}
-
-async function sendViaResend(to: string, subject: string, html: string, text: string): Promise<boolean> {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return false;
-
-  const from = process.env.RESEND_FROM || process.env.SMTP_FROM || "StHelp <onboarding@resend.dev>";
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      from,
-      to: [to],
-      subject,
-      html,
-      text
-    })
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("[Email Notification] Resend API error:", response.status, errorText);
-    return false;
-  }
-
-  return true;
 }
 
 export async function sendEmail({
@@ -94,113 +64,87 @@ export async function sendEmail({
     return false;
   }
 
-  // 1. Try Resend if configured
-  if (process.env.RESEND_API_KEY) {
-    try {
-      const sent = await sendViaResend(targetEmail, subject, html, text);
-      if (sent) return true;
-    } catch (error) {
-      console.error("[Email Notification] Resend sending failed:", error);
-    }
-  }
-
-  // 2. Try SMTP / Free Gmail
   const smtp = getSmtpConfig();
-  if (smtp) {
-    try {
-      const transporter = nodemailer.createTransport({
-        host: smtp.host,
-        port: smtp.port,
-        secure: smtp.secure,
-        auth: {
-          user: smtp.user,
-          pass: smtp.pass
-        }
-      });
-
-      const info = await transporter.sendMail({
-        from: smtp.from,
-        to: targetEmail,
-        replyTo: replyTo || smtp.user,
-        subject,
-        html,
-        text,
-        headers: {
-          "X-Entity-Ref-ID": targetEmail,
-          "List-Unsubscribe": `<mailto:${smtp.user}?subject=unsubscribe>`
-        }
-      });
-
-      console.log(`[Email Notification] Email sent successfully to ${targetEmail} (Message ID: ${info.messageId})`);
-      return true;
-    } catch (error) {
-      console.error(`[Email Notification] SMTP send error to ${targetEmail}:`, error);
-      return false;
-    }
+  if (!smtp) {
+    console.error("[Email Notification] SMTP configuration missing.");
+    return false;
   }
 
-  console.warn(
-    `[Email Notification] Email not sent to ${targetEmail} — No SMTP credentials configured.`
-  );
-  return false;
+  try {
+    const transporter = nodemailer.createTransport({
+      host: smtp.host,
+      port: smtp.port,
+      secure: smtp.secure,
+      auth: {
+        user: smtp.user,
+        pass: smtp.pass
+      }
+    });
+
+    const info = await transporter.sendMail({
+      from: smtp.from,
+      to: targetEmail,
+      replyTo: replyTo || smtp.user,
+      subject,
+      html,
+      text,
+      headers: {
+        "X-Entity-Ref-ID": `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+      }
+    });
+
+    console.log(`[Email Notification] Email sent successfully to ${targetEmail} (Message ID: ${info.messageId})`);
+    return true;
+  } catch (error) {
+    console.error(`[Email Notification] SMTP send error to ${targetEmail}:`, error);
+    return false;
+  }
 }
 
-function emailWrapper(content: string, previewText: string): string {
+function emailWrapper(content: string): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StHelp Notification</title>
-  <style>
-    body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; color: #1e293b; line-height: 1.6; }
-    .wrapper { width: 100%; max-width: 620px; margin: 0 auto; padding: 24px 16px; box-sizing: border-box; }
-    .card { background: #ffffff; border-radius: 14px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.04); }
-    .header { background: #15805d; padding: 24px; text-align: center; color: #ffffff; }
-    .header h1 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
-    .header p { margin: 6px 0 0 0; font-size: 13px; opacity: 0.95; }
-    .content { padding: 28px 24px; }
-    .badge { display: inline-block; background: #dcfce7; color: #166534; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
-    .highlight-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 16px 20px; margin: 20px 0; }
-    .highlight-title { font-size: 12px; font-weight: 700; text-transform: uppercase; color: #166534; letter-spacing: 0.05em; margin-bottom: 4px; }
-    .highlight-value { font-size: 20px; font-weight: 800; color: #15805d; }
-    .table-details { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
-    .table-details td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; }
-    .table-details td.label { width: 38%; color: #64748b; font-weight: 500; }
-    .table-details td.value { width: 62%; color: #0f172a; font-weight: 600; }
-    .button-container { text-align: center; margin: 28px 0 16px; }
-    .button { display: inline-block; background: #15805d; color: #ffffff !important; text-decoration: none; font-weight: 700; font-size: 15px; padding: 14px 28px; border-radius: 8px; box-shadow: 0 4px 12px rgba(21, 128, 93, 0.25); }
-    .button-secondary { display: inline-block; background: #f1f5f9; color: #334155 !important; text-decoration: none; font-weight: 600; font-size: 14px; padding: 10px 20px; border-radius: 6px; margin: 4px; }
-    .footer { padding: 20px; text-align: center; font-size: 12px; color: #94a3b8; line-height: 1.5; }
-    .footer a { color: #64748b; text-decoration: underline; }
-  </style>
 </head>
-<body>
-  <div style="display:none;font-size:1px;color:#333;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">
-    ${previewText}
-  </div>
-  <div class="wrapper">
-    <div class="card">
-      <div class="header">
-        <h1>StHelp Academic Support</h1>
-        <p>Private Academic Portal & Assignment Tracking</p>
-      </div>
-      <div class="content">
-        ${content}
-      </div>
-    </div>
-    <div class="footer">
-      <p style="margin: 0 0 6px 0;">StHelp Academic Support Services · Colombo, Sri Lanka</p>
-      <p style="margin: 0 0 6px 0;">WhatsApp: +94 78 206 7550 · Email: assignment.sthelp@gmail.com</p>
-      <p style="margin: 0;">Online academic research, software & coursework assistance</p>
-    </div>
-  </div>
+<body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b; line-height: 1.6;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="background-color: #f1f5f9; padding: 24px 0;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; margin: 0 16px;">
+          <tr>
+            <td style="background-color: #15805d; padding: 24px 28px; text-align: left;">
+              <h1 style="margin: 0; font-size: 20px; font-weight: 700; color: #ffffff; letter-spacing: -0.01em;">StHelp Academic Support</h1>
+              <p style="margin: 4px 0 0 0; font-size: 13px; color: #dcfce7;">Order Confirmation &amp; Workspace Access</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 28px 28px 24px 28px;">
+              ${content}
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 20px 28px; text-align: center; font-size: 12px; color: #64748b; line-height: 1.6;">
+              <p style="margin: 0 0 4px 0; font-weight: 600; color: #334155;">StHelp Academic Support Services</p>
+              <p style="margin: 0 0 4px 0;">Colombo, Sri Lanka · WhatsApp: +94 78 206 7550</p>
+              <p style="margin: 0;"><a href="https://www.sthelp.edu.lk" style="color: #15805d; text-decoration: none;">www.sthelp.edu.lk</a> · Support: assignment.sthelp@gmail.com</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>`;
 }
 
 export async function sendAssignmentNotifications(params: AssignmentNotificationParams): Promise<{ customerSent: boolean; adminSent: boolean }> {
-  const baseUrl = publicSiteUrl();
+  // Always use HTTPS production domain for links in emails (never localhost, which triggers spam filters)
+  const configured = process.env.NEXT_PUBLIC_APP_URL || "https://www.sthelp.edu.lk";
+  const baseUrl = configured.includes("localhost") ? "https://www.sthelp.edu.lk" : configured;
+
   const portalUrl = `${baseUrl}/portal/${params.token}`;
   const adminUrl = `${baseUrl}/admin/assignments/${params.assignmentId}`;
   const currency = params.currency || "LKR";
@@ -213,78 +157,72 @@ export async function sendAssignmentNotifications(params: AssignmentNotification
 
   // 1. Send confirmation email to Customer (if email was provided)
   if (params.studentEmail && params.studentEmail.trim()) {
-    const preview = `Your assignment order (${params.clientId}) has been received. Track your quotation & progress in your private client portal.`;
     const customerHtmlContent = `
-      <span class="badge">Order Confirmed</span>
-      <h2 style="margin: 0 0 10px 0; font-size: 20px; color: #0f172a;">Hello ${escapeHtml(params.studentName)},</h2>
-      <p style="margin: 0 0 16px 0; color: #475569; font-size: 15px;">
-        Thank you for submitting your assignment support request to <strong>StHelp</strong>. We have registered your order and prepared your private client portal.
+      <p style="margin: 0 0 16px 0; font-size: 16px; color: #0f172a;">Hello <strong>${escapeHtml(params.studentName)}</strong>,</p>
+      <p style="margin: 0 0 16px 0; color: #475569; font-size: 14px; line-height: 1.6;">
+        Thank you for submitting your assignment request to <strong>StHelp Academic Support</strong>. We have registered your request and created your private workspace portal.
       </p>
 
-      <div class="highlight-box">
-        <div class="highlight-title">Estimated Price Range / Initial Value</div>
-        <div class="highlight-value">${escapeHtml(priceText)}</div>
+      <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 14px 18px; margin: 18px 0;">
+        <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: #166534; letter-spacing: 0.05em; margin-bottom: 4px;">Estimated Quotation Range</div>
+        <div style="font-size: 20px; font-weight: 800; color: #15805d;">${escapeHtml(priceText)}</div>
         <div style="font-size: 12px; color: #475569; margin-top: 4px;">
-          Our academic team is reviewing your requirements and will confirm the final quotation directly in your portal before any payment is requested.
+          Our academic team is reviewing your requirements and will confirm final details directly in your portal.
         </div>
       </div>
 
-      <table class="table-details">
-        <tr><td class="label">Client ID</td><td class="value">${escapeHtml(params.clientId)}</td></tr>
-        <tr><td class="label">Assignment Title</td><td class="value">${escapeHtml(params.assignmentTitle)}</td></tr>
-        ${params.moduleName ? `<tr><td class="label">Module / Subject</td><td class="value">${escapeHtml(params.moduleName)}</td></tr>` : ""}
-        <tr><td class="label">University / Institute</td><td class="value">${escapeHtml(params.university)}</td></tr>
-        ${params.academicLevel ? `<tr><td class="label">Academic Level</td><td class="value">${escapeHtml(params.academicLevel)}</td></tr>` : ""}
-        <tr><td class="label">Required Deadline</td><td class="value">${escapeHtml(formatDate(params.deadline))}</td></tr>
-        <tr><td class="label">Support Type</td><td class="value">${escapeHtml(params.serviceType)}</td></tr>
+      <table width="100%" cellpadding="6" cellspacing="0" border="0" role="presentation" style="font-size: 14px; margin: 18px 0; border-collapse: collapse;">
+        <tr><td style="color: #64748b; width: 38%; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">Client Reference</td><td style="color: #0f172a; font-weight: 600; width: 62%; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">${escapeHtml(params.clientId)}</td></tr>
+        <tr><td style="color: #64748b; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">Assignment Title</td><td style="color: #0f172a; font-weight: 600; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">${escapeHtml(params.assignmentTitle)}</td></tr>
+        ${params.moduleName ? `<tr><td style="color: #64748b; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">Module / Subject</td><td style="color: #0f172a; font-weight: 600; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">${escapeHtml(params.moduleName)}</td></tr>` : ""}
+        <tr><td style="color: #64748b; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">University / Institute</td><td style="color: #0f172a; font-weight: 600; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">${escapeHtml(params.university)}</td></tr>
+        ${params.academicLevel ? `<tr><td style="color: #64748b; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">Academic Level</td><td style="color: #0f172a; font-weight: 600; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">${escapeHtml(params.academicLevel)}</td></tr>` : ""}
+        <tr><td style="color: #64748b; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">Required Deadline</td><td style="color: #0f172a; font-weight: 600; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">${escapeHtml(formatDate(params.deadline))}</td></tr>
+        <tr><td style="color: #64748b; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">Service Type</td><td style="color: #0f172a; font-weight: 600; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">${escapeHtml(params.serviceType)}</td></tr>
       </table>
 
-      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin: 18px 0;">
-        <strong style="color: #0f172a; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em;">Your Submitted Assignment Brief:</strong>
+      <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin: 18px 0;">
+        <strong style="color: #0f172a; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em;">Your Assignment Brief:</strong>
         <p style="white-space: pre-wrap; font-size: 13px; color: #475569; margin: 6px 0 0 0;">${escapeHtml(params.description)}</p>
         ${params.specialInstructions ? `<p style="font-size: 12px; color: #64748b; margin: 8px 0 0 0;"><strong>Special Instructions:</strong> ${escapeHtml(params.specialInstructions)}</p>` : ""}
       </div>
 
-      <div class="button-container">
-        <a href="${portalUrl}" class="button" target="_blank">
-          Open My Private Client Portal
+      <div style="text-align: center; margin: 26px 0 18px 0;">
+        <a href="${portalUrl}" style="display: inline-block; background-color: #15805d; color: #ffffff !important; text-decoration: none; font-weight: 700; font-size: 14px; padding: 12px 24px; border-radius: 6px;" target="_blank">
+          View Your Client Portal
         </a>
       </div>
 
-      <p style="font-size: 13px; color: #64748b; text-align: center; margin: 12px 0 20px 0;">
-        Direct link: <a href="${portalUrl}" style="color: #15805d;">${portalUrl}</a><br>
-        Bookmark your portal link to review quotations, verify files, request revisions, and send feedback.
+      <p style="font-size: 12px; color: #64748b; text-align: center; margin: 10px 0 16px 0;">
+        Portal Link: <a href="${portalUrl}" style="color: #15805d;">${portalUrl}</a>
       </p>
 
-      <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 16px; margin: 20px 0; text-align: center;">
-        <strong style="color: #166534; font-size: 14px; display: block; margin-bottom: 6px;">Need fast answers or want to discuss details?</strong>
-        <p style="font-size: 13px; color: #334155; margin: 0 0 12px 0;">Our academic support team is ready on WhatsApp:</p>
-        <a href="https://wa.me/${cleanWa}?text=${encodeURIComponent(`Hello StHelp Team, I placed an assignment order. My Client ID is ${params.clientId}.`)}" style="display: inline-block; background: #25D366; color: #ffffff !important; text-decoration: none; font-weight: 700; font-size: 14px; padding: 12px 24px; border-radius: 8px; box-shadow: 0 4px 10px rgba(37, 211, 102, 0.25);" target="_blank">
-          Chat on WhatsApp (+${cleanWa})
-        </a>
+      <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin: 16px 0; text-align: center;">
+        <p style="margin: 0; font-size: 13px; color: #334155;">
+          Direct WhatsApp Support: <strong>+${cleanWa}</strong> · Email: <a href="mailto:assignment.sthelp@gmail.com" style="color: #15805d; text-decoration: none;">assignment.sthelp@gmail.com</a>
+        </p>
       </div>
     `;
 
-    const customerHtml = emailWrapper(customerHtmlContent, preview);
+    const customerHtml = emailWrapper(customerHtmlContent);
     const customerText = `Hello ${params.studentName},\n\n` +
-      `Thank you for placing your assignment support request with StHelp.\n\n` +
-      `Order Summary:\n` +
-      `• Client ID: ${params.clientId}\n` +
+      `Thank you for submitting your assignment request to StHelp Academic Support.\n\n` +
+      `Request Summary:\n` +
+      `• Reference ID: ${params.clientId}\n` +
       `• Assignment: ${params.assignmentTitle}\n` +
       `• Deadline: ${formatDate(params.deadline)}\n` +
-      `• Estimated Price: ${priceText}\n\n` +
+      `• Estimated Range: ${priceText}\n\n` +
       `Your Assignment Brief:\n${params.description}\n\n` +
       `Access your private client portal:\n${portalUrl}\n\n` +
-      `WhatsApp Support: +${cleanWa}\n\n` +
-      `Best regards,\nStHelp Academic Team`;
+      `Direct Support:\nWhatsApp: +${cleanWa}\nEmail: assignment.sthelp@gmail.com\n\n` +
+      `StHelp Academic Support Services\nColombo, Sri Lanka\nwww.sthelp.edu.lk`;
 
     sendJobs.push(
       sendEmail({
         to: params.studentEmail,
-        subject: `Order Confirmation: ${params.assignmentTitle} (#${params.clientId}) - StHelp`,
+        subject: `StHelp Assignment Confirmation: ${params.assignmentTitle} [Ref: ${params.clientId}]`,
         html: customerHtml,
-        text: customerText,
-        replyTo: "assignment.sthelp@gmail.com"
+        text: customerText
       }).then((ok) => {
         results.customerSent = ok;
       }).catch((err) => {
@@ -296,74 +234,69 @@ export async function sendAssignmentNotifications(params: AssignmentNotification
   // 2. Send notification email to Admin ("To me")
   const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "gayanthanadeemal@gmail.com";
   if (adminEmail) {
-    const adminPreview = `New order from ${params.studentName} (${params.clientId}): ${params.assignmentTitle}`;
     const calcDetailsBlock = params.calcDetails ? `
-      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin: 14px 0; font-size: 13px;">
-        <strong style="color: #15805d;">Calculator Estimate Details:</strong><br>
+      <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin: 14px 0; font-size: 13px;">
+        <strong style="color: #15805d;">Calculator Estimate:</strong><br>
         • Area: ${escapeHtml(params.calcDetails.categoryLabel || params.calcDetails.category || "—")}<br>
         • Scope: ${escapeHtml(params.calcDetails.scope || "—")}<br>
         • Level: ${escapeHtml(params.calcDetails.level || "—")}<br>
         • Turnaround: ${escapeHtml(params.calcDetails.turnaround || "—")}<br>
         • Add-ons: ${escapeHtml(params.calcDetails.addons || "None")}<br>
-        • Range: <strong>${escapeHtml(params.calcDetails.estimateRange || priceText)}</strong>
+        • Estimate: <strong>${escapeHtml(params.calcDetails.estimateRange || priceText)}</strong>
       </div>
     ` : "";
 
     const adminHtmlContent = `
-      <span class="badge" style="background:#fef3c7; color:#92400e;">New Assignment Request</span>
-      <h2 style="margin: 0 0 10px 0; font-size: 20px; color: #0f172a;">New Order: ${escapeHtml(params.studentName)}</h2>
-      <p style="margin: 0 0 16px 0; color: #475569; font-size: 14px;">
-        A new assignment support request was just placed online.
-      </p>
+      <p style="margin: 0 0 16px 0; font-size: 16px; color: #0f172a;">New assignment order submitted by <strong>${escapeHtml(params.studentName)}</strong>.</p>
 
-      <div class="highlight-box">
-        <div class="highlight-title">Quoted / Estimated Price</div>
-        <div class="highlight-value">${escapeHtml(priceText)}</div>
+      <div style="background-color: #fef3c7; border: 1px solid #fde68a; border-radius: 8px; padding: 14px 18px; margin: 18px 0;">
+        <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: #92400e; letter-spacing: 0.05em; margin-bottom: 4px;">Quoted / Estimated Range</div>
+        <div style="font-size: 20px; font-weight: 800; color: #b45309;">${escapeHtml(priceText)}</div>
       </div>
 
-      <table class="table-details">
-        <tr><td class="label">Client ID</td><td class="value">${escapeHtml(params.clientId)}</td></tr>
-        <tr><td class="label">Student Name</td><td class="value">${escapeHtml(params.studentName)}</td></tr>
-        <tr><td class="label">Phone / WhatsApp</td><td class="value"><a href="https://wa.me/${params.contactNumber.replace(/\D/g, "")}" style="color:#15805d; font-weight:700;">${escapeHtml(params.contactNumber)}</a></td></tr>
-        <tr><td class="label">Student Email</td><td class="value">${escapeHtml(params.studentEmail || "Not provided")}</td></tr>
-        <tr><td class="label">University</td><td class="value">${escapeHtml(params.university)}</td></tr>
-        ${params.programme ? `<tr><td class="label">Programme</td><td class="value">${escapeHtml(params.programme)}</td></tr>` : ""}
-        ${params.moduleName ? `<tr><td class="label">Module</td><td class="value">${escapeHtml(params.moduleName)}</td></tr>` : ""}
-        <tr><td class="label">Assignment Title</td><td class="value"><strong>${escapeHtml(params.assignmentTitle)}</strong></td></tr>
-        <tr><td class="label">Deadline</td><td class="value">${escapeHtml(formatDate(params.deadline))}</td></tr>
-        <tr><td class="label">Group Work</td><td class="value">${params.isGroup ? `Yes (${params.groupMembers} members)` : "No"}</td></tr>
+      <table width="100%" cellpadding="6" cellspacing="0" border="0" role="presentation" style="font-size: 14px; margin: 18px 0; border-collapse: collapse;">
+        <tr><td style="color: #64748b; width: 38%; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">Client Reference</td><td style="color: #0f172a; font-weight: 600; width: 62%; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">${escapeHtml(params.clientId)}</td></tr>
+        <tr><td style="color: #64748b; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">Student Name</td><td style="color: #0f172a; font-weight: 600; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">${escapeHtml(params.studentName)}</td></tr>
+        <tr><td style="color: #64748b; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">Contact Number</td><td style="color: #0f172a; font-weight: 600; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">${escapeHtml(params.contactNumber)}</td></tr>
+        <tr><td style="color: #64748b; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">Student Email</td><td style="color: #0f172a; font-weight: 600; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">${params.studentEmail ? `<a href="mailto:${escapeHtml(params.studentEmail)}" style="color: #15805d;">${escapeHtml(params.studentEmail)}</a>` : "Not provided"}</td></tr>
+        <tr><td style="color: #64748b; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">University</td><td style="color: #0f172a; font-weight: 600; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">${escapeHtml(params.university)}</td></tr>
+        ${params.programme ? `<tr><td style="color: #64748b; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">Programme</td><td style="color: #0f172a; font-weight: 600; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">${escapeHtml(params.programme)}</td></tr>` : ""}
+        ${params.moduleName ? `<tr><td style="color: #64748b; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">Module</td><td style="color: #0f172a; font-weight: 600; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">${escapeHtml(params.moduleName)}</td></tr>` : ""}
+        <tr><td style="color: #64748b; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">Assignment Title</td><td style="color: #0f172a; font-weight: 600; padding: 8px 0; border-bottom: 1px solid #f1f5f9;"><strong>${escapeHtml(params.assignmentTitle)}</strong></td></tr>
+        <tr><td style="color: #64748b; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">Deadline</td><td style="color: #0f172a; font-weight: 600; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">${escapeHtml(formatDate(params.deadline))}</td></tr>
+        <tr><td style="color: #64748b; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">Group Work</td><td style="color: #0f172a; font-weight: 600; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">${params.isGroup ? `Yes (${params.groupMembers} members)` : "No"}</td></tr>
       </table>
 
       ${calcDetailsBlock}
 
       <div style="margin: 18px 0; font-size: 13px;">
-        <strong>Task Description:</strong>
-        <p style="white-space: pre-wrap; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; margin: 4px 0 12px 0;">${escapeHtml(params.description)}</p>
+        <strong style="color: #0f172a;">Task Description:</strong>
+        <p style="white-space: pre-wrap; background-color: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; margin: 4px 0 12px 0;">${escapeHtml(params.description)}</p>
         ${params.specialInstructions ? `
-          <strong>Special Instructions:</strong>
-          <p style="white-space: pre-wrap; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; margin: 4px 0;">${escapeHtml(params.specialInstructions)}</p>
+          <strong style="color: #0f172a;">Special Instructions:</strong>
+          <p style="white-space: pre-wrap; background-color: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; margin: 4px 0;">${escapeHtml(params.specialInstructions)}</p>
         ` : ""}
       </div>
 
-      <div class="button-container">
-        <a href="${adminUrl}" class="button" target="_blank" style="margin-right: 8px;">
+      <div style="text-align: center; margin: 26px 0 18px 0;">
+        <a href="${adminUrl}" style="display: inline-block; background-color: #15805d; color: #ffffff !important; text-decoration: none; font-weight: 700; font-size: 14px; padding: 12px 24px; border-radius: 6px; margin-right: 8px;" target="_blank">
           Open in Admin Dashboard
         </a>
-        <a href="${portalUrl}" class="button-secondary" target="_blank">
-          View Client Portal
+        <a href="${portalUrl}" style="display: inline-block; background-color: #f1f5f9; color: #334155 !important; text-decoration: none; font-weight: 600; font-size: 14px; padding: 12px 20px; border-radius: 6px;" target="_blank">
+          Client Portal View
         </a>
       </div>
     `;
 
-    const adminHtml = emailWrapper(adminHtmlContent, adminPreview);
-    const adminText = `[New Assignment Order Received]\n\n` +
+    const adminHtml = emailWrapper(adminHtmlContent);
+    const adminText = `[New Assignment Order]\n\n` +
       `Client ID: ${params.clientId}\n` +
       `Student: ${params.studentName} (${params.contactNumber})\n` +
       `Email: ${params.studentEmail || "Not provided"}\n` +
       `University: ${params.university}\n` +
       `Assignment: ${params.assignmentTitle}\n` +
       `Deadline: ${formatDate(params.deadline)}\n` +
-      `Estimated Price: ${priceText}\n\n` +
+      `Estimated Range: ${priceText}\n\n` +
       `Task Description:\n${params.description}\n\n` +
       `Admin Dashboard: ${adminUrl}\n` +
       `Client Portal: ${portalUrl}`;
@@ -371,10 +304,9 @@ export async function sendAssignmentNotifications(params: AssignmentNotification
     sendJobs.push(
       sendEmail({
         to: adminEmail,
-        subject: `[New Order] ${params.studentName} - ${params.assignmentTitle} (#${params.clientId})`,
+        subject: `New Assignment Order: ${params.studentName} - ${params.assignmentTitle} [Ref: ${params.clientId}]`,
         html: adminHtml,
-        text: adminText,
-        replyTo: params.studentEmail || undefined
+        text: adminText
       }).then((ok) => {
         results.adminSent = ok;
       }).catch((err) => {
