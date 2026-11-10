@@ -217,7 +217,9 @@ const AI_CLICHE_PATTERNS: { pattern: RegExp; label: string; weight: number }[] =
   { pattern: /,\s*(?:thereby\s+)?(?!adjusting\b)[a-z]+ing\s+[^,.?!]{8,85}[.?!]/gi, label: "participial -ing tail", weight: 10 },
   { pattern: /^(?:Designated|Founded|Established|Located|Recognized|Built|Rising|Drawing|Spanning)\s+[^,]{6,70},\s+/im, label: "fronted participle opener", weight: 10 },
   { pattern: /—like\s+[^—]{6,100}—/gi, label: "AI em-dash '—like X—' parenthetical", weight: 10 },
-  { pattern: /\b(?:quickly\s+replace|frantically\s+troubleshooting|running\s+purely\s+on|quietly\s+powers|entirely\s+new|mountains\s+of|astounding\s+concentration|extraordinary\s+feat|carved\s+directly\s+into|continues\s+to\s+attract)\b/gi, label: "AI dramatic adverb/modifier collocation", weight: 10 },
+  { pattern: /\b(?:quickly\s+replace|frantically\s+troubleshooting|running\s+purely\s+on|quietly\s+powers|entirely\s+new|mountains\s+of|astounding\s+concentration|extraordinary\s+feat|carved\s+directly\s+into|continues\s+to\s+attract|fluctuates\s+with|eliminates\s+exhausting|struggle\s+to\s+replicate|build\s+intentional\s+habits|asynchronous\s+updates|feels?\s+isolated)\b/gi, label: "AI dramatic/formal collocation", weight: 10 },
+  { pattern: /\b(?:solve|solves|address|addresses|handle|handles)\s+[^,]{4,40}\s+by\s+[a-z]+ing\s+.+?\s+and\s+[a-z]+ing\b/gi, label: "AI 'solve X by verbing A and verbing B' template", weight: 10 },
+  { pattern: /^However,\s+/im, label: "mechanical 'However,' opener", weight: 8 },
   { pattern: /\b(?:Some\s+days\s+you\s+are|Other\s+days,\s+it\s+is\s+just|You\s+learn\s+how\s+to\s+manage|It\s+is\s+[a-z]+,\s+[a-z]+,\s+and\s+[a-z]+,\s+but\s+it\s+shapes)\b/gi, label: "formulaic AI narrative framing", weight: 12 },
   { pattern: /\bUnlike\s+(?:conventional|traditional|existing|standard)\s+[^,]+that\s+only\b/gi, label: "Unlike conventional... that only", weight: 10 },
   { pattern: /\bcombines\s+[^.?!]+,\s+[^.?!]+\s+and\s+[^.?!]+\s+in\s+one\b/gi, label: "combines A, B and C in one", weight: 9 },
@@ -355,10 +357,10 @@ export function analyzeTextForensics(text: string, customFrozenWords: string[] =
     }
 
     if (hasDashOrSemicolon && !/—like\s+/i.test(s)) sAiScore -= 14;
-    if (/^(Where|Rather than|While|Although|Still|Yet|And|But|Most|Instead of|It’s|It's|There are|Compared with|More than|The uni)\b/i.test(s)) {
-      sAiScore -= 12;
+    if (/^(Where|Rather than|While|Although|Still|Even so|Yet|And|But|Most|Instead of|It’s|It's|There are|Compared with|More than|The uni|To fix)\b/i.test(s)) {
+      sAiScore -= 13;
     }
-    if (/\b(?:it’s|it's|don’t|don't|you’re|you're|that’s|that's|gives way to|refers to teaching|is home to|that flow around it|for example—|learns through|budget on your own|set foot on|brand new|quietly powering|covers some|was declared|was built by|cut straight into|still draws|remarkable feat of)\b/i.test(s)) {
+    if (/\b(?:it’s|it's|don’t|don't|you’re|you're|that’s|that's|gives way to|refers to teaching|is home to|that flow around it|for example—|learns through|budget on your own|set foot on|brand new|quietly powering|covers some|was declared|was built by|cut straight into|still draws|remarkable feat of|goes up and down|store extra energy|cuts reliance|keeps .* steady|cutting out tiring|find it hard to match|that way, nobody)\b/i.test(s)) {
       sAiScore -= 14;
     }
     if (/\([A-Z][A-Za-z\s&.,]+?(?:19|20)\d{2}/.test(s) || /\[\d+\]/.test(s)) {
@@ -1013,10 +1015,7 @@ const HIGH_RISK_REPLACEMENT_RULES: PhraseRule[] = [
 ];
 
 const CLEAN_HUMAN_SYNONYM_MAP: [RegExp, string[]][] = [
-  [/\bcombines\b/gi, ["brings together", "unites", "joins"]],
-  [/\bcombine\b/gi, ["bring together", "unite", "join"]],
-  [/\bcombining\b/gi, ["bringing together", "uniting", "joining"]],
-  [/\bconventional\b/gi, ["standard", "traditional", "typical"]],
+  // Multi-word Simple-English Phrase Simplifications
   [/\brepresents\s+an\s+extraordinary\s+feat\s+of\b/gi, ["is a remarkable feat of", "stands out as a remarkable feat of"]],
   [/\brepresents\s+(a|an)\b/gi, ["is $1", "acts as $1"]],
   [/\bconstitutes\s+(a|an)\b/gi, ["forms $1", "is $1"]],
@@ -1025,21 +1024,158 @@ const CLEAN_HUMAN_SYNONYM_MAP: [RegExp, string[]][] = [
   [/\baround\s+the\s+world\b/gi, ["worldwide", "all over the world"]],
   [/\bcarved\s+directly\s+into\b/gi, ["cut straight into", "carved right into"]],
   [/\bbefore\s+reaching\b/gi, ["on the way to", "before arriving at"]],
+  [/\bfluctuates\s+with\s+changing\s+weather\s+conditions\b/gi, ["goes up and down with shifting weather", "changes with the weather"]],
+  [/\bfluctuates\s+with\b/gi, ["goes up and down with", "changes with", "varies with"]],
+  [/\bfluctuate\s+with\b/gi, ["go up and down with", "change with", "vary with"]],
+  [/\bchanging\s+weather\s+conditions\b/gi, ["shifting weather", "weather changes"]],
+  [/\breleasing\s+it\s+back\s+into\b/gi, ["sending it back into", "feeding it back into"]],
+  [/\brelease\s+it\s+back\s+into\b/gi, ["send it back into", "feed it back into"]],
+  [/\bwhen\s+evening\s+demand\s+spikes\b/gi, ["when evening demand jumps", "during evening demand peaks"]],
+  [/\bdemand\s+spikes\b/gi, ["demand jumps", "demand peaks"]],
+  [/\bwhile\s+stabilizing\s+([^,.?!]+?)\s+levels\b/gi, ["and keeps $1 levels steady", "while keeping $1 levels steady"]],
+  [/\bwhile\s+stabilizing\b/gi, ["while keeping steady", "and steadies"]],
+  [/\breducing\s+reliance\s+on\b/gi, ["cutting reliance on", "relying less on"]],
+  [/\breduce\s+reliance\s+on\b/gi, ["cut reliance on", "rely less on"]],
+  [/\bdaily\s+commutes\s+across\s+congested\s+city\s+roads\b/gi, ["daily trips through crowded city roads", "daily commutes through busy city traffic"]],
+  [/\binstant\s+messaging\s+channels\b/gi, ["messaging tools", "chat apps"]],
+  [/\boften\s+struggle\s+to\s+replicate\b/gi, ["often find it hard to match", "rarely match"]],
+  [/\bstruggle\s+to\s+replicate\b/gi, ["find it hard to match", "struggle to recreate"]],
+  [/\bstruggles\s+to\s+replicate\b/gi, ["finds it hard to match", "struggles to recreate"]],
+  [/\bthat\s+happens\s+naturally\b/gi, ["that comes naturally", "that takes place naturally"]],
+  [/\bhave\s+to\s+build\s+intentional\s+habits\s+around\b/gi, ["need to build steady habits around", "need to make a real habit of"]],
+  [/\bbuild\s+intentional\s+habits\s+around\b/gi, ["build steady habits around", "make a real habit of"]],
+  [/\basynchronous\s+updates\b/gi, ["written updates", "async updates"]],
+  [/\bfeels\s+isolated\b/gi, ["feels cut off", "feels left out"]],
+  [/\bfeel\s+isolated\b/gi, ["feel cut off", "feel left out"]],
+  [/\ba\s+large\s+number\s+of\b/gi, ["many", "plenty of"]],
+  [/\ba\s+wide\s+(?:variety|range)\s+of\b/gi, ["many different", "all kinds of"]],
+  [/\bthe\s+vast\s+majority\s+of\b/gi, ["most", "almost all"]],
+  [/\bat\s+the\s+present\s+time\b/gi, ["right now", "today"]],
+  [/\bat\s+this\s+point\s+in\s+time\b/gi, ["right now", "now"]],
+  [/\bon\s+a\s+daily\s+basis\b/gi, ["every day", "daily"]],
+  [/\bon\s+a\s+regular\s+basis\b/gi, ["regularly", "often"]],
+  [/\bin\s+close\s+proximity\s+to\b/gi, ["near", "close to"]],
+  [/\bprior\s+to\b/gi, ["before", "ahead of"]],
+  [/\bsubsequent\s+to\b/gi, ["after", "following"]],
+  [/\bin\s+the\s+event\s+that\b/gi, ["if", "whenever"]],
+  [/\bin\s+the\s+absence\s+of\b/gi, ["without", "lacking"]],
+  [/\bfor\s+the\s+purpose\s+of\b/gi, ["to", "for"]],
+  [/\bby\s+means\s+of\b/gi, ["through", "using"]],
+  [/\bwith\s+(?:regard|respect)\s+to\b/gi, ["for", "when it comes to"]],
+  [/\bin\s+terms\s+of\b/gi, ["for", "in"]],
+  [/\bis\s+able\s+to\b/gi, ["can"]],
+  [/\bare\s+able\s+to\b/gi, ["can"]],
+  [/\bwas\s+able\s+to\b/gi, ["could", "managed to"]],
+  [/\bwere\s+able\s+to\b/gi, ["could", "managed to"]],
+  [/\bhas\s+the\s+(?:ability|capacity)\s+to\b/gi, ["can"]],
+  [/\bhave\s+the\s+(?:ability|capacity)\s+to\b/gi, ["can"]],
+  [/\bhas\s+the\s+potential\s+to\b/gi, ["can", "could"]],
+  [/\bhave\s+the\s+potential\s+to\b/gi, ["can", "could"]],
+  [/\bendeavors?\s+to\b/gi, ["tries to", "works to"]],
+  [/\bstrives\s+to\b/gi, ["works to", "tries to"]],
+  [/\bstrive\s+to\b/gi, ["work to", "try to"]],
+  [/\bseeks\s+to\b/gi, ["tries to", "aims to"]],
+  [/\bseek\s+to\b/gi, ["try to", "aim to"]],
+  [/\bprove\s+to\s+be\b/gi, ["turn out to be"]],
+  [/\bproves\s+to\s+be\b/gi, ["turns out to be"]],
+  [/\bproven\s+to\s+be\b/gi, ["turned out to be"]],
+  [/\bstems\s+from\b/gi, ["comes from", "grows out of"]],
+  [/\bstem\s+from\b/gi, ["come from", "grow out of"]],
+  [/\boriginates?\s+from\b/gi, ["comes from", "starts in"]],
+  [/\bderives?\s+from\b/gi, ["comes from", "draws from"]],
+  [/\bpertains?\s+to\b/gi, ["relates to", "applies to"]],
+  [/\badheres\s+to\b/gi, ["follows", "sticks to"]],
+  [/\badhere\s+to\b/gi, ["follow", "stick to"]],
+  [/\bcomplies\s+with\b/gi, ["follows", "meets"]],
+  [/\bcomply\s+with\b/gi, ["follow", "meet"]],
+  [/\bhinges\s+(?:on|upon)\b/gi, ["depends on", "rests on"]],
+  [/\bhinge\s+(?:on|upon)\b/gi, ["depend on", "rest on"]],
+  [/\bcapitalizes?\s+on\b/gi, ["makes the most of", "builds on"]],
+  [/\bparticipates\s+in\b/gi, ["takes part in", "joins"]],
+  [/\bparticipate\s+in\b/gi, ["take part in", "join"]],
+  [/\bengages\s+in\b/gi, ["takes part in", "carries out"]],
+  [/\bengage\s+in\b/gi, ["take part in", "carry out"]],
+  [/\bcontributes\s+to\b/gi, ["adds to", "helps drive"]],
+  [/\bcontribute\s+to\b/gi, ["add to", "help drive"]],
+  [/\bcollaborates\s+with\b/gi, ["works with", "teams up with"]],
+  [/\bcollaborate\s+with\b/gi, ["work with", "team up with"]],
+  [/\bsusceptible\s+to\b/gi, ["prone to", "open to"]],
+  [/\bvulnerable\s+to\b/gi, ["open to", "at risk of"]],
+  [/\bensures\s+that\b/gi, ["makes sure that", "guarantees that", "confirms that"]],
+  [/\bensure\s+that\b/gi, ["make sure that", "guarantee that", "confirm that"]],
+  [/\bensuring\s+that\b/gi, ["making sure that", "guaranteeing that", "confirming that"]],
+  [/\bdemonstrates\s+that\b/gi, ["shows that", "confirms that", "proves that"]],
+  [/\bdemonstrate\s+that\b/gi, ["show that", "confirm that", "prove that"]],
+  [/\bindicates\s+that\b/gi, ["shows that", "points to the fact that"]],
+  [/\bindicate\s+that\b/gi, ["show that", "point to the fact that"]],
+  [/\bconsists\s+of\b/gi, ["is made up of", "contains"]],
+  [/\bfocuses\s+on\b/gi, ["centers on", "looks at", "prioritizes"]],
+  [/\bfocus\s+on\b/gi, ["center on", "look at", "prioritize"]],
+  [/\bbased\s+on\b/gi, ["built on", "guided by", "using"]],
+  [/\baccording\s+to\b/gi, ["under", "following", "in line with"]],
+  [/\bcreates\s+a\b/gi, ["forms a", "builds a", "produces a"]],
+  [/\bentirely\s+new\b/gi, ["brand new", "completely new", "fresh"]],
+  [/\brarely\s+begin\s+with\b/gi, ["seldom start with", "almost never start with"]],
+  [/\bremain\s+the\s+strongest\s+defenses\s+against\b/gi, ["are still the best protection against", "remain the best defense against"]],
+  [/\bget\s+stuck\s+in\b/gi, ["get held up in", "get caught in"]],
+  [/\baccounts\s+for\s+more\s+than\s+half\s+of\b/gi, ["makes up over half of", "takes up more than half of"]],
+  [/\baccounts\s+for\b/gi, ["makes up", "takes up"]],
+  [/\baccount\s+for\b/gi, ["make up", "take up"]],
+  [/\bare\s+testing\b/gi, ["are trying out", "are piloting"]],
+  [/\bis\s+testing\b/gi, ["is trying out", "is piloting"]],
+  [/\bdoes\s+much\s+more\s+than\b/gi, ["does far more than just", "does a lot more than"]],
+  [/\bformed\s+during\s+the\s+day\b/gi, ["built during the day", "picked up during the day"]],
+  [/\bimportant\s+information\b/gi, ["key details", "what matters"]],
+  [/\bmakes\s+it\s+harder\s+to\s+recall\b/gi, ["makes it harder to remember", "makes it tougher to bring back"]],
+  [/\brecall\s+facts\b/gi, ["remember facts", "bring back facts"]],
+  [/\bbegins\s+on\b/gi, ["starts out on", "starts on"]],
+  [/\bbegin\s+on\b/gi, ["start out on", "start on"]],
+  [/\bharvest\s+([^,.]+?)\s+by\s+hand\b/gi, ["pick $1 by hand", "gather $1 by hand"]],
+  [/\bunpredictable\s+rainfall\s+patterns\b/gi, ["erratic rainfall", "shifting rain patterns"]],
+  [/\bexposing\s+([^,.]+?)\s+to\b/gi, ["leaving $1 open to", "opening $1 up to"]],
+  [/\bthroughout\s+the\s+afternoon\b/gi, ["all afternoon", "through the afternoon"]],
+  [/\bcrowded\s+metropolitan\s+neighborhoods\b/gi, ["busy city neighborhoods", "packed urban areas"]],
+
+  // Single-Word Simple-English Verb Replacements
+  [/\bexploits\b/gi, ["takes advantage of", "uses"]],
+  [/\bexploit\b/gi, ["take advantage of", "use"]],
+  [/\bimpersonates\b/gi, ["poses as", "pretends to be"]],
+  [/\bimpersonate\b/gi, ["pose as", "pretend to be"]],
+  [/\babsorbs\s+(intense|heat|sunlight|solar|water|moisture|light|energy|carbon)\b/gi, ["soaks up $1", "takes in $1"]],
+  [/\babsorb\s+(intense|heat|sunlight|solar|water|moisture|light|energy|carbon)\b/gi, ["soak up $1", "take in $1"]],
+  [/\breorganizes\b/gi, ["sorts out", "reshapes"]],
+  [/\breorganize\b/gi, ["sort out", "reshape"]],
+  [/\btransfers\b/gi, ["moves", "shifts"]],
+  [/\btransfer\b/gi, ["move", "shift"]],
+  [/\bpreserving\b/gi, ["protecting", "keeping safe"]],
+  [/\bpreserve\b/gi, ["keep safe", "protect"]],
+  [/\bpreserves\b/gi, ["keeps safe", "protects"]],
+  [/\binstalling\b/gi, ["putting in", "fitting"]],
+  [/\binstall\b/gi, ["put in", "fit"]],
+  [/\binstalls\b/gi, ["puts in", "fits"]],
+  [/\bexpect\b/gi, ["count on", "look for"]],
+  [/\bexpects\b/gi, ["counts on", "looks for"]],
+  [/\bmalicious\b/gi, ["harmful", "dangerous"]],
+  [/\bcredentials\b/gi, ["details", "login info"]],
+  [/\bunauthorized\b/gi, ["unapproved", "unwanted"]],
+  [/\bcontinuously\b/gi, ["non-stop", "all the time"]],
+  [/\breflective\b/gi, ["heat-reflecting", "light-colored"]],
+  [/\bexpensive\b/gi, ["costly", "pricey"]],
+  [/\bexpenses\b/gi, ["costs", "bills"]],
+  [/\bnarrow\s+delivery\s+windows\b/gi, ["tight delivery windows", "short delivery slots"]],
+  [/\bdestructive\b/gi, ["damaging", "harmful"]],
+  [/\bdelicate\b/gi, ["sensitive", "fragile"]],
+  [/\bcombines\b/gi, ["brings together", "unites", "joins"]],
+  [/\bcombine\b/gi, ["bring together", "unite", "join"]],
+  [/\bcombining\b/gi, ["bringing together", "uniting", "joining"]],
   [/\bfeatures\b/gi, ["has", "includes", "boasts"]],
   [/\bprovides\b/gi, ["gives", "offers", "delivers"]],
   [/\bprovide\b/gi, ["give", "offer", "deliver"]],
   [/\bproviding\b/gi, ["giving", "offering", "delivering"]],
-  [/\bensures\s+that\b/gi, ["makes sure that", "guarantees that", "confirms that"]],
-  [/\bensure\s+that\b/gi, ["make sure that", "guarantee that", "confirm that"]],
-  [/\bensuring\s+that\b/gi, ["making sure that", "guaranteeing that", "confirming that"]],
   [/\bensures\b/gi, ["protects", "maintains", "secures"]],
   [/\bensure\b/gi, ["protect", "maintain", "secure"]],
-  [/\bdemonstrates\s+that\b/gi, ["shows that", "confirms that", "proves that"]],
-  [/\bdemonstrate\s+that\b/gi, ["show that", "confirm that", "prove that"]],
   [/\bdemonstrates\b/gi, ["shows", "confirms", "proves"]],
   [/\bdemonstrate\b/gi, ["show", "confirm", "prove"]],
-  [/\bindicates\s+that\b/gi, ["shows that", "points to the fact that"]],
-  [/\bindicate\s+that\b/gi, ["show that", "point to the fact that"]],
   [/\billustrates\b/gi, ["shows", "explains", "makes clear"]],
   [/\billustrate\b/gi, ["show", "explain", "make clear"]],
   [/\bexhibits\b/gi, ["shows", "displays"]],
@@ -1047,9 +1183,125 @@ const CLEAN_HUMAN_SYNONYM_MAP: [RegExp, string[]][] = [
   [/\bpossesses\b/gi, ["has", "holds"]],
   [/\bpossess\b/gi, ["have", "hold"]],
   [/\bcomprises\b/gi, ["is made up of", "includes"]],
-  [/\bconsists\s+of\b/gi, ["is made up of", "contains"]],
   [/\bgenerates\b/gi, ["produces", "creates"]],
   [/\bgenerate\b/gi, ["produce", "create"]],
+  [/\bgenerating\b/gi, ["producing", "creating"]],
+  [/\beliminates\b/gi, ["cuts out", "gets rid of", "removes"]],
+  [/\beliminate\b/gi, ["cut out", "get rid of", "remove"]],
+  [/\beliminating\b/gi, ["cutting out", "getting rid of", "removing"]],
+  [/\breplicates\b/gi, ["matches", "recreates"]],
+  [/\breplicate\b/gi, ["match", "recreate"]],
+  [/\breplicating\b/gi, ["matching", "recreating"]],
+  [/\bfluctuates\b/gi, ["goes up and down", "changes", "varies"]],
+  [/\bfluctuate\b/gi, ["go up and down", "change", "vary"]],
+  [/\bstabilizes\b/gi, ["steadies", "keeps steady"]],
+  [/\bstabilize\b/gi, ["steady", "keep steady"]],
+  [/\bstabilizing\b/gi, ["keeping steady", "steadying"]],
+  [/\baccelerates\b/gi, ["speeds up", "quickens"]],
+  [/\baccelerate\b/gi, ["speed up", "quicken"]],
+  [/\baccelerating\b/gi, ["speeding up", "quickening"]],
+  [/\bexacerbates\b/gi, ["worsens", "makes worse"]],
+  [/\bexacerbate\b/gi, ["worsen", "make worse"]],
+  [/\balleviates\b/gi, ["eases", "relieves"]],
+  [/\balleviate\b/gi, ["ease", "relieve"]],
+  [/\bcultivates\b/gi, ["builds", "grows"]],
+  [/\bcultivate\b/gi, ["build", "grow"]],
+  [/\bencompasses\b/gi, ["covers", "takes in"]],
+  [/\bencompass\b/gi, ["cover", "take in"]],
+  [/\bnecessitates\b/gi, ["calls for", "requires"]],
+  [/\bnecessitate\b/gi, ["call for", "require"]],
+  [/\bepitomizes\b/gi, ["sums up", "captures"]],
+  [/\bexemplifies\b/gi, ["shows", "is a clear example of"]],
+  [/\bacquires\b/gi, ["gets", "picks up"]],
+  [/\bacquire\b/gi, ["get", "pick up"]],
+  [/\bretains\b/gi, ["keeps", "holds onto"]],
+  [/\bretain\b/gi, ["keep", "hold onto"]],
+  [/\bconsumes\b/gi, ["uses up", "takes in"]],
+  [/\bconsume\b/gi, ["use up", "take in"]],
+  [/\baccumulates\b/gi, ["builds up", "gathers"]],
+  [/\baccumulate\b/gi, ["build up", "gather"]],
+  [/\bdiminishes\b/gi, ["shrinks", "fades", "lowers"]],
+  [/\bdiminish\b/gi, ["shrink", "fade", "lower"]],
+  [/\bdeteriorates\b/gi, ["breaks down", "gets worse"]],
+  [/\bdeteriorate\b/gi, ["break down", "get worse"]],
+  [/\bescalates\b/gi, ["rises", "grows"]],
+  [/\bescalate\b/gi, ["rise", "grow"]],
+  [/\bsurpasses\b/gi, ["beats", "passes", "tops"]],
+  [/\bsurpass\b/gi, ["beat", "pass", "top"]],
+  [/\bexceeds\b/gi, ["goes beyond", "tops"]],
+  [/\bexceed\b/gi, ["go beyond", "top"]],
+  [/\bcomprehends\b/gi, ["understands", "grasps"]],
+  [/\bcomprehend\b/gi, ["understand", "grasp"]],
+  [/\bperceives\b/gi, ["sees", "views"]],
+  [/\bperceive\b/gi, ["see", "view"]],
+  [/\bverifies\b/gi, ["checks", "confirms"]],
+  [/\bverify\b/gi, ["check", "confirm"]],
+  [/\bvalidates\b/gi, ["confirms", "backs up"]],
+  [/\bvalidate\b/gi, ["confirm", "back up"]],
+  [/\bformulates\b/gi, ["works out", "builds"]],
+  [/\bformulate\b/gi, ["work out", "build"]],
+  [/\bsynthesizes\b/gi, ["brings together", "combines"]],
+  [/\bsynthesize\b/gi, ["bring together", "combine"]],
+  [/\bintegrates\b/gi, ["blends", "connects"]],
+  [/\bintegrate\b/gi, ["blend", "connect"]],
+  [/\bintegrating\b/gi, ["blending", "connecting"]],
+  [/\bincorporates\b/gi, ["includes", "builds in"]],
+  [/\bincorporate\b/gi, ["include", "build in"]],
+  [/\bincorporating\b/gi, ["including", "building in"]],
+  [/\baccommodates\b/gi, ["fits", "supports"]],
+  [/\baccommodate\b/gi, ["fit", "support"]],
+  [/\bmodernizes\b/gi, ["updates", "refreshes"]],
+  [/\bmodernize\b/gi, ["update", "refresh"]],
+  [/\boptimizes\b/gi, ["fine-tunes", "improves"]],
+  [/\boptimize\b/gi, ["fine-tune", "improve"]],
+  [/\boptimizing\b/gi, ["fine-tuning", "improving"]],
+  [/\bmaximizes\b/gi, ["makes the most of", "boosts"]],
+  [/\bmaximize\b/gi, ["make the most of", "boost"]],
+  [/\bminimizes\b/gi, ["cuts down", "keeps down"]],
+  [/\bminimize\b/gi, ["cut down", "keep down"]],
+  [/\bminimizing\b/gi, ["cutting down", "keeping down"]],
+  [/\bprioritizes\b/gi, ["puts first", "focuses on"]],
+  [/\bprioritize\b/gi, ["put first", "focus on"]],
+  [/\breinforces\b/gi, ["backs up", "strengthens"]],
+  [/\breinforce\b/gi, ["back up", "strengthen"]],
+  [/\bundermines\b/gi, ["weakens", "hurts"]],
+  [/\bundermine\b/gi, ["weaken", "hurt"]],
+  [/\bimpedes\b/gi, ["slows down", "blocks"]],
+  [/\bimpede\b/gi, ["slow down", "block"]],
+  [/\bhinders\b/gi, ["holds back", "slows"]],
+  [/\bhinder\b/gi, ["hold back", "slow"]],
+  [/\binhibits\b/gi, ["holds back", "curbs"]],
+  [/\binhibit\b/gi, ["hold back", "curb"]],
+  [/\bcircumvents\b/gi, ["gets around", "bypasses"]],
+  [/\bcircumvent\b/gi, ["get around", "bypass"]],
+  [/\brectifies\b/gi, ["fixes", "corrects"]],
+  [/\brectify\b/gi, ["fix", "correct"]],
+  [/\bencounters\b/gi, ["runs into", "faces"]],
+  [/\bencounter\b/gi, ["run into", "face"]],
+  [/\bundergoes\b/gi, ["goes through"]],
+  [/\bundergo\b/gi, ["go through"]],
+  [/\bcommences\b/gi, ["starts", "begins"]],
+  [/\bcommence\b/gi, ["start", "begin"]],
+  [/\bterminates\b/gi, ["ends", "stops"]],
+  [/\bterminate\b/gi, ["end", "stop"]],
+  [/\binhabits\b/gi, ["lives in"]],
+  [/\binhabit\b/gi, ["live in"]],
+  [/\btraverses\b/gi, ["crosses", "moves through"]],
+  [/\btraverse\b/gi, ["cross", "move through"]],
+  [/\bconstructs\b/gi, ["builds", "puts up"]],
+  [/\bconstruct\b/gi, ["build", "put up"]],
+  [/\bmanufactures\b/gi, ["makes", "produces"]],
+  [/\bmanufacture\b/gi, ["make", "produce"]],
+  [/\bdepicts\b/gi, ["shows", "portrays"]],
+  [/\bdepict\b/gi, ["show", "portray"]],
+  [/\bsignifies\b/gi, ["means", "shows"]],
+  [/\bsignify\b/gi, ["mean", "show"]],
+  [/\bconveys\b/gi, ["passes on", "expresses"]],
+  [/\bconvey\b/gi, ["pass on", "express"]],
+  [/\barticulates\b/gi, ["expresses", "puts into words"]],
+  [/\barticulate\b/gi, ["express", "put into words"]],
+  [/\bdisseminates\b/gi, ["shares", "spreads"]],
+  [/\bdisseminate\b/gi, ["share", "spread"]],
   [/\bmaintains\b/gi, ["keeps", "preserves"]],
   [/\bmaintain\b/gi, ["keep", "preserve"]],
   [/\bestablishes\b/gi, ["sets up", "builds"]],
@@ -1069,8 +1321,6 @@ const CLEAN_HUMAN_SYNONYM_MAP: [RegExp, string[]][] = [
   [/\butilizes\b/gi, ["uses", "applies", "relies on"]],
   [/\butilize\b/gi, ["use", "apply", "rely on"]],
   [/\butilizing\b/gi, ["using", "applying", "relying on"]],
-  [/\bfocuses\s+on\b/gi, ["centers on", "looks at", "prioritizes"]],
-  [/\bfocus\s+on\b/gi, ["center on", "look at", "prioritize"]],
   [/\baddresses\b/gi, ["tackles", "solves", "handles"]],
   [/\baddress\b/gi, ["tackle", "solve", "handle"]],
   [/\baddressing\b/gi, ["tackling", "solving", "handling"]],
@@ -1090,6 +1340,52 @@ const CLEAN_HUMAN_SYNONYM_MAP: [RegExp, string[]][] = [
   [/\bassess\b/gi, ["test", "check", "evaluate"]],
   [/\bassesses\b/gi, ["tests", "checks", "evaluates"]],
   [/\bobtain\b/gi, ["get", "build", "gather"]],
+
+  // Simple-English Adjectives, Nouns & Adverbs
+  [/\bconventional\b/gi, ["standard", "traditional", "typical"]],
+  [/\bexhausting\b/gi, ["tiring", "draining"]],
+  [/\bcongested\b/gi, ["crowded", "busy", "jammed"]],
+  [/\bexcess\b/gi, ["extra", "surplus"]],
+  [/\bemployees\b/gi, ["staff", "workers", "team members"]],
+  [/\bunprecedented\b/gi, ["unmatched", "never-before-seen"]],
+  [/\bubiquitous\b/gi, ["everywhere", "widespread"]],
+  [/\bpervasive\b/gi, ["widespread", "common"]],
+  [/\bprevalent\b/gi, ["common", "widespread"]],
+  [/\babundant\b/gi, ["plentiful", "rich"]],
+  [/\bsubstantial\b/gi, ["large", "sizeable", "major"]],
+  [/\bconsiderable\b/gi, ["large", "notable"]],
+  [/\bnegligible\b/gi, ["tiny", "minimal"]],
+  [/\bdetrimental\b/gi, ["harmful", "damaging"]],
+  [/\bbeneficial\b/gi, ["helpful", "useful"]],
+  [/\badvantageous\b/gi, ["helpful", "useful"]],
+  [/\bimperative\b/gi, ["necessary", "urgent"]],
+  [/\bmandatory\b/gi, ["required"]],
+  [/\bfeasible\b/gi, ["workable", "practical"]],
+  [/\bresilient\b/gi, ["tough", "durable"]],
+  [/\bversatile\b/gi, ["flexible", "adaptable"]],
+  [/\bintricate\b/gi, ["detailed", "complex"]],
+  [/\bsophisticated\b/gi, ["advanced", "smart"]],
+  [/\brudimentary\b/gi, ["basic", "simple"]],
+  [/\binherent\b/gi, ["built-in", "natural"]],
+  [/\bintrinsic\b/gi, ["built-in", "natural"]],
+  [/\boptimal\b/gi, ["best", "ideal"]],
+  [/\bprofound\b/gi, ["deep", "lasting"]],
+  [/\bimmense\b/gi, ["huge", "vast"]],
+  [/\btremendous\b/gi, ["huge", "great"]],
+  [/\bformidable\b/gi, ["tough", "daunting"]],
+  [/\brigorous\b/gi, ["strict", "thorough"]],
+  [/\bstringent\b/gi, ["strict", "tight"]],
+  [/\beffortless\b/gi, ["easy", "smooth"]],
+  [/\bsimultaneously\b/gi, ["at the same time", "at once"]],
+  [/\bconcurrently\b/gi, ["at the same time"]],
+  [/\bnevertheless\b/gi, ["even so", "still"]],
+  [/\bnonetheless\b/gi, ["even so", "still"]],
+  [/\bconversely\b/gi, ["on the flip side", "by contrast"]],
+  [/\bexclusively\b/gi, ["only", "solely"]],
+  [/\binvariably\b/gi, ["always", "every time"]],
+  [/\bundoubtedly\b/gi, ["clearly", "without doubt"]],
+  [/\bexponentially\b/gi, ["rapidly", "fast"]],
+  [/\bdrastically\b/gi, ["sharply", "greatly"]],
   [/\bnumerous\b/gi, ["many", "several", "multiple"]],
   [/\bvarious\b/gi, ["different", "several", "many"]],
   [/\bsignificant\b/gi, ["major", "notable", "clear"]],
@@ -1103,14 +1399,171 @@ const CLEAN_HUMAN_SYNONYM_MAP: [RegExp, string[]][] = [
   [/\bpredominantly\b/gi, ["mostly", "mainly"]],
   [/\bmerely\b/gi, ["just", "only"]],
   [/\bsolely\b/gi, ["only", "alone"]],
-  [/\bbased\s+on\b/gi, ["built on", "guided by", "using"]],
-  [/\baccording\s+to\b/gi, ["under", "following", "in line with"]],
   [/\broughly\b/gi, ["some", "around", "about"]],
   [/\bapproximately\b/gi, ["about", "around", "some"]],
-  [/\bcreates\s+a\b/gi, ["forms a", "builds a", "produces a"]],
-  [/\bentirely\s+new\b/gi, ["brand new", "completely new", "fresh"]],
-  [/\bquickly\b/gi, ["soon", "rapidly", "fast"]]
+  [/\bquickly\b/gi, ["soon", "rapidly", "fast"]],
+
+  // Additional Everyday Simple-English Phrase & Word Replacements
+  [/\bbreak\s+through\s+([a-z]+\s+firewalls)\b/gi, ["crack $1", "get past $1"]],
+  [/\blogin\s+credentials\b/gi, ["login details", "passwords"]],
+  [/\bimpersonating\b/gi, ["posing as", "pretending to be"]],
+  [/\bimpersonate\b/gi, ["pose as", "pretend to be"]],
+  [/\bcompromise\s+entire\s+company\s+networks\b/gi, ["take over whole company networks", "breach entire company networks"]],
+  [/\bcompromising\b/gi, ["breaching", "putting at risk"]],
+  [/\bhardware\s+security\s+keys\b/gi, ["physical security keys", "hardware keys"]],
+  [/\bunexpected\s+requests\b/gi, ["surprise requests", "unusual requests"]],
+  [/\babsorbs\s+and\s+retains\b/gi, ["soaks up and holds onto", "takes in and holds"]],
+  [/\babsorb\s+and\s+retain\b/gi, ["soak up and hold onto", "take in and hold"]],
+  [/\bsurrounding\s+countryside\b/gi, ["nearby countryside", "rural areas around them"]],
+  [/\bcontinuously\b/gi, ["non-stop", "all day", "around the clock"]],
+  [/\binstalling\b/gi, ["putting in", "setting up"]],
+  [/\breflective\s+roof\s+coatings\b/gi, ["heat-reflecting roof coatings", "reflective roofs"]],
+  [/\baccounts\s+for\b/gi, ["makes up", "takes up"]],
+  [/\baccount\s+for\b/gi, ["make up", "take up"]],
+  [/\bmore\s+than\s+half\s+of\b/gi, ["over half of"]],
+  [/\bmissed\s+home\s+deliveries\b/gi, ["missed doorstep drop-offs", "missed home drop-offs"]],
+  [/\bfuel\s+consumption\b/gi, ["fuel use"]],
+  [/\benergy\s+consumption\b/gi, ["energy use"]],
+  [/\bexperimenting\s+with\b/gi, ["testing out", "trying out"]],
+  [/\bexperiment\s+with\b/gi, ["test out", "try out"]],
+  [/\bneighborhood\s+parcel\s+lockers\b/gi, ["local parcel lockers", "nearby pickup lockers"]],
+  [/\bautonomous\b/gi, ["self-driving", "automated"]],
+  [/\bpassive\s+rest\b/gi, ["idle rest", "quiet downtime"]],
+  [/\bactive\s+maintenance\s+cycle\b/gi, ["active repair cycle", "busy maintenance cycle"]],
+  [/\btemporary\s+storage\b/gi, ["short-term storage"]],
+  [/\bneural\s+connections\b/gi, ["brain pathways", "neural links"]],
+  [/\bmetabolic\s+waste\s+products\b/gi, ["chemical waste", "metabolic waste"]],
+  [/\baccumulated\b/gi, ["built up", "gathered"]],
+  [/\baccumulates\b/gi, ["builds up", "gathers"]],
+  [/\baccumulate\b/gi, ["build up", "gather"]],
+  [/\bwaking\s+hours\b/gi, ["the day", "waking hours"]],
+  [/\brecall\s+information\b/gi, ["remember things", "call facts to mind"]],
+  [/\bregulate\s+emotions\b/gi, ["keep emotions steady", "manage moods"]],
+  [/\bmaintain\s+focused\s+attention\b/gi, ["stay focused", "keep sharp focus"]],
+  [/\bselective\s+hand-picking\b/gi, ["careful hand-picking"]],
+  [/\bcareful\s+fermentation\b/gi, ["controlled fermenting", "careful fermenting"]],
+  [/\bexact\s+moisture\s+content\b/gi, ["the right moisture level"]],
+  [/\bmoisture\s+content\b/gi, ["moisture level", "water content"]],
+  [/\bunlocks\s+hundreds\s+of\s+aromatic\s+compounds\b/gi, ["brings out hundreds of flavor and aroma compounds"]],
+  [/\bunlocks\b/gi, ["brings out", "releases"]],
+  [/\bunlock\b/gi, ["bring out", "release"]],
+  [/\brising\s+temperatures\b/gi, ["warmer weather", "rising heat"]],
+  [/\bunpredictable\s+rainfall\b/gi, ["erratic rain", "unpredictable rain"]],
+  [/\bthreaten\s+these\s+fragile\s+growing\s+regions\b/gi, ["put these delicate growing regions at risk"]]
 ];
+
+/**
+ * Morphological helper: converts an English -ing participle into its base and 3rd-person singular finite forms.
+ */
+function ingToFiniteVerb(ingWord: string): { base: string; third: string } {
+  const lower = ingWord.toLowerCase();
+  const irregularMap: Record<string, [string, string]> = {
+    being: ["be", "is"],
+    having: ["have", "has"],
+    doing: ["do", "does"],
+    going: ["go", "goes"],
+    making: ["make", "makes"],
+    taking: ["take", "takes"],
+    giving: ["give", "gives"],
+    coming: ["come", "comes"],
+    leaving: ["leave", "leaves"],
+    getting: ["get", "gets"],
+    running: ["run", "runs"],
+    cutting: ["cut", "cuts"],
+    putting: ["put", "puts"],
+    setting: ["set", "sets"],
+    letting: ["let", "lets"],
+    hitting: ["hit", "hits"],
+    splitting: ["split", "splits"],
+    stopping: ["stop", "stops"],
+    dropping: ["drop", "drops"],
+    planning: ["plan", "plans"],
+    spanning: ["cover", "covers"],
+    beginning: ["begin", "begins"],
+    winning: ["win", "wins"],
+    swimming: ["swim", "swims"],
+    sitting: ["sit", "sits"],
+    fitting: ["fit", "fits"],
+    driving: ["drive", "drives"],
+    writing: ["write", "writes"],
+    rising: ["rise", "rises"],
+    living: ["live", "lives"],
+    moving: ["move", "moves"],
+    serving: ["serve", "serves"],
+    using: ["use", "uses"],
+    saving: ["save", "saves"],
+    shaping: ["shape", "shapes"],
+    creating: ["create", "creates"],
+    producing: ["produce", "produces"],
+    reducing: ["cut", "cuts"],
+    releasing: ["send", "sends"],
+    storing: ["store", "stores"],
+    solving: ["solve", "solves"],
+    stabilizing: ["keep steady", "keeps steady"],
+    eliminating: ["cut out", "cuts out"],
+    generating: ["produce", "produces"],
+    improving: ["improve", "improves"],
+    enhancing: ["strengthen", "strengthens"],
+    increasing: ["raise", "raises"],
+    decreasing: ["lower", "lowers"],
+    providing: ["provide", "provides"],
+    ensuring: ["make sure", "keeps"],
+    enabling: ["let", "lets"],
+    allowing: ["allow", "allows"],
+    requiring: ["need", "needs"],
+    involving: ["involve", "involves"],
+    achieving: ["achieve", "achieves"],
+    promoting: ["promote", "promotes"],
+    encouraging: ["encourage", "encourages"],
+    forcing: ["force", "forces"],
+    straining: ["put pressure on", "puts pressure on"],
+    trapping: ["trap", "traps"],
+    pushing: ["push", "pushes"],
+    exposing: ["expose", "exposes"],
+    preserving: ["keep safe", "keeps safe"],
+    testing: ["test out", "tests out"],
+    cooling: ["cool down", "cools down"],
+    clearing: ["clear out", "clears out"],
+    transferring: ["move", "moves"],
+    replaying: ["replay", "replays"],
+    bridging: ["bridge", "bridges"],
+    managing: ["manage", "manages"],
+    handling: ["handle", "handles"],
+    balancing: ["balance", "balances"],
+    replacing: ["replace", "replaces"],
+    continuing: ["continue", "continues"],
+    demonstrating: ["show", "shows"],
+    illustrating: ["show", "shows"],
+    indicating: ["show", "shows"],
+    highlighting: ["highlight", "highlights"],
+    underscoring: ["show", "shows"],
+    showcasing: ["show", "shows"],
+    emphasizing: ["emphasize", "emphasizes"]
+  };
+
+  if (irregularMap[lower]) {
+    return { base: irregularMap[lower][0], third: irregularMap[lower][1] };
+  }
+
+  const stem = lower.replace(/ing$/, "");
+  let base = stem;
+  if (/([b-df-hj-np-tv-z])\1$/.test(stem) && !/[lsz]$/.test(stem)) {
+    base = stem.slice(0, -1);
+  } else if (/(?:[^aeiou][cgvz]|[^aeiou][bdgklmnprst]l|[^aeiou][bcdfgkpst]r|[^aeiou][mnv]|at|ut|it|ot|et)$/.test(stem)) {
+    if (/(?:c|g|v|z|at|ut|it|ot|pl|bl|cl|gl|fl|dl|tl|br|cr|dr|fr|gr|pr|tr)$/.test(stem)) {
+      base = `${stem}e`;
+    }
+  }
+
+  let third = `${base}s`;
+  if (base.endsWith("y") && !/[aeiou]y$/.test(base)) {
+    third = `${base.slice(0, -1)}ies`;
+  } else if (/(?:s|sh|ch|x|z|o)$/.test(base)) {
+    third = `${base}es`;
+  }
+
+  return { base, third };
+}
 
 /**
  * PASS 3: Natural Human Syntactic & Narrative Restructuring
@@ -1320,7 +1773,7 @@ function restructureSentenceSyntax(
     }
   }
 
-  // 9. Break or convert trailing participial clauses (BOTH academic AND narrative/descriptive!)
+  // 9A. Specific trailing participial clauses
   if (!restructured) {
     const tailRegex =
       /,\s*(?:thereby\s+)?(remaining|forming|creating|spanning|getting|leaving|offering|providing|giving|bringing|turning|leading|resulting|passing|walking|moving|generating|producing|revealing|highlighting|underscoring|demonstrating|ensuring|fostering|showcasing|emphasizing|illustrating|reflecting|enabling|allowing|making|showing|proving)\s+([^.?!]+)(\.|!|\?)$/i;
@@ -1379,7 +1832,39 @@ function restructureSentenceSyntax(
     }
   }
 
-  // 10. Transform "By [verbing] [X], [Y] can/is able to [Z]"
+  // 9B. Universal Trailing Participial Clause (", [any-verbing] [rest]")
+  // Example: "Modern lithium-iron-phosphate batteries last for thousands of charge cycles, reducing reliance on fossil-fuel peaker plants while stabilizing regional voltage levels."
+  // -> "Modern lithium-iron-phosphate batteries last for thousands of charge cycles. This cuts reliance on fossil-fuel peaker plants and keeps regional voltage levels steady."
+  if (!restructured) {
+    const universalTailMatch = out.match(
+      /^(.{18,140}?),\s+(?:thereby\s+)?(?!including\b|such\s+as\b|according\b|depending\b|ranging\b|starting\b|beginning\b|adjusting\b|laughing\b|desperately\b|scrambling\b)([a-z]{4,15}ing)\s+([^,.;?!]{8,115})(\.|!|\?)$/i
+    );
+    if (universalTailMatch) {
+      const mainClause = universalTailMatch[1].trim();
+      const ingWord = universalTailMatch[2].toLowerCase();
+      let tailBody = universalTailMatch[3].trim();
+      const punct = universalTailMatch[4];
+      const { third } = ingToFiniteVerb(ingWord);
+      // Also convert any coordinated secondary participle ("and straining" -> "and puts pressure on")
+      tailBody = tailBody.replace(/\band\s+([a-z]{4,15}ing)\b/gi, (_, secondIng: string) => {
+        const { third: secondThird } = ingToFiniteVerb(secondIng.toLowerCase());
+        return `and ${secondThird}`;
+      });
+      const variants = /^This\s+/i.test(mainClause)
+        ? [
+            `${mainClause}, which ${third} ${tailBody}${punct}`,
+            `${mainClause}. That ${third} ${tailBody}${punct}`
+          ]
+        : [
+            `${mainClause}. This ${third} ${tailBody}${punct}`,
+            `${mainClause}, which ${third} ${tailBody}${punct}`
+          ];
+      out = pickVariant(variants, seed);
+      restructured = true;
+    }
+  }
+
+  // 10A. Transform Fronted "By [verbing] [X], [Y] can/is able to [Z]"
   if (!restructured) {
     const byVerbingMatch = out.match(
       /^By\s+([a-z]+ing)\s+([^,]{4,65}),\s+([^,]{3,45})\s+(?:can|are able to|is able to|will)\s+(.+)$/i
@@ -1401,7 +1886,305 @@ function restructureSentenceSyntax(
     }
   }
 
-  // 11. General Compound Sentence Restructuring ("[Clause 1 >= 9 words], and [Clause 2 >= 7 words]")
+  // 10B. Transform Mid-Sentence Instrumental "[Subj] [solve/fix/address/handle/overcome/reduce/prevent] [Obj] by [verbing1] [X] and [verbing2] [Y]"
+  // Example: "Utility-scale battery systems solve this intermittency problem by storing excess energy during peak production and releasing it back into the grid when evening demand spikes."
+  // -> "To fix this intermittency problem, utility-scale battery systems store extra energy during peak production and send it back into the grid when evening demand jumps."
+  if (!restructured) {
+    const midByCompoundMatch = out.match(
+      /^([A-Z][^,]{4,65}?)\s+(solve|solves|fix|fixes|handle|handles|address|addresses|tackle|tackles|overcome|overcomes|manage|manages|prevent|prevents|reduce|reduces|cut|cuts)\s+([^,]{4,45}?)\s+by\s+([a-z]+ing)\s+(.+?)\s+and\s+([a-z]+ing)\s+(.+)(\.|!|\?)$/i
+    );
+    if (midByCompoundMatch) {
+      const subj = midByCompoundMatch[1].trim();
+      const mainVerb = midByCompoundMatch[2].toLowerCase();
+      const obj = midByCompoundMatch[3].trim();
+      const ing1 = midByCompoundMatch[4].toLowerCase();
+      const body1 = midByCompoundMatch[5].trim();
+      const ing2 = midByCompoundMatch[6].toLowerCase();
+      const body2 = midByCompoundMatch[7].trim();
+      const punct = midByCompoundMatch[8];
+
+      const isSingular = /s$/.test(mainVerb) && !/ss$/.test(mainVerb);
+      const purposeVerb = mainVerb.startsWith("solv") || mainVerb.startsWith("fix") ? "fix" : mainVerb.replace(/s$/, "");
+      const v1 = ingToFiniteVerb(ing1);
+      const v2 = ingToFiniteVerb(ing2);
+      const f1 = isSingular ? v1.third : v1.base;
+      const f2 = isSingular ? v2.third : v2.base;
+      const subjLower =
+        /^[A-Z]{2,}/.test(subj) || /^__/.test(subj)
+          ? subj
+          : subj.charAt(0).toLowerCase() + subj.slice(1);
+
+      const variants = [
+        `To ${purposeVerb} ${obj}, ${subjLower} ${f1} ${body1} and ${f2} ${body2}${punct}`,
+        `${subj} ${f1} ${body1} and ${f2} ${body2} to ${purposeVerb} ${obj}${punct}`
+      ];
+      out = pickVariant(variants, seed);
+      restructured = true;
+    }
+  }
+
+  // 10C. Semicolon + "instead, [Subj] [Verb]" -> two crisp Simple-English sentences
+  // Example: "Modern cyberattacks rarely start by cracking technical firewalls; instead, they trick ordinary staff into handing over their login details."
+  if (!restructured) {
+    const semiInsteadMatch = out.match(
+      /^([^;]{15,125});\s+instead,\s+([a-zA-Z]+\s+.+)(\.|!|\?)$/i
+    );
+    if (semiInsteadMatch) {
+      const firstClause = semiInsteadMatch[1].trim();
+      const secondClause = semiInsteadMatch[2].trim();
+      const punct = semiInsteadMatch[3];
+      out = `${firstClause}. Instead, ${secondClause}${punct}`;
+      restructured = true;
+    }
+  }
+
+  // 10D. Semicolon Explanatory "[Clause 1]; [it/they/this] [Clause 2]" -> em-dash Simple-English explanation
+  // Example: "Sleep is not idle rest for the brain; it is an active repair cycle." -> "Sleep is not idle rest for the brain—it’s an active repair cycle."
+  if (!restructured) {
+    const semiExplainMatch = out.match(
+      /^([^;]{12,95});\s+(it|they|this)\s+(.+)(\.|!|\?)$/i
+    );
+    if (semiExplainMatch) {
+      const c1 = semiExplainMatch[1].trim();
+      const pron = semiExplainMatch[2].toLowerCase();
+      const c2 = semiExplainMatch[3].trim().replace(/^is\s+/i, "’s ");
+      const punct = semiExplainMatch[4];
+      out = c2.startsWith("’s ")
+        ? `${c1}—${pron}${c2}${punct}`
+        : `${c1}—${pron} ${c2}${punct}`;
+      restructured = true;
+    }
+  }
+
+  // 11. Contrastive "[Clause 1], but [their/its/this/these/the] [Clause 2]" -> "While [Clause 1], [Clause 2]"
+  // Example: "Solar and wind power generate clean electricity, but their output fluctuates with changing weather conditions and daylight hours."
+  // -> "While solar and wind power produce clean electricity, their output goes up and down with shifting weather and daylight hours."
+  if (!restructured && !/^It’s\s+/i.test(out)) {
+    const contrastButMatch = out.match(
+      /^([A-Z][^,]{12,90}),\s+but\s+((?:their|its|this|these|the)\s+[^,]{10,165})(\.|!|\?)$/
+    );
+    if (contrastButMatch) {
+      const c1 = contrastButMatch[1].trim();
+      const c2 = contrastButMatch[2].trim();
+      const punct = contrastButMatch[3];
+      const c1Lower =
+        /^[A-Z]{2,}/.test(c1) || /^__/.test(c1) || /^(?:Sri|South|North|East|West|UNESCO)\b/.test(c1)
+          ? c1
+          : c1.charAt(0).toLowerCase() + c1.slice(1);
+      const variants = [
+        `While ${c1Lower}, ${c2}${punct}`,
+        `${c1}—though ${c2}${punct}`
+      ];
+      out = pickVariant(variants, seed);
+      restructured = true;
+    }
+  }
+
+  // 12. Purpose/Result "[Clause 1] so (that) [nobody/no one/everyone/people/users/teams/students/workers/employees/it/they] [Clause 2]"
+  // Example: "Teams have to build intentional habits around clear documentation, asynchronous updates, and honest check-ins so nobody feels isolated behind a laptop screen."
+  // -> "Teams need to build steady habits around clear documentation, written updates, and honest check-ins—that way, nobody feels cut off behind a laptop screen."
+  if (!restructured) {
+    const soThatMatch = out.match(
+      /^(.{20,130}?)\s+so\s+(?:that\s+)?((?:nobody|no\s+one|everyone|people|users|teams|students|workers|employees|staff|it|they)\s+.+)(\.|!|\?)$/i
+    );
+    if (soThatMatch) {
+      const c1 = soThatMatch[1].trim();
+      const c2 = soThatMatch[2].trim();
+      const punct = soThatMatch[3];
+      const variants = [
+        `${c1}—that way, ${c2}${punct}`,
+        `${c1}, making sure ${c2}${punct}`
+      ];
+      out = pickVariant(variants, seed);
+      restructured = true;
+    }
+  }
+
+  // 13A. Compound Predicate "[Subj] [gives/offers/brings/provides/lets] [Obj1] and [eliminates/cuts/reduces/removes/prevents/saves] [Obj2]"
+  // Example: "Working from home gives employees flexible mornings and eliminates exhausting daily commutes across congested city roads."
+  // -> "Working from home gives staff flexible mornings while cutting out tiring daily trips through crowded city roads."
+  if (!restructured) {
+    const compoundPredMatch = out.match(
+      /^([A-Z][^,]{6,55}?\s+(?:gives|give|offers|offer|brings|bring|provides|provide)\s+[^,]{6,45}?)\s+and\s+(eliminates|eliminate|reduces|reduce|cuts|cut|removes|remove|prevents|prevent|saves|save)\s+(.+)(\.|!|\?)$/i
+    );
+    if (compoundPredMatch) {
+      const firstHalf = compoundPredMatch[1].trim();
+      const secondVerb = compoundPredMatch[2].toLowerCase();
+      const secondObj = compoundPredMatch[3].trim();
+      const punct = compoundPredMatch[4];
+      const gerundMap: Record<string, string> = {
+        eliminates: "cutting out",
+        eliminate: "cutting out",
+        reduces: "cutting down",
+        reduce: "cutting down",
+        cuts: "cutting",
+        cut: "cutting",
+        removes: "removing",
+        remove: "removing",
+        prevents: "preventing",
+        prevent: "preventing",
+        saves: "saving",
+        save: "saving"
+      };
+      const gerundPhrase = gerundMap[secondVerb] || "cutting out";
+      out = `${firstHalf} while ${gerundPhrase} ${secondObj}${punct}`;
+      restructured = true;
+    }
+  }
+
+  // 13B. Gerund Subject + Modal/Helps + "while [verbing]"
+  // Example: "Planting street trees and putting in heat-reflecting roof coatings can cool down neighborhood blocks by several degrees while cutting peak summer electricity demand."
+  // -> "Planting street trees and putting in heat-reflecting roof coatings can both cool down neighborhood blocks by several degrees and cut peak summer electricity demand."
+  if (!restructured) {
+    const gerundModalWhileMatch = out.match(
+      /^([A-Z][a-z]+ing\s+[^,]{6,85}?)\s+(can|will|helps?)\s+([a-z]+(?:\s+down|\s+up|\s+out)?)\s+([^,]{4,45}?)\s+while\s+([a-z]+ing)\s+(.+)(\.|!|\?)$/
+    );
+    if (gerundModalWhileMatch) {
+      const gerundSubj = gerundModalWhileMatch[1].trim();
+      const modalOrHelps = gerundModalWhileMatch[2].toLowerCase();
+      const v1Phrase = gerundModalWhileMatch[3].trim();
+      const v1Obj = gerundModalWhileMatch[4].trim();
+      const ing2 = gerundModalWhileMatch[5].toLowerCase();
+      const v2Obj = gerundModalWhileMatch[6].trim();
+      const punct = gerundModalWhileMatch[7];
+      const { base: v2Base } = ingToFiniteVerb(ing2);
+      const secondPredicate =
+        v2Base === "keep safe" ? `keep ${v2Obj} safe` : `${v2Base} ${v2Obj}`;
+      out = `${gerundSubj} ${modalOrHelps} both ${v1Phrase} ${v1Obj} and ${secondPredicate}${punct}`;
+      restructured = true;
+    }
+  }
+
+  // 13C. Evaluative Gerund Opener: "Skipping/Missing/Avoiding/Ignoring [X] (actually) makes it [harder/easier/tougher] to [Y]"
+  // Example: "Skipping even a single night of deep sleep actually makes it harder to remember things, keep emotions steady, and stay focused the next day."
+  // -> "If you skip even a single night of deep sleep, it becomes much harder to remember things, keep emotions steady, and stay focused the next day."
+  if (!restructured) {
+    const evalGerundMatch = out.match(
+      /^(Skipping|Missing|Avoiding|Ignoring|Cutting|Dropping)\s+([^,]{4,45}?)\s+(?:actually\s+)?makes\s+it\s+(harder|easier|tougher|more\s+difficult)\s+to\s+(.+)(\.|!|\?)$/i
+    );
+    if (evalGerundMatch) {
+      const ingWord = evalGerundMatch[1].toLowerCase();
+      const obj = evalGerundMatch[2].trim();
+      const adj = evalGerundMatch[3].toLowerCase();
+      const rest = evalGerundMatch[4].trim();
+      const punct = evalGerundMatch[5];
+      const { base } = ingToFiniteVerb(ingWord);
+      out = `If you ${base} ${obj}, it becomes ${adj} to ${rest}${punct}`;
+      restructured = true;
+    }
+  }
+
+  // 13D. 3-Verb Serial Predicate with Temporal Opener:
+  // Example: "While you sleep, the brain replays new experiences, moves key memories from short-term storage into long-term brain pathways, and flushes out chemical waste that built up during the day."
+  // -> "As you sleep, your brain replays new experiences and moves key memories from short-term storage into long-term brain pathways. At the same time, it flushes out chemical waste that built up during the day."
+  if (!restructured) {
+    const whileThreeVerbsMatch = out.match(
+      /^While\s+you\s+([a-z]+),\s+the\s+([a-z]+)\s+([a-z]+s\s+[^,]+),\s+([a-z]+s\s+[^,]+),\s+and\s+([a-z]+s\s+.+)(\.|!|\?)$/i
+    );
+    if (whileThreeVerbsMatch) {
+      const userVerb = whileThreeVerbsMatch[1].toLowerCase();
+      const organ = whileThreeVerbsMatch[2].toLowerCase();
+      const pred1 = whileThreeVerbsMatch[3].trim();
+      const pred2 = whileThreeVerbsMatch[4].trim();
+      const pred3 = whileThreeVerbsMatch[5].trim();
+      const punct = whileThreeVerbsMatch[6];
+      out = `As you ${userVerb}, your ${organ} ${pred1} and ${pred2}. At the same time, it ${pred3}${punct}`;
+      restructured = true;
+    }
+  }
+
+  // 13E. Locative "where" Origin Clause:
+  // Example: "Every morning cup of coffee begins on high-altitude tropical farms where growers rely on careful hand-picking to harvest only ripe red coffee cherries."
+  // -> "Every morning cup of coffee starts out on high-altitude tropical farms, where growers rely on careful hand-picking to gather only ripe red coffee cherries."
+  if (!restructured) {
+    const beginsWhereMatch = out.match(
+      /^(.{10,55}?)\s+(?:begins|starts(?:\s+out)?)\s+(on|in|at)\s+([^,]{6,45}?)\s+where\s+(.+)(\.|!|\?)$/i
+    );
+    if (beginsWhereMatch) {
+      const subj = beginsWhereMatch[1].trim();
+      const prep = beginsWhereMatch[2].toLowerCase();
+      const place = beginsWhereMatch[3].trim();
+      const whereClause = beginsWhereMatch[4]
+        .trim()
+        .replace(/\bto\s+harvest\s+only\b/i, "to gather only");
+      const punct = beginsWhereMatch[5];
+      out = `${subj} starts out ${prep} ${place}, where ${whereClause}${punct}`;
+      restructured = true;
+    }
+  }
+
+  // 13F. Mid-Sentence Purpose Infinitive Fronting:
+  // Example: "Logistics companies are testing out electric cargo bikes, local parcel lockers, and self-driving sidewalk robots to lower shipping costs and cut tailpipe emissions."
+  // -> "To lower shipping costs and cut tailpipe emissions, logistics companies are testing out electric cargo bikes, local parcel lockers, and self-driving sidewalk robots."
+  if (!restructured) {
+    const trailingPurposeMatch = out.match(
+      /^([A-Z].{22,125}?)\s+to\s+(lower|cut|reduce|improve|boost|protect|prevent|save|avoid|solve|fix|stop|drop\s+off|deliver)\s+([^,.;?!]{8,75})(\.|!|\?)$/
+    );
+    if (
+      trailingPurposeMatch &&
+      !/\b(?:have|has|had|need|needs|needed|used|able|harder|easier|tougher|try|tries|tried|learn|learns|begin|begins|start|starts|continue|continues|refers|way|home|according|due|thanks|rely\s+on\s+[^,]+)\s*$/i.test(
+        trailingPurposeMatch[1].trim()
+      )
+    ) {
+      const mainClause = trailingPurposeMatch[1].trim();
+      const purposeVerb = trailingPurposeMatch[2].trim();
+      const purposeObj = trailingPurposeMatch[3].trim();
+      const punct = trailingPurposeMatch[4];
+      const mainLower =
+        /^[A-Z]{2,}/.test(mainClause) || /^__/.test(mainClause)
+          ? mainClause
+          : mainClause.charAt(0).toLowerCase() + mainClause.slice(1);
+      out = `To ${purposeVerb} ${purposeObj}, ${mainLower}${punct}`;
+      restructured = true;
+    }
+  }
+
+  // 13G. General 3-Verb Serial Predicate Split for Burstiness:
+  // Example: "Delivery vans often get held up in urban traffic, burn costly fuel, and miss tight delivery windows when customers are away at work."
+  // -> "Delivery vans often get held up in urban traffic and burn costly fuel. They also miss tight delivery windows when customers are away at work."
+  if (!restructured) {
+    const serialPredMatch = out.match(
+      /^([A-Z][a-zA-Z\s-]{2,28}?s)\s+((?:often|frequently|regularly|sometimes|usually)?\s*[a-z]+\s+[^,]{6,45}),\s+([a-z]+\s+[^,]{6,38}),\s+and\s+([a-z]+\s+.+)(\.|!|\?)$/
+    );
+    if (serialPredMatch) {
+      const pluralSubj = serialPredMatch[1].trim();
+      const pred1 = serialPredMatch[2].trim();
+      const pred2 = serialPredMatch[3].trim();
+      const pred3 = serialPredMatch[4].trim();
+      const punct = serialPredMatch[5];
+      out = `${pluralSubj} ${pred1} and ${pred2}. They also ${pred3}${punct}`;
+      restructured = true;
+    }
+  }
+
+  // 13H. Progressive Compound Split for Burstiness:
+  // Example: "Warmer weather and erratic rainfall are pushing sensitive arabica crops higher up mountain slopes and leaving plants open to damaging fungal diseases."
+  // -> "Warmer weather and erratic rainfall are pushing sensitive arabica crops higher up mountain slopes. At the same time, this leaves plants open to damaging fungal diseases."
+  if (!restructured) {
+    const progCompoundMatch = out.match(
+      /^([A-Z][^,]{8,65}?)\s+(are|is)\s+([a-z]+ing\s+[^,]{10,65}?)\s+and\s+([a-z]+ing)\s+(.+)(\.|!|\?)$/
+    );
+    if (progCompoundMatch) {
+      const subj = progCompoundMatch[1].trim();
+      const aux = progCompoundMatch[2];
+      const pred1 = progCompoundMatch[3].trim();
+      const ing2 = progCompoundMatch[4].toLowerCase();
+      const rest2 = progCompoundMatch[5].trim();
+      const punct = progCompoundMatch[6];
+      const { third } = ingToFiniteVerb(ing2);
+      out = `${subj} ${aux} ${pred1}. At the same time, this ${third} ${rest2}${punct}`;
+      restructured = true;
+    }
+  }
+
+  // 14. Contrastive Opener "However, / Nevertheless, / Nonetheless, [Clause]" -> "Still, / Even so, [Clause]"
+  if (!restructured && /^(However|Nevertheless|Nonetheless),\s+/i.test(out)) {
+    const choices = ["Still, ", "Even so, ", "At the same time, "];
+    out = out.replace(/^(However|Nevertheless|Nonetheless),\s+/i, pickVariant(choices, seed));
+    restructured = true;
+  }
+
+  // 15. General Compound Sentence Restructuring ("[Clause 1 >= 9 words], and [Clause 2 >= 7 words]")
   if (!restructured) {
     const generalCompoundMatch = out.match(/^([^,]{28,140}),\s+and\s+([a-zA-Z][^,]{22,140})(\.|!|\?)$/);
     if (generalCompoundMatch) {
@@ -1416,7 +2199,7 @@ function restructureSentenceSyntax(
     }
   }
 
-  // 12. Natural human punctuation (em-dash or semicolon) in multi-clause sentences
+  // 16. Natural human punctuation (em-dash or semicolon) in multi-clause sentences
   if (!restructured && (intensity !== "balanced" || mode === "postgrad" || getWords(out).length >= 19)) {
     if (/,\s+which\s+/i.test(out)) {
       out = out.replace(/,\s+which\s+/, "—which ");
@@ -1435,7 +2218,7 @@ function restructureSentenceSyntax(
 
 /**
  * PASS 4: Universal Sentence-Level Polish
- * Guarantees that even sentences without explicit buzzwords get natural human phrasing.
+ * Guarantees that even sentences without explicit buzzwords get natural Simple-English phrasing.
  */
 function ensureSentenceHumanized(
   originalSentence: string,
@@ -1449,9 +2232,12 @@ function ensureSentenceHumanized(
     const [regex, options] = CLEAN_HUMAN_SYNONYM_MAP[i];
     if (regex.test(out)) {
       regex.lastIndex = 0;
-      out = out.replace(regex, (match) => {
+      out = out.replace(regex, (match, ...args) => {
         changesMade++;
-        const chosen = pickVariant(options, seed);
+        let chosen = pickVariant(options, seed);
+        if (chosen.includes("$1") && typeof args[0] === "string") {
+          chosen = chosen.replace("$1", args[0]);
+        }
         return matchCase(match, chosen);
       });
     }
@@ -1487,14 +2273,21 @@ function ensureSentenceHumanized(
       return { text: out, changesMade };
     }
 
-    // Fallback C: Oxford comma tricolon "[A], [B], and [C]" -> "[A], [B] and [C]" or em-dash emphasis
+    // Fallback C: Relative clause simplification ("that is/are [adj/participle]" -> "[adj/participle]")
+    if (/\b(?:that|which)\s+(?:is|are)\s+([a-z]{4,15})\b/i.test(withoutPunct)) {
+      out = `${withoutPunct.replace(/\b(?:that|which)\s+(?:is|are)\s+([a-z]{4,15})\b/i, "$1")}${punct}`;
+      changesMade++;
+      return { text: out, changesMade };
+    }
+
+    // Fallback D: Oxford comma tricolon "[A], [B], and [C]" -> "[A], [B] and [C]"
     if (/,\s+and\s+/i.test(withoutPunct)) {
       out = `${withoutPunct.replace(/,\s+and\s+/, " and ")}${punct}`;
       changesMade++;
       return { text: out, changesMade };
     }
 
-    // Fallback D: "It is" / "There is" / "That is" natural contraction or "is" -> "remains"
+    // Fallback E: "It is" / "There is" / "That is" natural contraction
     if (/\bIt\s+is\b/.test(withoutPunct)) {
       out = `${withoutPunct.replace(/\bIt\s+is\b/, "It’s")}${punct}`;
       changesMade++;

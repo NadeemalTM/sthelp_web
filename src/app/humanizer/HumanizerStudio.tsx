@@ -357,8 +357,8 @@ export function HumanizerStudio({ whatsapp }: { whatsapp: string }) {
     setSelectedSentenceIdx(null);
 
     try {
-      const nextSeed = variationCount;
-      setVariationCount((prev) => prev + 1);
+      const nextSeed = 0;
+      setVariationCount(0);
       const res = await fetch("/api/humanize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
