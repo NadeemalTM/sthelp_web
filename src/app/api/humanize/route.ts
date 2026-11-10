@@ -138,6 +138,7 @@ export async function POST(request: NextRequest) {
 
     const preserveCitations = body.preserveCitations !== false;
     const effectiveFreezeKeywords = tierRules.allowFreezeKeywords ? freezeKeywords : [];
+    const variationSeed = typeof body.variationSeed === "number" ? body.variationSeed : 0;
 
     const result = runHumanizerEngine({
       text,
@@ -145,7 +146,8 @@ export async function POST(request: NextRequest) {
       mode,
       intensity,
       preserveCitations,
-      freezeKeywords: effectiveFreezeKeywords
+      freezeKeywords: effectiveFreezeKeywords,
+      variationSeed
     });
 
     return NextResponse.json(result);

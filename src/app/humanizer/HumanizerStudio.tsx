@@ -61,49 +61,49 @@ const MODE_META: {
   badge: string;
   minTier: HumanizerTier;
 }[] = [
-  {
-    key: "academic",
-    label: "Standard Academic",
-    shortDesc: "Balanced university prose for essays, reports & reflections",
-    badge: "Free",
-    minTier: "free"
-  },
-  {
-    key: "concise",
-    label: "Concise & Direct",
-    shortDesc: "Eliminates wordy AI padding for clear, tight academic arguments",
-    badge: "Free",
-    minTier: "free"
-  },
-  {
-    key: "postgrad",
-    label: "Postgraduate / Master's",
-    shortDesc: "Level 7 scholarly register, nuanced hedging & critical syntax",
-    badge: "Pro",
-    minTier: "pro"
-  },
-  {
-    key: "lit_review",
-    label: "Literature Review",
-    shortDesc: "Synthesizes citations & scholarly debates without robotic transitions",
-    badge: "Pro",
-    minTier: "pro"
-  },
-  {
-    key: "methodology",
-    label: "Methodology & Empirical",
-    shortDesc: "Precise research design, SPSS/SmartPLS & empirical reporting tone",
-    badge: "Pro",
-    minTier: "pro"
-  },
-  {
-    key: "business",
-    label: "Executive & MBA",
-    shortDesc: "Strategic case studies, financial analysis & corporate reports",
-    badge: "Pro",
-    minTier: "pro"
-  }
-];
+    {
+      key: "academic",
+      label: "Standard Academic",
+      shortDesc: "Balanced university prose for essays, reports & reflections",
+      badge: "Free",
+      minTier: "free"
+    },
+    {
+      key: "concise",
+      label: "Concise & Direct",
+      shortDesc: "Eliminates wordy AI padding for clear, tight academic arguments",
+      badge: "Free",
+      minTier: "free"
+    },
+    {
+      key: "postgrad",
+      label: "Postgraduate / Master's",
+      shortDesc: "Level 7 scholarly register, nuanced hedging & critical syntax",
+      badge: "Pro",
+      minTier: "pro"
+    },
+    {
+      key: "lit_review",
+      label: "Literature Review",
+      shortDesc: "Synthesizes citations & scholarly debates without robotic transitions",
+      badge: "Pro",
+      minTier: "pro"
+    },
+    {
+      key: "methodology",
+      label: "Methodology & Empirical",
+      shortDesc: "Precise research design, SPSS/SmartPLS & empirical reporting tone",
+      badge: "Pro",
+      minTier: "pro"
+    },
+    {
+      key: "business",
+      label: "Executive & MBA",
+      shortDesc: "Strategic case studies, financial analysis & corporate reports",
+      badge: "Pro",
+      minTier: "pro"
+    }
+  ];
 
 const INTENSITY_META: {
   key: HumanizerIntensity;
@@ -111,25 +111,25 @@ const INTENSITY_META: {
   desc: string;
   minTier: HumanizerTier;
 }[] = [
-  {
-    key: "balanced",
-    label: "Balanced Polish",
-    desc: "Removes AI clichés while keeping original sentence structure intact",
-    minTier: "free"
-  },
-  {
-    key: "enhanced",
-    label: "Enhanced Academic",
-    desc: "Deep lexical replacement + clause restructuring for higher perplexity",
-    minTier: "pro"
-  },
-  {
-    key: "stealth",
-    label: "Deep Stealth (Turnitin Safe)",
-    desc: "Maximum burstiness injection & participial tail splitting (<10% AI target)",
-    minTier: "pro"
-  }
-];
+    {
+      key: "balanced",
+      label: "Balanced Polish",
+      desc: "Removes AI clichés while keeping original sentence structure intact",
+      minTier: "free"
+    },
+    {
+      key: "enhanced",
+      label: "Enhanced Academic",
+      desc: "Deep lexical replacement + clause restructuring for higher perplexity",
+      minTier: "pro"
+    },
+    {
+      key: "stealth",
+      label: "Deep Stealth (Turnitin Safe)",
+      desc: "Maximum burstiness injection & participial tail splitting (<10% AI target)",
+      minTier: "pro"
+    }
+  ];
 
 export function HumanizerStudio({ whatsapp }: { whatsapp: string }) {
   // Plan & Credits State
@@ -162,6 +162,7 @@ export function HumanizerStudio({ whatsapp }: { whatsapp: string }) {
   const [outputTab, setOutputTab] = useState<"clean" | "diff" | "heatmap">("clean");
   const [selectedSentenceIdx, setSelectedSentenceIdx] = useState<number | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
+  const [variationCount, setVariationCount] = useState<number>(0);
 
   // Modals State
   const [showUpgradeModal, setShowUpgradeModal] = useState<boolean>(false);
@@ -336,8 +337,7 @@ export function HumanizerStudio({ whatsapp }: { whatsapp: string }) {
 
     if (inputForensics.wordCount > currentTierConfig.maxWordsPerRun) {
       setErrorMsg(
-        `Your text is ${inputForensics.wordCount.toLocaleString()} words, which exceeds the ${currentTierConfig.name} limit of ${currentTierConfig.maxWordsPerRun.toLocaleString()} words per run. Upgrade to ${
-          activeTier === "free" ? "Academic Pro (2,500 words)" : "Dissertation Ultra (10,000 words)"
+        `Your text is ${inputForensics.wordCount.toLocaleString()} words, which exceeds the ${currentTierConfig.name} limit of ${currentTierConfig.maxWordsPerRun.toLocaleString()} words per run. Upgrade to ${activeTier === "free" ? "Academic Pro (2,500 words)" : "Dissertation Ultra (10,000 words)"
         } to process longer documents.`
       );
       return;
@@ -357,6 +357,8 @@ export function HumanizerStudio({ whatsapp }: { whatsapp: string }) {
     setSelectedSentenceIdx(null);
 
     try {
+      const nextSeed = variationCount;
+      setVariationCount((prev) => prev + 1);
       const res = await fetch("/api/humanize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -367,7 +369,8 @@ export function HumanizerStudio({ whatsapp }: { whatsapp: string }) {
           intensity,
           preserveCitations,
           freezeKeywords: activeTier === "ultra" ? freezeKeywords : [],
-          accessCode: savedAccessCode
+          accessCode: savedAccessCode,
+          variationSeed: nextSeed
         })
       });
 
@@ -472,6 +475,40 @@ export function HumanizerStudio({ whatsapp }: { whatsapp: string }) {
     setShowUpgradeModal(false);
   }
 
+  async function handleRegenerateVariation() {
+    if (!inputText.trim() || isProcessing) return;
+    setErrorMsg(null);
+    setIsProcessing(true);
+    setSelectedSentenceIdx(null);
+    try {
+      const nextSeed = variationCount + 1;
+      setVariationCount(nextSeed);
+      const res = await fetch("/api/humanize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: inputText,
+          tier: activeTier,
+          mode,
+          intensity,
+          preserveCitations,
+          freezeKeywords: activeTier === "ultra" ? freezeKeywords : [],
+          accessCode: savedAccessCode,
+          variationSeed: nextSeed
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to generate variation.");
+      const humResult = data as HumanizeResult;
+      setResult(humResult);
+      setEditedOutputText(humResult.humanizedText);
+    } catch (err: any) {
+      setErrorMsg(err.message || "Unable to generate new variation.");
+    } finally {
+      setIsProcessing(false);
+    }
+  }
+
   function handleSwapSentence(sentenceIndex: number, newSentenceText: string) {
     if (!result) return;
     const updatedSentences = result.afterMetrics.sentences.map((s, idx) =>
@@ -553,12 +590,12 @@ ${result.originalText}
     const plan = TIER_CONFIG[tierKey];
     const msg = encodeURIComponent(
       `✨ *StHelp VerbaFlow™ AI Humanizer — Plan Activation Request*\n\n` +
-        `👋 *Hello StHelp Team,*\n` +
-        `I would like to activate the *${plan.name}* plan on the StHelp AI Humanizer:\n\n` +
-        `📦 *Selected Plan:* ${plan.name} (${plan.priceLkr}/month or ${plan.singlePassLkr})\n` +
-        `⚡ *Allowance:* ${plan.monthlyWordsLabel}\n` +
-        (customNote ? `📝 *Note:* ${customNote}\n` : "") +
-        `\nPlease share the payment details and my instant Access Key. Thank you!`
+      `👋 *Hello StHelp Team,*\n` +
+      `I would like to activate the *${plan.name}* plan on the StHelp AI Humanizer:\n\n` +
+      `📦 *Selected Plan:* ${plan.name} (${plan.priceLkr}/month or ${plan.singlePassLkr})\n` +
+      `⚡ *Allowance:* ${plan.monthlyWordsLabel}\n` +
+      (customNote ? `📝 *Note:* ${customNote}\n` : "") +
+      `\nPlease share the payment details and my instant Access Key. Thank you!`
     );
     return wa ? `https://wa.me/${wa}?text=${msg}` : "/place-assignment?service=custom";
   };
@@ -1183,9 +1220,8 @@ ${result.originalText}
                       {result.afterMetrics.sentences.map((s) => (
                         <span
                           key={s.index}
-                          className={`heatmap-sentence risk-${s.riskLevel} ${
-                            selectedSentenceIdx === s.index ? "selected-sentence" : ""
-                          }`}
+                          className={`heatmap-sentence risk-${s.riskLevel} ${selectedSentenceIdx === s.index ? "selected-sentence" : ""
+                            }`}
                           onClick={() => setSelectedSentenceIdx(s.index)}
                         >
                           {s.text}{" "}
@@ -1256,6 +1292,17 @@ ${result.originalText}
                     <button type="button" className="btn-output-action primary" onClick={handleCopyOutput}>
                       {copied ? <Check size={16} /> : <Copy size={16} />}
                       <span>{copied ? "Copied to Clipboard!" : "Copy Humanized Text"}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="btn-output-action"
+                      onClick={handleRegenerateVariation}
+                      disabled={isProcessing}
+                      title="Generate another meaning-preserving phrasing variation"
+                    >
+                      <RefreshCw size={15} className={isProcessing ? "spin-icon" : ""} />
+                      <span>New Variation</span>
                     </button>
 
                     <button
@@ -1678,11 +1725,9 @@ ${result.originalText}
                     TIER_CONFIG[modalTargetTier].name
                   )}&title=${encodeURIComponent(
                     `StHelp VerbaFlow™ — ${TIER_CONFIG[modalTargetTier].name} Activation`
-                  )}&level=Undergraduate%20%2F%20Degree&urgency=Express&min=${
-                    modalTargetTier === "ultra" ? "3,500" : "1,200"
-                  }&max=${modalTargetTier === "ultra" ? "4,500" : "1,900"}&rawMin=${
-                    modalTargetTier === "ultra" ? "3500" : "1200"
-                  }&rawMax=${modalTargetTier === "ultra" ? "4500" : "1900"}`}
+                  )}&level=Undergraduate%20%2F%20Degree&urgency=Express&min=${modalTargetTier === "ultra" ? "3,500" : "1,200"
+                    }&max=${modalTargetTier === "ultra" ? "4,500" : "1,900"}&rawMin=${modalTargetTier === "ultra" ? "3500" : "1200"
+                    }&rawMax=${modalTargetTier === "ultra" ? "4500" : "1900"}`}
                   className="btn btn-dark modal-portal-btn"
                   onClick={() => setShowUpgradeModal(false)}
                 >
