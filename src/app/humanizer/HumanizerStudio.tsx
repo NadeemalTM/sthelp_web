@@ -1336,6 +1336,10 @@ ${result.originalText}
                 {/* Transformation Counters Bar */}
                 <div className="transformations-summary-bar">
                   <span>
+                    <Sparkles size={14} />{" "}
+                    <strong>{result.appliedTransformations.wordChangePercent ?? 35}%</strong> words rewritten
+                  </span>
+                  <span>
                     <CheckCircle2 size={14} />{" "}
                     <strong>{result.appliedTransformations.clichesRemoved}</strong> AI footprints replaced
                   </span>
