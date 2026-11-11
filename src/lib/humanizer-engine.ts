@@ -215,7 +215,7 @@ const AI_CLICHE_PATTERNS: { pattern: RegExp; label: string; weight: number }[] =
   { pattern: /\bpave(?:s|d|ing)?\s+the\s+way\b/gi, label: "pave the way", weight: 11 },
   { pattern: /\bnot\s+only\b[^.?!]{3,65}\bbut\s+also\b/gi, label: "not only ... but also", weight: 10 },
   { pattern: /\b(?:stands|functions|serves)\s+as\s+/gi, label: "stands/functions as", weight: 9 },
-  { pattern: /,\s*(?:thereby\s+)?(?!adjusting\b|keeping\b|making\b)[a-z]+ing\s+[^,.?!]{8,85}[.?!]/gi, label: "participial -ing tail", weight: 10 },
+  { pattern: new RegExp(",\\s*(?:thereby\\s+)?(?!adjusting\\b|keeping\\b|making\\b)[a-z]+ing\\s+[^,.?!]{8,85}[.?!]", "gi"), label: "participial -ing tail", weight: 10 },
   { pattern: /^(?:Designated|Founded|Established|Located|Recognized|Built|Rising|Drawing|Spanning)\s+[^,]{6,70},\s+/im, label: "fronted participle opener", weight: 10 },
   { pattern: /—like\s+[^—]{6,100}—/gi, label: "AI em-dash '—like X—' parenthetical", weight: 10 },
   { pattern: /\b(?:quickly\s+replace|frantically\s+troubleshooting|running\s+purely\s+on|quietly\s+powers|entirely\s+new|mountains\s+of|astounding\s+concentration|extraordinary\s+feat|carved\s+directly\s+into|continues\s+to\s+attract|fluctuates\s+with|eliminates\s+exhausting|struggle\s+to\s+replicate|build\s+intentional\s+habits|asynchronous\s+updates|feels?\s+isolated)\b/gi, label: "AI dramatic/formal collocation", weight: 10 },
@@ -358,32 +358,32 @@ export function analyzeTextForensics(text: string, customFrozenWords: string[] =
     }
 
     if (hasDashOrSemicolon && !/—like\s+/i.test(s)) sAiScore -= 14;
-      if (/^(Where|Rather than|While|Although|By|Still|Even so|Yet|And|But|Most|Instead of|Instead,|It’s|It's|There are|Compared with|More than|The uni|To fix|To lower|To cut|As you|If you|Remote work|In everyday practice|On a practical level|At the same time|Along with that|In the long run|During|After|Once)\b/i.test(s)) {
-        sAiScore -= 13;
-      }
-        if (/\b(?:it’s|it's|don’t|don't|you’re|you're|that’s|that's|gives way to|refers to teaching|is home to|that flow around it|for example—|learns through|budget on your own|set foot on|brand new|quietly powering|covers some|was declared|was built by|cut straight into|still draws|remarkable feat of|goes up and down|store extra energy|cuts reliance|keeps .* steady|cutting out tiring|find it hard to match|that way, nobody|soak up a lot of|keeping .* trapped|for hours after the sun goes down|making people|putting pressure on|air quality that people breathe|can both|helps both|seldom start|take advantage of|does far more than just|starts out on|allows workers flexibility|without having to|step into|in real life|from a young age|rely a lot on|open up free|each week|each single|right at the start|a lot of|plenty of|hold onto|pick up|moving over to|plenty of charge|along with that)\b/i.test(s)) {
-          sAiScore -= 14;
-        }
-        if (/\([A-Z][A-Za-z\s&.,]+?(?:19|20)\d{2}/.test(s) || /\[\d+\]/.test(s)) {
-          sAiScore -= 6;
-        }
-        if (sLen <= 14 || sLen >= 28) {
-          sAiScore -= 11;
-        }
+    if (/^(Where|Rather than|While|Although|By|Still|Even so|Yet|And|But|Most|Instead of|Instead,|It’s|It's|There are|Compared with|More than|The uni|To fix|To lower|To cut|As you|If you|Remote work|In everyday practice|On a practical level|At the same time|Along with that|In the long run|During|After|Once)\b/i.test(s)) {
+      sAiScore -= 13;
+    }
+    if (/\b(?:it’s|it's|don’t|don't|you’re|you're|that’s|that's|gives way to|refers to teaching|is home to|that flow around it|for example—|learns through|budget on your own|set foot on|brand new|quietly powering|covers some|was declared|was built by|cut straight into|still draws|remarkable feat of|goes up and down|store extra energy|cuts reliance|keeps .* steady|cutting out tiring|find it hard to match|that way, nobody|soak up a lot of|keeping .* trapped|for hours after the sun goes down|making people|putting pressure on|air quality that people breathe|can both|helps both|seldom start|take advantage of|does far more than just|starts out on|allows workers flexibility|without having to|step into|in real life|from a young age|rely a lot on|open up free|each week|each single|right at the start|a lot of|plenty of|hold onto|pick up|moving over to|plenty of charge|along with that)\b/i.test(s)) {
+      sAiScore -= 14;
+    }
+    if (/\([A-Z][A-Za-z\s&.,]+?(?:19|20)\d{2}/.test(s) || /\[\d+\]/.test(s)) {
+      sAiScore -= 6;
+    }
+    if (sLen <= 14 || sLen >= 28) {
+      sAiScore -= 11;
+    }
 
-        const clampedScore = Math.max(3, Math.min(98, Math.round(sAiScore)));
-        const riskLevel: "low" | "medium" | "high" =
-          clampedScore >= 58 ? "high" : clampedScore >= 34 ? "medium" : "low";
+    const clampedScore = Math.max(3, Math.min(98, Math.round(sAiScore)));
+    const riskLevel: "low" | "medium" | "high" =
+      clampedScore >= 58 ? "high" : clampedScore >= 34 ? "medium" : "low";
 
-        return {
-          index: idx,
-          text: s,
-          wordCount: sLen,
-          aiScore: clampedScore,
-          riskLevel,
-          flags: flags.slice(0, 3)
-        };
-      });
+    return {
+      index: idx,
+      text: s,
+      wordCount: sLen,
+      aiScore: clampedScore,
+      riskLevel,
+      flags: flags.slice(0, 3)
+    };
+  });
 
   // Calculate Burstiness
   let burstinessScore = 54;
@@ -639,7 +639,7 @@ const HIGH_RISK_REPLACEMENT_RULES: PhraseRule[] = [
     replacements: [", without anyone having to write", " without a programmer writing"]
   },
   {
-    regex: /\bwithout\s+anyone\s+(?!having\b)([a-z]+)ing\b/gi,
+    regex: new RegExp("\\bwithout\\s+anyone\\s+(?!having\\b)([a-z]+)ing\\b", "gi"),
     replacements: [", without anyone having to $1", " without someone manually $1ing"]
   },
   // "Instead of coding" -> "Instead of writing out"
@@ -2301,9 +2301,10 @@ function restructureSentenceSyntax(
   // Example: "Delivery vans often get held up in urban traffic, burn costly fuel, and miss tight delivery windows when customers are away at work."
   // -> "Delivery vans often get held up in urban traffic and burn costly fuel. They also miss tight delivery windows when customers are away at work."
   if (!restructured) {
-    const serialPredMatch = out.match(
-      /^ ([A - Z][a - zA - Z\s -]{ 2, 28} ? s) \s+((?: often | frequently | regularly | sometimes | usually) ?\s * (? !are\b | is\b | were\b | was\b)[a - z] +\s + [^,]{ 6, 45 }), \s + (? ![a - z] + ing\b) ([a - z] +\s + [^,]{ 6, 38 }), \s + and\s + (? ![a - z] + ing\b) ([a - z] +\s +.+) (\.| !|\?) $ /
-    );
+    const serialPredRegex = new RegExp(
+        "^([A-Z][a-zA-Z\\s-]{2,28}?s)\\s+((?:often|frequently|regularly|sometimes|usually)?\\s*(?!are\\b|is\\b|were\\b|was\\b)[a-z]+\\s+[^,]{6,45}),\\s+(?![a-z]+ing\\b)([a-z]+\\s+[^,]{6,38}),\\s+and\\s+(?![a-z]+ing\\b)([a-z]+\\s+.+)(\\.|!|\\?)$"
+      );
+    const serialPredMatch = out.match(serialPredRegex);
     if (serialPredMatch) {
       const pluralSubj = serialPredMatch[1].trim();
       const pred1 = serialPredMatch[2].trim();
@@ -3115,7 +3116,7 @@ export function runHumanizerEngine(req: HumanizeRequest): HumanizeResult {
 
   humanizedText = humanizedText
     .replace(/(^|[.!?]\s+)([a-z])/g, (_, prefix, letter) => `${prefix}${letter.toUpperCase()}`)
-    .replace(/\b(a)\s+([aeiouAEIOU](?!ni[a-z]*|se[a-z]*|til[a-z]*|ro[a-z]*|ne\b)[a-z]+)/g, "$1n $2")
+    .replace(new RegExp("\\b(a)\\s+([aeiouAEIOU](?!ni[a-z]*|se[a-z]*|til[a-z]*|ro[a-z]*|ne\\b)[a-z]+)", "g"), "$1n $2")
     .replace(
       /\b(an)\s+(uni[a-z]+|use[a-z]*|util[a-z]*|[bcdfghjklmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ][a-z]+)/gi,
       (_, anWord, nextWord) => {
