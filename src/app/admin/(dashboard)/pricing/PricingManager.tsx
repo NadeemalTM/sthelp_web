@@ -182,7 +182,7 @@ export function PricingManager({ supabaseConfigured }: { supabaseConfigured: boo
   }
 
   if (loading) {
-    return <main className="admin-content admin-settings-page admin-pricing-page loading"><div className="spinner"/></main>;
+    return <main className="admin-content admin-settings-page admin-pricing-page loading"><div className="spinner" /></main>;
   }
 
   if (!supabaseConfigured) {
@@ -193,7 +193,10 @@ export function PricingManager({ supabaseConfigured }: { supabaseConfigured: boo
   }
 
   return <main className="admin-content admin-settings-page admin-pricing-page stack">
-    <div><span className="eyebrow">Service catalogue</span><h2 style={{ marginTop: 7 }}>Pricing</h2><p className="muted">Manage public starting prices. Each client receives a final quote after their requirements are reviewed.</p></div>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
+      <div><span className="eyebrow">Service catalogue</span><h2 style={{ marginTop: 7 }}>Pricing</h2><p className="muted">Manage public starting prices. Each client receives a final quote after their requirements are reviewed.</p></div>
+      <Link className="btn btn-primary btn-sm" href="/admin/humanizer">Manage AI Humanizer Plans & Subscribers</Link>
+    </div>
 
     {notice ? <div className={`notice notice-${notice.type}`} role="status">{notice.text}</div> : null}
     {setupRequired ? <div className="notice notice-info"><strong>Database setup required.</strong> {setupMessage}</div> : null}
@@ -201,14 +204,14 @@ export function PricingManager({ supabaseConfigured }: { supabaseConfigured: boo
     <section className="panel resource-admin-panel pricing-catalog-panel">
       <div className="panel-title">
         <div><span className="eyebrow">Public pricing page</span><h3>Services and starting prices</h3><p className="muted small">Add, edit, order, feature or hide the services displayed to customers.</p></div>
-        <Link className="btn btn-soft btn-sm" href="/pricing" target="_blank"><ExternalLink size={15}/> View page</Link>
+        <Link className="btn btn-soft btn-sm" href="/pricing" target="_blank"><ExternalLink size={15} /> View page</Link>
       </div>
 
       <div className="resource-admin-grid">
         <form className="stack resource-editor pricing-editor" id="pricing-editor" key={editing?.id || "new-pricing-service"} onSubmit={saveService}>
           <div className="resource-editor-heading">
             <div><strong>{editing ? `Edit ${editing.name}` : "Add a pricing service"}</strong><span>{editing ? "Update the selected service and save your changes." : "Create a service for the public pricing page."}</span></div>
-            {editing ? <button type="button" className="btn btn-soft btn-sm" onClick={clearEditor}><X size={14}/> Cancel</button> : <Plus size={18}/>} 
+            {editing ? <button type="button" className="btn btn-soft btn-sm" onClick={clearEditor}><X size={14} /> Cancel</button> : <Plus size={18} />}
           </div>
 
           <div className="form-grid">
@@ -216,33 +219,33 @@ export function PricingManager({ supabaseConfigured }: { supabaseConfigured: boo
               if (editing) return;
               const slugInput = event.currentTarget.form?.elements.namedItem("slug");
               if (slugInput instanceof HTMLInputElement && !slugInput.value.trim()) slugInput.value = slugify(event.currentTarget.value);
-            }} maxLength={120} required/></div>
-            <div className="field"><label htmlFor="pricing-slug">Slug</label><input id="pricing-slug" className="input" name="slug" defaultValue={editing?.slug || ""} pattern="[a-z0-9]+(-[a-z0-9]+)*" maxLength={80} placeholder="report-writing" required/><span className="help">Lowercase letters, numbers and hyphens.</span></div>
-            <div className="field full"><label htmlFor="pricing-description">Short description</label><textarea id="pricing-description" className="textarea" name="shortDescription" defaultValue={editing?.short_description || ""} maxLength={1000} required/></div>
-            <div className="field"><label htmlFor="pricing-price">Starting price</label><input id="pricing-price" className="input" name="startingPrice" type="number" min="0.01" max="9999999999.99" step="0.01" defaultValue={editing?.starting_price ?? ""} disabled={isCustom} required={!isCustom}/><span className="help">The final assignment quote can be changed later.</span></div>
-            <div className="field"><label htmlFor="pricing-currency">Currency</label><input id="pricing-currency" className="input" name="currency" value="LKR" readOnly required/><span className="help">Public starting prices are listed in Sri Lankan rupees.</span></div>
-            <div className="field full"><label htmlFor="pricing-features">Included features</label><textarea id="pricing-features" className="textarea" name="features" defaultValue={featureLines(editing?.features || [])} placeholder={"One feature per line\nRequirements review\nScope-based final quote"} maxLength={1500}/><span className="help">One feature per line, with up to 12 features.</span></div>
-            <div className="field"><label htmlFor="pricing-order">Sort order</label><input id="pricing-order" className="input" name="sortOrder" type="number" min="-10000" max="10000" step="1" defaultValue={editing?.sort_order ?? 0} required/></div>
-            <label className="checkbox-row field"><input type="checkbox" checked={isCustom} onChange={(event) => setIsCustom(event.target.checked)}/><span>Custom quote without a starting price</span></label>
-            <label className="checkbox-row field"><input type="checkbox" name="isFeatured" defaultChecked={Boolean(editing?.is_featured)}/><span>Feature this service</span></label>
-            <label className="checkbox-row field"><input type="checkbox" name="isPublished" defaultChecked={editing ? Boolean(editing.is_published) : true}/><span>Publish this service</span></label>
+            }} maxLength={120} required /></div>
+            <div className="field"><label htmlFor="pricing-slug">Slug</label><input id="pricing-slug" className="input" name="slug" defaultValue={editing?.slug || ""} pattern="[a-z0-9]+(-[a-z0-9]+)*" maxLength={80} placeholder="report-writing" required /><span className="help">Lowercase letters, numbers and hyphens.</span></div>
+            <div className="field full"><label htmlFor="pricing-description">Short description</label><textarea id="pricing-description" className="textarea" name="shortDescription" defaultValue={editing?.short_description || ""} maxLength={1000} required /></div>
+            <div className="field"><label htmlFor="pricing-price">Starting price</label><input id="pricing-price" className="input" name="startingPrice" type="number" min="0.01" max="9999999999.99" step="0.01" defaultValue={editing?.starting_price ?? ""} disabled={isCustom} required={!isCustom} /><span className="help">The final assignment quote can be changed later.</span></div>
+            <div className="field"><label htmlFor="pricing-currency">Currency</label><input id="pricing-currency" className="input" name="currency" value="LKR" readOnly required /><span className="help">Public starting prices are listed in Sri Lankan rupees.</span></div>
+            <div className="field full"><label htmlFor="pricing-features">Included features</label><textarea id="pricing-features" className="textarea" name="features" defaultValue={featureLines(editing?.features || [])} placeholder={"One feature per line\nRequirements review\nScope-based final quote"} maxLength={1500} /><span className="help">One feature per line, with up to 12 features.</span></div>
+            <div className="field"><label htmlFor="pricing-order">Sort order</label><input id="pricing-order" className="input" name="sortOrder" type="number" min="-10000" max="10000" step="1" defaultValue={editing?.sort_order ?? 0} required /></div>
+            <label className="checkbox-row field"><input type="checkbox" checked={isCustom} onChange={(event) => setIsCustom(event.target.checked)} /><span>Custom quote without a starting price</span></label>
+            <label className="checkbox-row field"><input type="checkbox" name="isFeatured" defaultChecked={Boolean(editing?.is_featured)} /><span>Feature this service</span></label>
+            <label className="checkbox-row field"><input type="checkbox" name="isPublished" defaultChecked={editing ? Boolean(editing.is_published) : true} /><span>Publish this service</span></label>
           </div>
 
-          <button className="btn btn-primary" disabled={busy || setupRequired}>{editing ? <><Save size={17}/> Save service</> : <><Plus size={17}/> Add service</>}</button>
+          <button className="btn btn-primary" disabled={busy || setupRequired}>{editing ? <><Save size={17} /> Save service</> : <><Plus size={17} /> Add service</>}</button>
         </form>
 
         <div className="resource-admin-library pricing-library">
-          <label className="search-field"><Search size={17}/><span className="sr-only">Search pricing services</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search services"/></label>
+          <label className="search-field"><Search size={17} /><span className="sr-only">Search pricing services</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search services" /></label>
           <div className="resource-admin-count"><strong>{filteredServices.length}</strong> of {services.length} services</div>
           <div className="resource-admin-list">
             {filteredServices.map((service) => <article className={`resource-admin-row ${editing?.id === service.id ? "is-editing" : ""}`} aria-current={editing?.id === service.id ? "true" : undefined} key={service.id}>
-              <div className="resource-admin-thumb"><BadgeDollarSign size={21}/></div>
+              <div className="resource-admin-thumb"><BadgeDollarSign size={21} /></div>
               <div className="resource-admin-copy"><strong>{service.name}</strong><span>{service.is_custom ? "Custom quote" : `${formatMoney(service.starting_price, service.currency)} and up`} · {service.is_published ? "Published" : "Hidden"}{service.is_featured ? " · Featured" : ""}</span></div>
               <div className="resource-admin-actions">
-                <button className="btn btn-soft btn-sm" type="button" title="Edit service" aria-label={`Edit ${service.name}`} disabled={busy || setupRequired} onClick={() => editService(service)}><Pencil size={14}/></button>
-                <Link className="btn btn-soft btn-sm" href={`/pricing#service-${encodeURIComponent(service.slug)}`} target="_blank" title="View pricing page" aria-label={`View ${service.name} on the pricing page`}><ExternalLink size={14}/></Link>
-                <button className="btn btn-soft btn-sm" type="button" title={service.is_published ? "Hide service" : "Publish service"} aria-label={`${service.is_published ? "Hide" : "Publish"} ${service.name}`} disabled={busy || setupRequired} onClick={() => setPublished(service)}>{service.is_published ? <EyeOff size={14}/> : <Eye size={14}/>}</button>
-                <button className="btn btn-danger btn-sm" type="button" title="Archive service" aria-label={`Archive ${service.name}`} disabled={busy || setupRequired} onClick={() => deleteService(service)}><Trash2 size={14}/></button>
+                <button className="btn btn-soft btn-sm" type="button" title="Edit service" aria-label={`Edit ${service.name}`} disabled={busy || setupRequired} onClick={() => editService(service)}><Pencil size={14} /></button>
+                <Link className="btn btn-soft btn-sm" href={`/pricing#service-${encodeURIComponent(service.slug)}`} target="_blank" title="View pricing page" aria-label={`View ${service.name} on the pricing page`}><ExternalLink size={14} /></Link>
+                <button className="btn btn-soft btn-sm" type="button" title={service.is_published ? "Hide service" : "Publish service"} aria-label={`${service.is_published ? "Hide" : "Publish"} ${service.name}`} disabled={busy || setupRequired} onClick={() => setPublished(service)}>{service.is_published ? <EyeOff size={14} /> : <Eye size={14} />}</button>
+                <button className="btn btn-danger btn-sm" type="button" title="Archive service" aria-label={`Archive ${service.name}`} disabled={busy || setupRequired} onClick={() => deleteService(service)}><Trash2 size={14} /></button>
               </div>
             </article>)}
             {!filteredServices.length ? <p className="muted small">{setupRequired ? "Run the pricing migration to load services." : "No pricing services match this search."}</p> : null}

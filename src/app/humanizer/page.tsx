@@ -15,6 +15,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { TrustGuarantees } from "@/components/TrustGuarantees";
 import { getPublicContent } from "@/lib/data";
+import { getHumanizerPlans } from "@/lib/humanizer-admin-store";
 import { publicSiteUrl } from "@/lib/site-url";
 import { HumanizerStudio } from "./HumanizerStudio";
 
@@ -70,7 +71,10 @@ const engineSteps = [
 ];
 
 export default async function HumanizerPage() {
-  const { settings } = await getPublicContent();
+  const [{ settings }, plans] = await Promise.all([
+    getPublicContent(),
+    getHumanizerPlans()
+  ]);
   const whatsapp = String(settings.whatsapp_number || "").replace(/\D/g, "");
   const siteUrl = publicSiteUrl();
 
@@ -95,13 +99,13 @@ export default async function HumanizerPage() {
             </p>
             <div className="humanizer-hero-badges">
               <span>
-                <CheckCircle2 size={16} /> 3 Free Daily Credits Included
+                <CheckCircle2 size={16} /> {plans.free.dailyCredits} Free Daily Credits Included
               </span>
               <span>
                 <ShieldCheck size={16} /> 100% Citation &amp; Stats Lock
               </span>
               <span>
-                <FileCheck2 size={16} /> Pro &amp; Ultra Editions for Dissertations
+                <FileCheck2 size={16} /> {plans.pro.name} &amp; {plans.ultra.name} Editions
               </span>
             </div>
           </div>
@@ -110,22 +114,22 @@ export default async function HumanizerPage() {
             <div className="hero-edition-row">
               <span className="edition-tag free">Free</span>
               <div>
-                <strong>Starter Free (Limited Credit)</strong>
-                <small>3 credits/day · 400 words/run · Standard modes</small>
+                <strong>{plans.free.name} ({plans.free.badge})</strong>
+                <small>{plans.free.dailyCredits} credits/day · {plans.free.maxWordsPerRun.toLocaleString()} words/run</small>
               </div>
             </div>
             <div className="hero-edition-row">
               <span className="edition-tag pro">Pro</span>
               <div>
-                <strong>Academic Pro · LKR 1,900</strong>
-                <small>50 credits · 2,500 words/run · Deep Stealth + 6 modes</small>
+                <strong>{plans.pro.name} · {plans.pro.priceLkr}</strong>
+                <small>{plans.pro.dailyCredits} credits · {plans.pro.maxWordsPerRun.toLocaleString()} words/run · Deep Stealth</small>
               </div>
             </div>
             <div className="hero-edition-row">
               <span className="edition-tag ultra">Ultra</span>
               <div>
-                <strong>Dissertation Ultra · LKR 4,500</strong>
-                <small>200 credits · 10,000 words/run · Term Freeze + Thesis Suite</small>
+                <strong>{plans.ultra.name} · {plans.ultra.priceLkr}</strong>
+                <small>{plans.ultra.dailyCredits} credits · {plans.ultra.maxWordsPerRun.toLocaleString()} words/run · Term Freeze</small>
               </div>
             </div>
             <a href="#humanizer-plans" className="hero-compare-link">
@@ -136,7 +140,7 @@ export default async function HumanizerPage() {
       </section>
 
       {/* Main Interactive Humanizer Studio + 3-Tier Plans */}
-      <HumanizerStudio whatsapp={whatsapp} />
+      <HumanizerStudio whatsapp={whatsapp} initialPlans={plans} />
 
       {/* How the Engine Works */}
       <section className="section humanizer-methodology-section" data-public-reveal>

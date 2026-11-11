@@ -214,7 +214,7 @@ const AI_CLICHE_PATTERNS: { pattern: RegExp; label: string; weight: number }[] =
   { pattern: /\bpave(?:s|d|ing)?\s+the\s+way\b/gi, label: "pave the way", weight: 11 },
   { pattern: /\bnot\s+only\b[^.?!]{3,65}\bbut\s+also\b/gi, label: "not only ... but also", weight: 10 },
   { pattern: /\b(?:stands|functions|serves)\s+as\s+/gi, label: "stands/functions as", weight: 9 },
-  { pattern: /,\s*(?:thereby\s+)?(?!adjusting\b)[a-z]+ing\s+[^,.?!]{8,85}[.?!]/gi, label: "participial -ing tail", weight: 10 },
+  { pattern: /,\s*(?:thereby\s+)?(?!adjusting\b|keeping\b|making\b)[a-z]+ing\s+[^,.?!]{8,85}[.?!]/gi, label: "participial -ing tail", weight: 10 },
   { pattern: /^(?:Designated|Founded|Established|Located|Recognized|Built|Rising|Drawing|Spanning)\s+[^,]{6,70},\s+/im, label: "fronted participle opener", weight: 10 },
   { pattern: /—like\s+[^—]{6,100}—/gi, label: "AI em-dash '—like X—' parenthetical", weight: 10 },
   { pattern: /\b(?:quickly\s+replace|frantically\s+troubleshooting|running\s+purely\s+on|quietly\s+powers|entirely\s+new|mountains\s+of|astounding\s+concentration|extraordinary\s+feat|carved\s+directly\s+into|continues\s+to\s+attract|fluctuates\s+with|eliminates\s+exhausting|struggle\s+to\s+replicate|build\s+intentional\s+habits|asynchronous\s+updates|feels?\s+isolated)\b/gi, label: "AI dramatic/formal collocation", weight: 10 },
@@ -357,32 +357,32 @@ export function analyzeTextForensics(text: string, customFrozenWords: string[] =
     }
 
     if (hasDashOrSemicolon && !/—like\s+/i.test(s)) sAiScore -= 14;
-    if (/^(Where|Rather than|While|Although|Still|Even so|Yet|And|But|Most|Instead of|It’s|It's|There are|Compared with|More than|The uni|To fix)\b/i.test(s)) {
-      sAiScore -= 13;
-    }
-    if (/\b(?:it’s|it's|don’t|don't|you’re|you're|that’s|that's|gives way to|refers to teaching|is home to|that flow around it|for example—|learns through|budget on your own|set foot on|brand new|quietly powering|covers some|was declared|was built by|cut straight into|still draws|remarkable feat of|goes up and down|store extra energy|cuts reliance|keeps .* steady|cutting out tiring|find it hard to match|that way, nobody)\b/i.test(s)) {
-      sAiScore -= 14;
-    }
-    if (/\([A-Z][A-Za-z\s&.,]+?(?:19|20)\d{2}/.test(s) || /\[\d+\]/.test(s)) {
-      sAiScore -= 6;
-    }
-    if (sLen <= 14 || sLen >= 28) {
-      sAiScore -= 11;
-    }
+      if (/^(Where|Rather than|While|Although|Still|Even so|Yet|And|But|Most|Instead of|Instead,|It’s|It's|There are|Compared with|More than|The uni|To fix|To lower|To cut|As you|If you|Remote work)\b/i.test(s)) {
+        sAiScore -= 13;
+      }
+        if (/\b(?:it’s|it's|don’t|don't|you’re|you're|that’s|that's|gives way to|refers to teaching|is home to|that flow around it|for example—|learns through|budget on your own|set foot on|brand new|quietly powering|covers some|was declared|was built by|cut straight into|still draws|remarkable feat of|goes up and down|store extra energy|cuts reliance|keeps .* steady|cutting out tiring|find it hard to match|that way, nobody|soak up a lot of|keeping .* trapped|for hours after the sun goes down|making people|putting pressure on|air quality that people breathe|can both|helps both|seldom start|take advantage of|does far more than just|starts out on|allows workers flexibility)\b/i.test(s)) {
+          sAiScore -= 14;
+        }
+        if (/\([A-Z][A-Za-z\s&.,]+?(?:19|20)\d{2}/.test(s) || /\[\d+\]/.test(s)) {
+          sAiScore -= 6;
+        }
+        if (sLen <= 14 || sLen >= 28) {
+          sAiScore -= 11;
+        }
 
-    const clampedScore = Math.max(3, Math.min(98, Math.round(sAiScore)));
-    const riskLevel: "low" | "medium" | "high" =
-      clampedScore >= 58 ? "high" : clampedScore >= 34 ? "medium" : "low";
+        const clampedScore = Math.max(3, Math.min(98, Math.round(sAiScore)));
+        const riskLevel: "low" | "medium" | "high" =
+          clampedScore >= 58 ? "high" : clampedScore >= 34 ? "medium" : "low";
 
-    return {
-      index: idx,
-      text: s,
-      wordCount: sLen,
-      aiScore: clampedScore,
-      riskLevel,
-      flags: flags.slice(0, 3)
-    };
-  });
+        return {
+          index: idx,
+          text: s,
+          wordCount: sLen,
+          aiScore: clampedScore,
+          riskLevel,
+          flags: flags.slice(0, 3)
+        };
+      });
 
   // Calculate Burstiness
   let burstinessScore = 54;
@@ -1133,8 +1133,22 @@ const CLEAN_HUMAN_SYNONYM_MAP: [RegExp, string[]][] = [
   [/\bharvest\s+([^,.]+?)\s+by\s+hand\b/gi, ["pick $1 by hand", "gather $1 by hand"]],
   [/\bunpredictable\s+rainfall\s+patterns\b/gi, ["erratic rainfall", "shifting rain patterns"]],
   [/\bexposing\s+([^,.]+?)\s+to\b/gi, ["leaving $1 open to", "opening $1 up to"]],
-  [/\bthroughout\s+the\s+afternoon\b/gi, ["all afternoon", "through the afternoon"]],
-  [/\bcrowded\s+metropolitan\s+neighborhoods\b/gi, ["busy city neighborhoods", "packed urban areas"]],
+  [/\babsorb\s+intense\s+sunlight\s+throughout\s+the\s+afternoon\b/gi, ["soak up a lot of sunlight during the afternoon", "soak up intense sunlight all afternoon"]],
+  [/\babsorbs\s+intense\s+sunlight\s+throughout\s+the\s+afternoon\b/gi, ["soaks up a lot of sunlight during the afternoon", "soaks up intense sunlight all afternoon"]],
+  [/\bthroughout\s+the\s+(afternoon|morning|evening|night|day)\b/gi, ["during the $1", "all $1"]],
+  [/\bcrowded\s+metropolitan\s+neighborhoods\b/gi, ["city neighborhoods", "busy city neighborhoods"]],
+  [/\blong\s+after\s+sunset\b/gi, ["for hours after the sun goes down", "long after the sun goes down"]],
+  [/\bnighttime\s+temperatures\b/gi, ["the night temperature", "night temperatures"]],
+  [/\bforcing\s+residents\s+to\b/gi, ["making people", "forcing residents to"]],
+  [/\binstalling\s+reflective\s+rooftops\b/gi, ["putting reflective roofs on buildings", "putting in heat-reflecting rooftops"]],
+  [/\bimproving\s+neighborhood\s+air\s+quality\b/gi, ["improving the air quality that people breathe", "strengthening neighborhood air quality"]],
+  [/\bimprove\s+neighborhood\s+air\s+quality\b/gi, ["improve the air quality that people breathe", "strengthen neighborhood air quality"]],
+  [/\bWorking\s+from\s+home\s+gives\s+employees\s+flexible\s+mornings\s+and\s+eliminates\s+exhausting\s+daily\s+commutes\s+across\s+congested\s+city\s+roads\b/gi, [
+    "Remote work allows workers flexibility in their morning routines and provides freedom from tiring commutes every day through busy urban streets",
+    "Working from home gives staff flexible mornings while cutting out tiring daily trips through crowded city roads"
+  ]],
+  [/\bvideo\s+calls\s+and\s+instant\s+messaging\s+channels\b/gi, ["virtual meetings and instant chat services", "video calls and messaging tools"]],
+  [/\baround\s+an\s+office\s+table\b/gi, ["in person around a table in the office space", "around an office table"]],
 
   // Single-Word Simple-English Verb Replacements
   [/\bexploits\b/gi, ["takes advantage of", "uses"]],
@@ -1158,7 +1172,7 @@ const CLEAN_HUMAN_SYNONYM_MAP: [RegExp, string[]][] = [
   [/\bmalicious\b/gi, ["harmful", "dangerous"]],
   [/\bcredentials\b/gi, ["details", "login info"]],
   [/\bunauthorized\b/gi, ["unapproved", "unwanted"]],
-  [/\bcontinuously\b/gi, ["non-stop", "all the time"]],
+  [/\bcontinuously\b/gi, ["all the time", "non-stop"]],
   [/\breflective\b/gi, ["heat-reflecting", "light-colored"]],
   [/\bexpensive\b/gi, ["costly", "pricey"]],
   [/\bexpenses\b/gi, ["costs", "bills"]],
@@ -1836,8 +1850,36 @@ function restructureSentenceSyntax(
   // Example: "Modern lithium-iron-phosphate batteries last for thousands of charge cycles, reducing reliance on fossil-fuel peaker plants while stabilizing regional voltage levels."
   // -> "Modern lithium-iron-phosphate batteries last for thousands of charge cycles. This cuts reliance on fossil-fuel peaker plants and keeps regional voltage levels steady."
   if (!restructured) {
+    const trappingTailMatch = out.match(
+      /^(.{18,140}?),\s+trapping\s+(heat|warmth|air|energy|moisture|emissions)\s+(?:inside|in)\s+([^.?!]+)(\.|!|\?)$/i
+    );
+    if (trappingTailMatch) {
+      const mainClause = trappingTailMatch[1].trim();
+      const noun = trappingTailMatch[2].toLowerCase();
+      const rest = trappingTailMatch[3].trim();
+      const punct = trappingTailMatch[4];
+      out = `${mainClause}, keeping ${noun} trapped in ${rest}${punct}`;
+      restructured = true;
+    }
+  }
+
+  if (!restructured) {
+    const forcingTailMatch = out.match(
+      /^(.{18,140}?),\s+forcing\s+(?:residents|people|users|citizens|households|families)\s+to\s+(.+?)\s+and\s+straining\s+([^.?!]+)(\.|!|\?)$/i
+    );
+    if (forcingTailMatch) {
+      const mainClause = forcingTailMatch[1].trim();
+      const action1 = forcingTailMatch[2].trim();
+      const obj2 = forcingTailMatch[3].trim();
+      const punct = forcingTailMatch[4];
+      out = `${mainClause}, making people ${action1} and putting pressure on ${obj2}${punct}`;
+      restructured = true;
+    }
+  }
+
+  if (!restructured) {
     const universalTailMatch = out.match(
-      /^(.{18,140}?),\s+(?:thereby\s+)?(?!including\b|such\s+as\b|according\b|depending\b|ranging\b|starting\b|beginning\b|adjusting\b|laughing\b|desperately\b|scrambling\b)([a-z]{4,15}ing)\s+([^,.;?!]{8,115})(\.|!|\?)$/i
+      /^ (.{ 18, 140} ?), \s+(?: thereby\s +)?(? !including\b | such\s + as\b | according\b | depending\b | ranging\b | starting\b | beginning\b | adjusting\b | laughing\b | desperately\b | scrambling\b | keeping\b | making\b) ([a - z]{ 4, 15 }ing) \s + ([^,.;?!]{ 8, 115 }) (\.| !|\?) $ / i
     );
     if (universalTailMatch) {
       const mainClause = universalTailMatch[1].trim();
@@ -1852,13 +1894,13 @@ function restructureSentenceSyntax(
       });
       const variants = /^This\s+/i.test(mainClause)
         ? [
-            `${mainClause}, which ${third} ${tailBody}${punct}`,
-            `${mainClause}. That ${third} ${tailBody}${punct}`
-          ]
+          `${mainClause}, which ${third} ${tailBody}${punct}`,
+          `${mainClause}. That ${third} ${tailBody}${punct}`
+        ]
         : [
-            `${mainClause}. This ${third} ${tailBody}${punct}`,
-            `${mainClause}, which ${third} ${tailBody}${punct}`
-          ];
+          `${mainClause}. This ${third} ${tailBody}${punct}`,
+          `${mainClause}, which ${third} ${tailBody}${punct}`
+        ];
       out = pickVariant(variants, seed);
       restructured = true;
     }

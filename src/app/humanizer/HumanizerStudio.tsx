@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -26,6 +26,7 @@ import {
   Zap
 } from "lucide-react";
 import { WhatsAppIcon } from "@/components/WhatsAppIcon";
+import type { HumanizerPlanConfig } from "@/lib/humanizer-admin-store";
 import {
   analyzeTextForensics,
   SAMPLE_AI_TEXTS,
@@ -36,6 +37,55 @@ import {
   type HumanizerTier,
   type TextForensics
 } from "@/lib/humanizer-engine";
+
+const FALLBACK_PLANS: Record<HumanizerTier, HumanizerPlanConfig> = {
+  free: {
+    ...TIER_CONFIG.free,
+    tier: "free",
+    priceNumeric: 0,
+    billingPeriod: "forever",
+    features: [
+      "3 Free Humanize Credits refreshed daily",
+      "Unlimited Free AI Probability Scans & Burstiness metrics",
+      "2 Academic Modes: Standard Academic & Concise",
+      "Citation Shield™: Protects APA, Harvard & IEEE references"
+    ],
+    ctaLabel: "Use Free Plan Above",
+    isFeatured: false
+  },
+  pro: {
+    ...TIER_CONFIG.pro,
+    tier: "pro",
+    priceNumeric: 1900,
+    billingPeriod: "/ month",
+    features: [
+      "Up to 125,000 Words/Mo (2,500 words per single pass)",
+      "Deep Stealth Engine v4: Targets <10% AI score on Turnitin & GPTZero",
+      "All 6 Academic Disciplines: Postgraduate, Literature Review, Methodology & MBA",
+      "Interactive Sentence Studio: Click any sentence for 3 alternative scholarly rewrites",
+      "Side-by-Side Diff Viewer & Forensic .DOC Audit Export",
+      "100% Citation, Statistic & Direct Quote Preservation"
+    ],
+    ctaLabel: "Get Pro Access Key on WhatsApp",
+    isFeatured: true
+  },
+  ultra: {
+    ...TIER_CONFIG.ultra,
+    tier: "ultra",
+    priceNumeric: 4500,
+    billingPeriod: "/ month",
+    features: [
+      "Full Chapter & Thesis Capacity: Up to 10,000 words in a single click",
+      "Ultra-Stealth Neural Rhythm Engine: Deep clause-level burstiness & perplexity engineering",
+      "Custom Keyword & Terminology Freeze Lock: Lock domain terms, variables & statutes",
+      "All 6 Modes + Interactive Sentence Swapper + Full Forensic Report",
+      "Priority StHelp Human Editor Support: Includes 20% off manual Turnitin verification",
+      "Multi-Device Access Key valid across laptop & mobile"
+    ],
+    ctaLabel: "Get Ultra Access Key on WhatsApp",
+    isFeatured: false
+  }
+};
 
 interface CreditStorageState {
   date: string;
@@ -131,89 +181,204 @@ const INTENSITY_META: {
     }
   ];
 
-export function HumanizerStudio({ whatsapp }: { whatsapp: string }) {
-  // Plan & Credits State
-  const [activeTier, setActiveTier] = useState<HumanizerTier>("free");
-  const [unlockedTier, setUnlockedTier] = useState<HumanizerTier>("free");
-  const [freeCredits, setFreeCredits] = useState<number>(3);
-  const [proCredits, setProCredits] = useState<number>(50);
-  const [ultraCredits, setUltraCredits] = useState<number>(200);
-  const [savedAccessCode, setSavedAccessCode] = useState<string>("");
-  const [usedTrialPreview, setUsedTrialPreview] = useState<boolean>(false);
+  export function HumanizerStudio({
+    whatsapp,
+    initialPlans
+  }: {
+    whatsapp: string;
+    initialPlans?: Record<HumanizerTier, HumanizerPlanConfig>;
+  }) {
+    // Admin-editable Plans State
+    const [plansConfig, setPlansConfig] = useState<Record<HumanizerTier, HumanizerPlanConfig>>(
+      initialPlans || FALLBACK_PLANS
+    );
 
-  // Tool Configuration State
-  const [inputText, setInputText] = useState<string>(SAMPLE_AI_TEXTS[0].text);
-  const [mode, setMode] = useState<HumanizerMode>("academic");
-  const [intensity, setIntensity] = useState<HumanizerIntensity>("balanced");
-  const [preserveCitations, setPreserveCitations] = useState<boolean>(true);
-  const [freezeInput, setFreezeInput] = useState<string>("");
-  const [freezeKeywords, setFreezeKeywords] = useState<string[]>([
-    "SmartPLS",
-    "Cronbach's alpha"
-  ]);
+    // Plan & Credits State
+    const [activeTier, setActiveTier] = useState<HumanizerTier>("free");
+    const [unlockedTier, setUnlockedTier] = useState<HumanizerTier>("free");
+    const [freeCredits, setFreeCredits] = useState<number>(initialPlans?.free?.dailyCredits || 3);
+    const [proCredits, setProCredits] = useState<number>(initialPlans?.pro?.dailyCredits || 50);
+    const [ultraCredits, setUltraCredits] = useState<number>(initialPlans?.ultra?.dailyCredits || 200);
+    const [subscriberName, setSubscriberName] = useState<string | null>(null);
+    const [subscriberMaxWords, setSubscriberMaxWords] = useState<number | null>(null);
+    const [savedAccessCode, setSavedAccessCode] = useState<string>("");
+    const [usedTrialPreview, setUsedTrialPreview] = useState<boolean>(false);
 
-  // Output & Forensics State
-  const [isProcessing, setIsProcessing] = useState<boolean>(false);
-  const [isScanning, setIsScanning] = useState<boolean>(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [result, setResult] = useState<HumanizeResult | null>(null);
-  const [editedOutputText, setEditedOutputText] = useState<string>("");
-  const [liveScan, setLiveScan] = useState<TextForensics | null>(null);
-  const [outputTab, setOutputTab] = useState<"clean" | "diff" | "heatmap">("clean");
-  const [selectedSentenceIdx, setSelectedSentenceIdx] = useState<number | null>(null);
-  const [copied, setCopied] = useState<boolean>(false);
-  const [variationCount, setVariationCount] = useState<number>(0);
+    // Tool Configuration State
+    const [inputText, setInputText] = useState<string>(SAMPLE_AI_TEXTS[0].text);
+    const [mode, setMode] = useState<HumanizerMode>("academic");
+    const [intensity, setIntensity] = useState<HumanizerIntensity>("balanced");
+    const [preserveCitations, setPreserveCitations] = useState<boolean>(true);
+    const [freezeInput, setFreezeInput] = useState<string>("");
+    const [freezeKeywords, setFreezeKeywords] = useState<string[]>([
+      "SmartPLS",
+      "Cronbach's alpha"
+    ]);
 
-  // Modals State
-  const [showUpgradeModal, setShowUpgradeModal] = useState<boolean>(false);
-  const [modalTargetTier, setModalTargetTier] = useState<"pro" | "ultra">("pro");
-  const [accessKeyInput, setAccessKeyInput] = useState<string>("");
-  const [keyStatusMsg, setKeyStatusMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
-  const [verifyingKey, setVerifyingKey] = useState<boolean>(false);
+    // Output & Forensics State
+    const [isProcessing, setIsProcessing] = useState<boolean>(false);
+    const [isScanning, setIsScanning] = useState<boolean>(false);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
+    const [result, setResult] = useState<HumanizeResult | null>(null);
+    const [editedOutputText, setEditedOutputText] = useState<string>("");
+    const [liveScan, setLiveScan] = useState<TextForensics | null>(null);
+    const [outputTab, setOutputTab] = useState<"clean" | "diff" | "heatmap">("clean");
+    const [selectedSentenceIdx, setSelectedSentenceIdx] = useState<number | null>(null);
+    const [copied, setCopied] = useState<boolean>(false);
+    const [variationCount, setVariationCount] = useState<number>(0);
 
-  // Hydrate credits from localStorage
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      const today = getTodayKey();
-      if (raw) {
-        const parsed = JSON.parse(raw) as Partial<CreditStorageState>;
-        const isSameDay = parsed.date === today;
-        const restoredFree = isSameDay && typeof parsed.freeRemaining === "number" ? parsed.freeRemaining : 3;
-        const restoredPro = typeof parsed.proRemaining === "number" ? parsed.proRemaining : 50;
-        const restoredUltra = typeof parsed.ultraRemaining === "number" ? parsed.ultraRemaining : 200;
-        const restoredTier =
-          parsed.unlockedTier === "ultra" || parsed.unlockedTier === "pro" ? parsed.unlockedTier : "free";
+    // Live Typing / Streaming Generation Animation State
+    const [isTypingOutput, setIsTypingOutput] = useState<boolean>(false);
+    const [typedOutputText, setTypedOutputText] = useState<string>("");
+    const [typingProgress, setTypingProgress] = useState<number>(0);
+    const [generationPhase, setGenerationPhase] = useState<string>("Analyzing AI footprints...");
+    const typingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-        setFreeCredits(restoredFree);
-        setProCredits(restoredPro);
-        setUltraCredits(restoredUltra);
-        setUnlockedTier(restoredTier);
-        setActiveTier(restoredTier);
-        if (restoredTier !== "free") {
-          setMode("lit_review");
-          setIntensity("stealth");
-        }
-        if (parsed.accessCode) setSavedAccessCode(parsed.accessCode);
-        if (parsed.usedTrialPreview) setUsedTrialPreview(true);
-      } else {
-        localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify({
-            date: today,
-            freeRemaining: 3,
-            proRemaining: 50,
-            ultraRemaining: 200,
-            unlockedTier: "free",
-            accessCode: "",
-            usedTrialPreview: false
-          } satisfies CreditStorageState)
-        );
+    // Modals State
+    const [showUpgradeModal, setShowUpgradeModal] = useState<boolean>(false);
+    const [modalTargetTier, setModalTargetTier] = useState<"pro" | "ultra">("pro");
+    const [accessKeyInput, setAccessKeyInput] = useState<string>("");
+    const [keyStatusMsg, setKeyStatusMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+    const [verifyingKey, setVerifyingKey] = useState<boolean>(false);
+
+    // Cleanup typing timer on unmount
+    useEffect(() => {
+      return () => {
+        if (typingTimerRef.current) clearInterval(typingTimerRef.current);
+      };
+    }, []);
+
+    function startTypingAnimation(fullText: string) {
+      if (typingTimerRef.current) {
+        clearInterval(typingTimerRef.current);
+        typingTimerRef.current = null;
       }
-    } catch {
-      // ignore storage errors
+
+      const tokens = fullText.split(/(\s+)/);
+      if (tokens.length <= 2) {
+        setTypedOutputText(fullText);
+        setEditedOutputText(fullText);
+        setIsTypingOutput(false);
+        setTypingProgress(100);
+        return;
+      }
+
+      setOutputTab("clean");
+      setIsTypingOutput(true);
+      setTypedOutputText("");
+      setTypingProgress(4);
+      setGenerationPhase("Scanning AI watermarks & shielding citations...");
+
+      let currentIdx = 0;
+      // Scale step size so any paragraph finishes smoothly in ~1.6 to 2.4 seconds
+      const totalTokens = tokens.length;
+      const stepTokens = Math.max(2, Math.ceil(totalTokens / 55));
+
+      typingTimerRef.current = setInterval(() => {
+        currentIdx = Math.min(totalTokens, currentIdx + stepTokens);
+        const currentSlice = tokens.slice(0, currentIdx).join("");
+        const pct = Math.min(100, Math.round((currentIdx / totalTokens) * 100));
+
+        setTypedOutputText(currentSlice);
+        setEditedOutputText(currentSlice);
+        setTypingProgress(pct);
+
+        if (pct < 32) {
+          setGenerationPhase("Replacing AI footprints with Simple English...");
+        } else if (pct < 72) {
+          setGenerationPhase("Restructuring clauses & optimizing burstiness...");
+        } else {
+          setGenerationPhase("Polishing natural human rhythm...");
+        }
+
+        if (currentIdx >= totalTokens) {
+          if (typingTimerRef.current) {
+            clearInterval(typingTimerRef.current);
+            typingTimerRef.current = null;
+          }
+          setTypedOutputText(fullText);
+          setEditedOutputText(fullText);
+          setTypingProgress(100);
+          setIsTypingOutput(false);
+        }
+      }, 32);
     }
-  }, []);
+
+    function skipTypingAnimation() {
+      if (typingTimerRef.current) {
+        clearInterval(typingTimerRef.current);
+        typingTimerRef.current = null;
+      }
+      if (result) {
+        setTypedOutputText(result.humanizedText);
+        setEditedOutputText(result.humanizedText);
+      }
+      setTypingProgress(100);
+      setIsTypingOutput(false);
+    }
+
+    // Hydrate credits from localStorage & sync latest plans from /api/humanize
+    useEffect(() => {
+      void (async () => {
+        try {
+          const res = await fetch("/api/humanize", { cache: "no-store" });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.plans) {
+              setPlansConfig(data.plans);
+            }
+          }
+        } catch {
+          // Keep initialPlans / fallback
+        }
+      })();
+
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const today = getTodayKey();
+        const defaultFree = initialPlans?.free?.dailyCredits || 3;
+        const defaultPro = initialPlans?.pro?.dailyCredits || 50;
+        const defaultUltra = initialPlans?.ultra?.dailyCredits || 200;
+
+        if (raw) {
+          const parsed = JSON.parse(raw) as Partial<CreditStorageState>;
+          const isSameDay = parsed.date === today;
+          const restoredFree =
+            isSameDay && typeof parsed.freeRemaining === "number" ? parsed.freeRemaining : defaultFree;
+          const restoredPro = typeof parsed.proRemaining === "number" ? parsed.proRemaining : defaultPro;
+          const restoredUltra = typeof parsed.ultraRemaining === "number" ? parsed.ultraRemaining : defaultUltra;
+          const restoredTier =
+            parsed.unlockedTier === "ultra" || parsed.unlockedTier === "pro" ? parsed.unlockedTier : "free";
+
+          setFreeCredits(restoredFree);
+          setProCredits(restoredPro);
+          setUltraCredits(restoredUltra);
+          setUnlockedTier(restoredTier);
+          setActiveTier(restoredTier);
+          if (restoredTier !== "free") {
+            setMode("lit_review");
+            setIntensity("stealth");
+          }
+          if (parsed.accessCode) setSavedAccessCode(parsed.accessCode);
+          if (parsed.usedTrialPreview) setUsedTrialPreview(true);
+        } else {
+          localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({
+              date: today,
+              freeRemaining: defaultFree,
+              proRemaining: defaultPro,
+              ultraRemaining: defaultUltra,
+              unlockedTier: "free",
+              accessCode: "",
+              usedTrialPreview: false
+            } satisfies CreditStorageState)
+          );
+        }
+      } catch {
+        // ignore storage errors
+      }
+  }, [initialPlans]);
 
   function persistState(partial: Partial<CreditStorageState>) {
     try {
@@ -237,7 +402,14 @@ export function HumanizerStudio({ whatsapp }: { whatsapp: string }) {
     return analyzeTextForensics(inputText, activeTier === "ultra" ? freezeKeywords : []);
   }, [inputText, activeTier, freezeKeywords]);
 
-  const currentTierConfig = TIER_CONFIG[activeTier];
+  const currentTierConfig = useMemo(() => {
+    const base = plansConfig[activeTier] || FALLBACK_PLANS[activeTier];
+    if (activeTier !== "free" && subscriberMaxWords) {
+      return { ...base, maxWordsPerRun: subscriberMaxWords };
+    }
+    return base;
+  }, [plansConfig, activeTier, subscriberMaxWords]);
+
   const remainingCredits =
     activeTier === "ultra" ? ultraCredits : activeTier === "pro" ? proCredits : freeCredits;
 
@@ -253,7 +425,7 @@ export function HumanizerStudio({ whatsapp }: { whatsapp: string }) {
       setActiveTier(target);
       setErrorMsg(null);
       if (target === "free") {
-        if (!TIER_CONFIG.free.allowedModes.includes(mode)) setMode("academic");
+        if (!plansConfig.free.allowedModes.includes(mode)) setMode("academic");
         setIntensity("balanced");
       }
     } else {
@@ -337,8 +509,10 @@ export function HumanizerStudio({ whatsapp }: { whatsapp: string }) {
 
     if (inputForensics.wordCount > currentTierConfig.maxWordsPerRun) {
       setErrorMsg(
-        `Your text is ${inputForensics.wordCount.toLocaleString()} words, which exceeds the ${currentTierConfig.name} limit of ${currentTierConfig.maxWordsPerRun.toLocaleString()} words per run. Upgrade to ${activeTier === "free" ? "Academic Pro (2,500 words)" : "Dissertation Ultra (10,000 words)"
-        } to process longer documents.`
+          `Your text is ${inputForensics.wordCount.toLocaleString()} words, which exceeds the ${currentTierConfig.name} limit of ${currentTierConfig.maxWordsPerRun.toLocaleString()} words per run. Upgrade to ${activeTier === "free"
+            ? `${plansConfig.pro.name} (${plansConfig.pro.maxWordsPerRun.toLocaleString()} words)`
+            : `${plansConfig.ultra.name} (${plansConfig.ultra.maxWordsPerRun.toLocaleString()} words)`
+          } to process longer documents.`
       );
       return;
     }
@@ -347,7 +521,7 @@ export function HumanizerStudio({ whatsapp }: { whatsapp: string }) {
       setModalTargetTier(activeTier === "free" ? "pro" : "ultra");
       setShowUpgradeModal(true);
       setErrorMsg(
-        `You have used all ${currentTierConfig.dailyCredits} credits on your ${currentTierConfig.name} plan. Upgrade to Academic Pro or Dissertation Ultra for high-volume academic humanization.`
+          `You have used all ${currentTierConfig.dailyCredits} credits on your ${currentTierConfig.name} plan. Upgrade to ${plansConfig.pro.name} or ${plansConfig.ultra.name} for high-volume academic humanization.`
       );
       return;
     }
@@ -381,8 +555,8 @@ export function HumanizerStudio({ whatsapp }: { whatsapp: string }) {
 
       const humResult = data as HumanizeResult;
       setResult(humResult);
-      setEditedOutputText(humResult.humanizedText);
       setLiveScan(null);
+      startTypingAnimation(humResult.humanizedText);
 
       // Deduct 1 credit
       if (activeTier === "free") {
@@ -430,24 +604,28 @@ export function HumanizerStudio({ whatsapp }: { whatsapp: string }) {
       }
 
       const newTier = data.tier as HumanizerTier;
+      const unlockedCredits = Number(data.credits) || (newTier === "ultra" ? plansConfig.ultra.dailyCredits : plansConfig.pro.dailyCredits);
       setUnlockedTier(newTier);
       setActiveTier(newTier);
       setSavedAccessCode(cleanKey.toUpperCase());
+      if (data.customerName) setSubscriberName(String(data.customerName));
+      if (data.maxWordsPerRun) setSubscriberMaxWords(Number(data.maxWordsPerRun));
+
       if (newTier === "pro") {
-        setProCredits(50);
+        setProCredits(unlockedCredits);
         setMode("lit_review");
         setIntensity("stealth");
-        persistState({ unlockedTier: "pro", proRemaining: 50, accessCode: cleanKey.toUpperCase() });
+        persistState({ unlockedTier: "pro", proRemaining: unlockedCredits, accessCode: cleanKey.toUpperCase() });
       } else if (newTier === "ultra") {
-        setUltraCredits(200);
+        setUltraCredits(unlockedCredits);
         setMode("postgrad");
         setIntensity("stealth");
-        persistState({ unlockedTier: "ultra", ultraRemaining: 200, accessCode: cleanKey.toUpperCase() });
+        persistState({ unlockedTier: "ultra", ultraRemaining: unlockedCredits, accessCode: cleanKey.toUpperCase() });
       }
 
       setKeyStatusMsg({
         type: "ok",
-        text: `Success! ${data.planName} unlocked with ${data.credits} priority credits.`
+        text: `Success! ${data.customerName ? `Welcome ${data.customerName} — ` : ""}${data.planName} unlocked with ${unlockedCredits} credits.`
       });
       setTimeout(() => {
         setShowUpgradeModal(false);
@@ -501,7 +679,7 @@ export function HumanizerStudio({ whatsapp }: { whatsapp: string }) {
       if (!res.ok) throw new Error(data.error || "Failed to generate variation.");
       const humResult = data as HumanizeResult;
       setResult(humResult);
-      setEditedOutputText(humResult.humanizedText);
+      startTypingAnimation(humResult.humanizedText);
     } catch (err: any) {
       setErrorMsg(err.message || "Unable to generate new variation.");
     } finally {
@@ -554,7 +732,7 @@ export function HumanizerStudio({ whatsapp }: { whatsapp: string }) {
     const reportContent = `STHELP VERBAFLOW™ — ACADEMIC AI HUMANIZATION & FORENSIC AUDIT REPORT
 ===================================================================
 Date: ${new Date().toLocaleString()}
-Plan Used: ${TIER_CONFIG[result.tierUsed].name}
+Plan Used: ${plansConfig[result.tierUsed].name}
 Academic Mode: ${result.modeUsed.toUpperCase()} | Intensity: ${result.intensityUsed.toUpperCase()}
 
 1. TELEMETRY SUMMARY (BEFORE VS. AFTER)
@@ -587,12 +765,12 @@ ${result.originalText}
 
   const wa = whatsapp.replace(/\D/g, "");
   const getPlanWaLink = (tierKey: "pro" | "ultra", customNote?: string) => {
-    const plan = TIER_CONFIG[tierKey];
+    const plan = plansConfig[tierKey];
     const msg = encodeURIComponent(
       `✨ *StHelp VerbaFlow™ AI Humanizer — Plan Activation Request*\n\n` +
       `👋 *Hello StHelp Team,*\n` +
       `I would like to activate the *${plan.name}* plan on the StHelp AI Humanizer:\n\n` +
-      `📦 *Selected Plan:* ${plan.name} (${plan.priceLkr}/month or ${plan.singlePassLkr})\n` +
+      `📦 *Selected Plan:* ${plan.name} (${plan.priceLkr} ${plan.billingPeriod} or ${plan.singlePassLkr})\n` +
       `⚡ *Allowance:* ${plan.monthlyWordsLabel}\n` +
       (customNote ? `📝 *Note:* ${customNote}\n` : "") +
       `\nPlease share the payment details and my instant Access Key. Thank you!`
@@ -615,8 +793,8 @@ ${result.originalText}
             >
               <span className="tier-pill-dot free" />
               <div>
-                <strong>Starter Free</strong>
-                <small>400w / run · Limited Credit</small>
+                <strong>{plansConfig.free.name}</strong>
+                <small>{plansConfig.free.maxWordsPerRun.toLocaleString()}w / run · {plansConfig.free.dailyCredits} Credits</small>
               </div>
             </button>
 
@@ -630,9 +808,9 @@ ${result.originalText}
               <span className="tier-pill-dot pro" />
               <div>
                 <strong>
-                  Academic Pro {!canAccessTier("pro") ? <Lock size={12} /> : <CheckCircle2 size={12} />}
+                  {plansConfig.pro.name} {!canAccessTier("pro") ? <Lock size={12} /> : <CheckCircle2 size={12} />}
                 </strong>
-                <small>2,500w / run · LKR 1,900</small>
+                <small>{plansConfig.pro.maxWordsPerRun.toLocaleString()}w / run · {plansConfig.pro.priceLkr}</small>
               </div>
               <span className="tier-pill-tag">Popular</span>
             </button>
@@ -647,9 +825,9 @@ ${result.originalText}
               <span className="tier-pill-dot ultra" />
               <div>
                 <strong>
-                  Dissertation Ultra {!canAccessTier("ultra") ? <Lock size={12} /> : <Crown size={12} />}
+                  {plansConfig.ultra.name} {!canAccessTier("ultra") ? <Lock size={12} /> : <Crown size={12} />}
                 </strong>
-                <small>10,000w / run · LKR 4,500</small>
+                <small>{plansConfig.ultra.maxWordsPerRun.toLocaleString()}w / run · {plansConfig.ultra.priceLkr}</small>
               </div>
               <span className="tier-pill-tag ultra-tag">Ultra</span>
             </button>
@@ -660,6 +838,7 @@ ${result.originalText}
               <div className="credit-meter-top">
                 <span className="credit-plan-label">
                   <Zap size={14} /> {currentTierConfig.name}
+                  {subscriberName ? ` · ${subscriberName}` : ""}
                 </span>
                 <strong className="credit-count-badge">
                   {remainingCredits} / {currentTierConfig.dailyCredits} Credits Left
@@ -669,7 +848,7 @@ ${result.originalText}
                 <div
                   className={`credit-progress-fill ${activeTier}`}
                   style={{
-                    width: `${Math.min(100, Math.round((remainingCredits / currentTierConfig.dailyCredits) * 100))}%`
+                    width: `${Math.min(100, Math.round((remainingCredits / Math.max(1, currentTierConfig.dailyCredits)) * 100))}%`
                   }}
                 />
               </div>
@@ -1171,15 +1350,55 @@ ${result.originalText}
                   </span>
                 </div>
 
-                {/* Tab 1: Clean Editable Text */}
+                {/* Tab 1: Clean Editable Text with Live Typing / Generating Animation */}
                 {outputTab === "clean" && (
                   <div className="clean-output-container">
-                    <textarea
-                      className="humanizer-textarea output-clean-textarea"
-                      value={editedOutputText}
-                      onChange={(e) => setEditedOutputText(e.target.value)}
-                      rows={10}
-                    />
+                    {isTypingOutput && (
+                      <div className="humanizer-typing-banner" role="status" aria-live="polite">
+                        <div className="typing-banner-left">
+                          <span className="typing-pulse-dot" />
+                          <span className="typing-phase-label">{generationPhase}</span>
+                          <strong className="typing-pct-badge">{typingProgress}%</strong>
+                        </div>
+                        <div className="typing-banner-right">
+                          <div className="typing-mini-progress">
+                            <div
+                              className="typing-mini-progress-fill"
+                              style={{ width: `${typingProgress}%` }}
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            className="btn-skip-typing"
+                            onClick={skipTypingAnimation}
+                          >
+                            Skip Animation
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {isTypingOutput ? (
+                      <div
+                        className="humanizer-typing-stream-box"
+                        onClick={skipTypingAnimation}
+                        title="Click anywhere to finish typing immediately"
+                      >
+                        <p className="typing-stream-text">
+                          {typedOutputText}
+                          <span className="humanizer-typing-cursor" aria-hidden="true">
+                            ▋
+                          </span>
+                        </p>
+                      </div>
+                    ) : (
+                      <textarea
+                        className="humanizer-textarea output-clean-textarea"
+                        value={editedOutputText}
+                        onChange={(e) => setEditedOutputText(e.target.value)}
+                        rows={10}
+                      />
+                    )}
                   </div>
                 )}
 
@@ -1250,8 +1469,8 @@ ${result.originalText}
                             <div className="drawer-pro-lock">
                               <Lock size={16} />
                               <span>
-                                Interactive Sentence Rephrasing is an <strong>Academic Pro</strong> &amp;{" "}
-                                <strong>Dissertation Ultra</strong> feature.
+                                Interactive Sentence Rephrasing is an <strong>{plansConfig.pro.name}</strong> &amp;{" "}
+                                <strong>{plansConfig.ultra.name}</strong> feature.
                               </span>
                               <button
                                 type="button"
@@ -1350,6 +1569,7 @@ ${result.originalText}
 
       {/* =====================================================================
           3-TIER PRICING SECTION: FREE LIMITED CREDIT + 2 PAID ADVANCED VERSIONS
+          (Dynamically driven by Admin Panel configuration)
           ===================================================================== */}
       <section className="humanizer-pricing-section" id="humanizer-plans">
         <div className="container">
@@ -1357,7 +1577,7 @@ ${result.originalText}
             <span className="eyebrow">CHOOSE YOUR HUMANIZER EDITION</span>
             <h2>Start with free daily credits. Upgrade for full assignments &amp; dissertations.</h2>
             <p>
-              Every student receives <strong>3 free credits daily</strong> to test short sections. Unlock our two advanced paid editions—<strong>Academic Pro</strong> or <strong>Dissertation Ultra</strong>—for full coursework, deep Turnitin stealth modes, and custom keyword freezing.
+              Every student receives <strong>{plansConfig.free.dailyCredits} free credits daily</strong> to test short sections. Unlock our two advanced paid editions—<strong>{plansConfig.pro.name}</strong> or <strong>{plansConfig.ultra.name}</strong>—for full coursework, deep Turnitin stealth modes, and custom keyword freezing.
             </p>
           </div>
 
@@ -1365,53 +1585,33 @@ ${result.originalText}
             {/* PLAN 1: LIMITED CREDIT FREE VERSION */}
             <article className={`humanizer-plan-card ${activeTier === "free" ? "current-plan" : ""}`}>
               <div className="plan-card-top">
-                <span className="plan-tier-kicker">FREE EDITION · LIMITED CREDIT</span>
-                <h3>Starter Free</h3>
-                <p>For quick paragraph humanization, abstract checks, and testing the AI detector.</p>
+                <span className="plan-tier-kicker">{plansConfig.free.badge}</span>
+                <h3>{plansConfig.free.name}</h3>
+                <p>{plansConfig.free.tagline}</p>
               </div>
 
               <div className="plan-price-block">
-                <strong>LKR 0</strong>
-                <span>/ 3 Free Credits Every Day</span>
+                <strong>{plansConfig.free.priceLkr}</strong>
+                <span>{plansConfig.free.billingPeriod}</span>
               </div>
 
               <div className="plan-allowance-pill">
-                <Zap size={15} /> Up to <strong>400 words per run</strong> (1,200 words/day)
+                <Zap size={15} /> Up to <strong>{plansConfig.free.maxWordsPerRun.toLocaleString()} words per run</strong> ({plansConfig.free.monthlyWordsLabel})
               </div>
 
               <ul className="plan-features-list">
-                <li>
-                  <CheckCircle2 size={16} />
-                  <span>
-                    <strong>3 Free Humanize Credits</strong> refreshed daily
-                  </span>
-                </li>
-                <li>
-                  <CheckCircle2 size={16} />
-                  <span>
-                    <strong>Unlimited Free AI Probability Scans</strong> &amp; Burstiness metrics
-                  </span>
-                </li>
-                <li>
-                  <CheckCircle2 size={16} />
-                  <span>
-                    <strong>2 Academic Modes:</strong> Standard Academic &amp; Concise
-                  </span>
-                </li>
-                <li>
-                  <CheckCircle2 size={16} />
-                  <span>
-                    <strong>Citation Shield™:</strong> Protects APA, Harvard &amp; IEEE references
-                  </span>
-                </li>
-                <li className="muted-feature">
-                  <Lock size={15} />
-                  <span>No Deep Stealth Turnitin mode or Postgraduate register</span>
-                </li>
-                <li className="muted-feature">
-                  <Lock size={15} />
-                  <span>No interactive sentence swapper or custom keyword freeze</span>
-                </li>
+                {plansConfig.free.features.map((feat, idx) => (
+                  <li key={idx}>
+                    <CheckCircle2 size={16} />
+                    <span>{feat}</span>
+                  </li>
+                ))}
+                {!plansConfig.free.allowSentenceAlternatives && (
+                  <li className="muted-feature">
+                    <Lock size={15} />
+                    <span>No interactive sentence swapper or custom keyword freeze</span>
+                  </li>
+                )}
               </ul>
 
               <div className="plan-card-actions">
@@ -1423,66 +1623,39 @@ ${result.originalText}
                     document.getElementById("humanizer-studio")?.scrollIntoView({ behavior: "smooth" });
                   }}
                 >
-                  {activeTier === "free" ? "Currently Active Plan" : "Switch to Starter Free"}
+                  {activeTier === "free" ? "Currently Active Plan" : `Switch to ${plansConfig.free.name}`}
                 </button>
               </div>
             </article>
 
             {/* PLAN 2: PAID ADVANCED VERSION 1 — ACADEMIC PRO */}
             <article className={`humanizer-plan-card featured-pro ${activeTier === "pro" ? "current-plan" : ""}`}>
-              <div className="plan-popular-ribbon">MOST POPULAR · ADVANCED #1</div>
+              <div className="plan-popular-ribbon">{plansConfig.pro.badge}</div>
               <div className="plan-card-top">
                 <span className="plan-tier-kicker">PAID ADVANCED EDITION 01</span>
-                <h3>Academic Pro</h3>
-                <p>Built for undergraduate &amp; postgraduate coursework, essays, and full module reports.</p>
+                <h3>{plansConfig.pro.name}</h3>
+                <p>{plansConfig.pro.tagline}</p>
               </div>
 
               <div className="plan-price-block">
-                <strong>LKR 1,900</strong>
-                <span>/ month · or LKR 1,200 single assignment pass</span>
+                <strong>{plansConfig.pro.priceLkr}</strong>
+                <span>
+                  {plansConfig.pro.billingPeriod} · or {plansConfig.pro.singlePassLkr}
+                </span>
               </div>
 
               <div className="plan-allowance-pill pro">
-                <Flame size={15} /> <strong>50 Priority Credits</strong> · Up to <strong>2,500 words per run</strong>
+                <Flame size={15} /> <strong>{plansConfig.pro.dailyCredits} Priority Credits</strong> · Up to{" "}
+                <strong>{plansConfig.pro.maxWordsPerRun.toLocaleString()} words per run</strong>
               </div>
 
               <ul className="plan-features-list">
-                <li>
-                  <CheckCircle2 size={16} />
-                  <span>
-                    <strong>Up to 125,000 Words/Mo</strong> (2,500 words per single pass)
-                  </span>
-                </li>
-                <li>
-                  <CheckCircle2 size={16} />
-                  <span>
-                    <strong>Deep Stealth Engine v4:</strong> Targets &lt;10% AI score on Turnitin &amp; GPTZero
-                  </span>
-                </li>
-                <li>
-                  <CheckCircle2 size={16} />
-                  <span>
-                    <strong>All 6 Academic Disciplines:</strong> Postgraduate, Literature Review, Methodology &amp; MBA
-                  </span>
-                </li>
-                <li>
-                  <CheckCircle2 size={16} />
-                  <span>
-                    <strong>Interactive Sentence Studio:</strong> Click any sentence for 3 alternative scholarly rewrites
-                  </span>
-                </li>
-                <li>
-                  <CheckCircle2 size={16} />
-                  <span>
-                    <strong>Side-by-Side Diff Viewer &amp; Forensic .DOC Audit Export</strong>
-                  </span>
-                </li>
-                <li>
-                  <CheckCircle2 size={16} />
-                  <span>
-                    <strong>100% Citation, Statistic &amp; Direct Quote Preservation</strong>
-                  </span>
-                </li>
+                {plansConfig.pro.features.map((feat, idx) => (
+                  <li key={idx}>
+                    <CheckCircle2 size={16} />
+                    <span>{feat}</span>
+                  </li>
+                ))}
               </ul>
 
               <div className="plan-card-actions">
@@ -1493,253 +1666,228 @@ ${result.originalText}
                   className="btn btn-coral plan-btn-full"
                 >
                   <WhatsAppIcon />
-                  <span>Get Pro Access Key on WhatsApp</span>
+                  <span>{plansConfig.pro.ctaLabel || "Get Pro Access Key on WhatsApp"}</span>
                 </a>
 
                 <div className="plan-secondary-links">
                   <Link
                     href={`/place-assignment?fromCalc=1&cat=turnitin&catLabel=${encodeURIComponent(
-                      "Academic Pro AI Humanizer"
+                      plansConfig.pro.name
                     )}&title=${encodeURIComponent(
-                      "StHelp VerbaFlow™ — Academic Pro Plan (50 Credits / 2,500w per run)"
-                    )}&level=Undergraduate%20%2F%20Degree&urgency=Express&min=1,200&max=1,900&rawMin=1200&rawMax=1900`}
+                      `StHelp VerbaFlow™ — ${plansConfig.pro.name} (${plansConfig.pro.dailyCredits} Credits / ${plansConfig.pro.maxWordsPerRun.toLocaleString()}w per run)`
+                    )}&level=Undergraduate%20%2F%20Degree&urgency=Express&min=${Math.round(plansConfig.pro.priceNumeric * 0.65).toLocaleString()}&max=${plansConfig.pro.priceNumeric.toLocaleString()}&rawMin=${Math.round(plansConfig.pro.priceNumeric * 0.65)}&rawMax=${plansConfig.pro.priceNumeric}`}
                   >
-                    Order via Portal (PayHere / Bank) ↗
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setModalTargetTier("pro");
-                      setKeyStatusMsg(null);
-                      setShowUpgradeModal(true);
-                    }}
-                  >
-                    Have a Pro Key?
-                  </button>
-                </div>
-              </div>
-            </article>
-
-            {/* PLAN 3: PAID ADVANCED VERSION 2 — DISSERTATION ULTRA */}
-            <article className={`humanizer-plan-card ultra-card ${activeTier === "ultra" ? "current-plan" : ""}`}>
-              <div className="plan-popular-ribbon ultra">RESEARCH &amp; THESIS SUITE · ADVANCED #2</div>
-              <div className="plan-card-top">
-                <span className="plan-tier-kicker">PAID ADVANCED EDITION 02</span>
-                <h3>Dissertation Ultra</h3>
-                <p>Maximum capacity &amp; neural rhythm control for 10,000-word dissertations, FYPs, and journal papers.</p>
-              </div>
-
-              <div className="plan-price-block">
-                <strong>LKR 4,500</strong>
-                <span>/ month · or LKR 3,500 full dissertation pass</span>
-              </div>
-
-              <div className="plan-allowance-pill ultra">
-                <Crown size={15} /> <strong>200 Ultra Credits</strong> · Up to <strong>10,000 words per run</strong>
-              </div>
-
-              <ul className="plan-features-list">
-                <li>
-                  <CheckCircle2 size={16} />
-                  <span>
-                    <strong>Full Chapter &amp; Thesis Capacity:</strong> Up to 10,000 words in a single click
-                  </span>
-                </li>
-                <li>
-                  <CheckCircle2 size={16} />
-                  <span>
-                    <strong>Ultra-Stealth Neural Rhythm Engine:</strong> Deep clause-level burstiness &amp; perplexity engineering
-                  </span>
-                </li>
-                <li>
-                  <CheckCircle2 size={16} />
-                  <span>
-                    <strong>Custom Keyword &amp; Terminology Freeze Lock:</strong> Lock domain terms, variables &amp; statutes
-                  </span>
-                </li>
-                <li>
-                  <CheckCircle2 size={16} />
-                  <span>
-                    <strong>All 6 Modes + Interactive Sentence Swapper + Full Forensic Report</strong>
-                  </span>
-                </li>
-                <li>
-                  <CheckCircle2 size={16} />
-                  <span>
-                    <strong>Priority StHelp Human Editor Support:</strong> Includes 20% off manual Turnitin verification
-                  </span>
-                </li>
-                <li>
-                  <CheckCircle2 size={16} />
-                  <span>
-                    <strong>Multi-Device Access Key</strong> valid across laptop &amp; mobile
-                  </span>
-                </li>
-              </ul>
-
-              <div className="plan-card-actions">
-                <a
-                  href={getPlanWaLink("ultra")}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="btn btn-light plan-btn-full ultra-cta-btn"
+                  Order via Portal (PayHere / Bank) ↗
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModalTargetTier("pro");
+                    setKeyStatusMsg(null);
+                    setShowUpgradeModal(true);
+                  }}
                 >
-                  <WhatsAppIcon />
-                  <span>Get Ultra Access Key on WhatsApp</span>
-                </a>
-
-                <div className="plan-secondary-links">
-                  <Link
-                    href={`/place-assignment?fromCalc=1&cat=turnitin&catLabel=${encodeURIComponent(
-                      "Dissertation Ultra AI Humanizer"
-                    )}&title=${encodeURIComponent(
-                      "StHelp VerbaFlow™ — Dissertation Ultra Plan (200 Credits / 10,000w per run)"
-                    )}&level=Postgraduate%20%2F%20Master's&urgency=Express&min=3,500&max=4,500&rawMin=3500&rawMax=4500`}
-                  >
-                    Order via Portal (PayHere / Bank) ↗
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setModalTargetTier("ultra");
-                      setKeyStatusMsg(null);
-                      setShowUpgradeModal(true);
-                    }}
-                  >
-                    Have an Ultra Key?
-                  </button>
-                </div>
+                  Have a Pro Key?
+                </button>
               </div>
-            </article>
           </div>
-        </div>
-      </section>
+        </article>
 
-      {/* =====================================================================
-          UPGRADE / ACCESS KEY ACTIVATION MODAL
-          ===================================================================== */}
-      {showUpgradeModal && (
-        <div className="humanizer-modal-backdrop" role="dialog" aria-modal="true" aria-label="Unlock Advanced Humanizer Plan">
-          <div className="humanizer-modal-card">
+        {/* PLAN 3: PAID ADVANCED VERSION 2 — DISSERTATION ULTRA */}
+        <article className={`humanizer-plan-card ultra-card ${activeTier === "ultra" ? "current-plan" : ""}`}>
+          <div className="plan-popular-ribbon ultra">{plansConfig.ultra.badge}</div>
+          <div className="plan-card-top">
+            <span className="plan-tier-kicker">PAID ADVANCED EDITION 02</span>
+            <h3>{plansConfig.ultra.name}</h3>
+            <p>{plansConfig.ultra.tagline}</p>
+          </div>
+
+          <div className="plan-price-block">
+            <strong>{plansConfig.ultra.priceLkr}</strong>
+            <span>
+              {plansConfig.ultra.billingPeriod} · or {plansConfig.ultra.singlePassLkr}
+            </span>
+          </div>
+
+          <div className="plan-allowance-pill ultra">
+            <Crown size={15} /> <strong>{plansConfig.ultra.dailyCredits} Ultra Credits</strong> · Up to{" "}
+            <strong>{plansConfig.ultra.maxWordsPerRun.toLocaleString()} words per run</strong>
+          </div>
+
+          <ul className="plan-features-list">
+            {plansConfig.ultra.features.map((feat, idx) => (
+              <li key={idx}>
+                <CheckCircle2 size={16} />
+                <span>{feat}</span>
+              </li>
+            ))}
+          </ul>
+
+          <div className="plan-card-actions">
+            <a
+              href={getPlanWaLink("ultra")}
+              target="_blank"
+              rel="noreferrer"
+              className="btn btn-light plan-btn-full ultra-cta-btn"
+            >
+              <WhatsAppIcon />
+              <span>{plansConfig.ultra.ctaLabel || "Get Ultra Access Key on WhatsApp"}</span>
+            </a>
+
+            <div className="plan-secondary-links">
+              <Link
+                href={`/place-assignment?fromCalc=1&cat=turnitin&catLabel=${encodeURIComponent(
+                      plansConfig.ultra.name
+                )}&title=${encodeURIComponent(
+                      `StHelp VerbaFlow™ — ${plansConfig.ultra.name} (${plansConfig.ultra.dailyCredits} Credits / ${plansConfig.ultra.maxWordsPerRun.toLocaleString()}w per run)`
+                    )}&level=Postgraduate%20%2F%20Master's&urgency=Express&min=${Math.round(plansConfig.ultra.priceNumeric * 0.78).toLocaleString()}&max=${plansConfig.ultra.priceNumeric.toLocaleString()}&rawMin=${Math.round(plansConfig.ultra.priceNumeric * 0.78)}&rawMax=${plansConfig.ultra.priceNumeric}`}
+                  >
+              Order via Portal (PayHere / Bank) ↗
+            </Link>
             <button
               type="button"
-              className="modal-close-btn"
-              onClick={() => setShowUpgradeModal(false)}
-              aria-label="Close modal"
+              onClick={() => {
+                setModalTargetTier("ultra");
+                setKeyStatusMsg(null);
+                setShowUpgradeModal(true);
+              }}
             >
-              <X size={18} />
+              Have an Ultra Key?
             </button>
-
-            <div className="modal-tier-tabs">
-              <button
-                type="button"
-                className={modalTargetTier === "pro" ? "active" : ""}
-                onClick={() => setModalTargetTier("pro")}
-              >
-                <Flame size={15} /> Academic Pro (LKR 1,900)
-              </button>
-              <button
-                type="button"
-                className={modalTargetTier === "ultra" ? "active" : ""}
-                onClick={() => setModalTargetTier("ultra")}
-              >
-                <Crown size={15} /> Dissertation Ultra (LKR 4,500)
-              </button>
-            </div>
-
-            <div className="modal-body-content">
-              <span className="eyebrow">
-                {modalTargetTier === "ultra" ? "ADVANCED EDITION #2 · THESIS SUITE" : "ADVANCED EDITION #1 · MOST POPULAR"}
-              </span>
-              <h3>Unlock {TIER_CONFIG[modalTargetTier].name}</h3>
-              <p>{TIER_CONFIG[modalTargetTier].tagline}</p>
-
-              <div className="modal-highlights-box">
-                <div>
-                  <strong>{TIER_CONFIG[modalTargetTier].maxWordsPerRun.toLocaleString()} words</strong>
-                  <small>Max per run</small>
-                </div>
-                <div>
-                  <strong>{TIER_CONFIG[modalTargetTier].dailyCredits} credits</strong>
-                  <small>Priority allowance</small>
-                </div>
-                <div>
-                  <strong>{TIER_CONFIG[modalTargetTier].priceLkr}</strong>
-                  <small>{TIER_CONFIG[modalTargetTier].singlePassLkr}</small>
-                </div>
-              </div>
-
-              {/* Enter Access Key Form */}
-              <form onSubmit={handleVerifyAccessKey} className="modal-key-form">
-                <label htmlFor="humanizer-key-input">
-                  <KeyRound size={14} /> Already received an Access Key from StHelp?
-                </label>
-                <div className="key-input-row">
-                  <input
-                    id="humanizer-key-input"
-                    type="text"
-                    placeholder="Enter Access Key (e.g. STHELP-PRO-2026)..."
-                    value={accessKeyInput}
-                    onChange={(e) => setAccessKeyInput(e.target.value)}
-                  />
-                  <button type="submit" disabled={verifyingKey}>
-                    <Unlock size={15} />
-                    <span>{verifyingKey ? "Checking..." : "Activate"}</span>
-                  </button>
-                </div>
-                {keyStatusMsg && (
-                  <p className={`key-feedback ${keyStatusMsg.type}`}>{keyStatusMsg.text}</p>
-                )}
-              </form>
-
-              {/* Free 2-Credit Preview Trial Button for Evaluators */}
-              {!usedTrialPreview && unlockedTier === "free" && (
-                <div className="modal-preview-trial-box">
-                  <div>
-                    <strong>Want to test {TIER_CONFIG[modalTargetTier].name} features first?</strong>
-                    <small>Activate a complimentary 2-credit preview pass right now in your browser.</small>
-                  </div>
-                  <button
-                    type="button"
-                    className="btn-trial-preview"
-                    onClick={() => handleActivateOneRunPreview(modalTargetTier)}
-                  >
-                    <Sparkles size={14} /> Try 2 Free {modalTargetTier === "ultra" ? "Ultra" : "Pro"} Credits
-                  </button>
-                </div>
-              )}
-
-              <div className="modal-purchase-actions">
-                <a
-                  href={getPlanWaLink(modalTargetTier)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="btn btn-coral modal-wa-btn"
-                >
-                  <WhatsAppIcon />
-                  <span>Get Instant Access Key via WhatsApp</span>
-                </a>
-
-                <Link
-                  href={`/place-assignment?fromCalc=1&cat=turnitin&catLabel=${encodeURIComponent(
-                    TIER_CONFIG[modalTargetTier].name
-                  )}&title=${encodeURIComponent(
-                    `StHelp VerbaFlow™ — ${TIER_CONFIG[modalTargetTier].name} Activation`
-                  )}&level=Undergraduate%20%2F%20Degree&urgency=Express&min=${modalTargetTier === "ultra" ? "3,500" : "1,200"
-                    }&max=${modalTargetTier === "ultra" ? "4,500" : "1,900"}&rawMin=${modalTargetTier === "ultra" ? "3500" : "1200"
-                    }&rawMax=${modalTargetTier === "ultra" ? "4500" : "1900"}`}
-                  className="btn btn-dark modal-portal-btn"
-                  onClick={() => setShowUpgradeModal(false)}
-                >
-                  <span>Order via StHelp Portal</span>
-                  <ArrowRight size={16} />
-                </Link>
-              </div>
-            </div>
           </div>
         </div>
-      )}
+      </article>
     </div>
+        </div >
+      </section >
+
+  {/* =====================================================================
+          UPGRADE / ACCESS KEY ACTIVATION MODAL
+          ===================================================================== */}
+  {
+    showUpgradeModal && (
+      <div className="humanizer-modal-backdrop" role="dialog" aria-modal="true" aria-label="Unlock Advanced Humanizer Plan">
+        <div className="humanizer-modal-card">
+          <button
+            type="button"
+            className="modal-close-btn"
+            onClick={() => setShowUpgradeModal(false)}
+            aria-label="Close modal"
+          >
+            <X size={18} />
+          </button>
+
+          <div className="modal-tier-tabs">
+            <button
+              type="button"
+              className={modalTargetTier === "pro" ? "active" : ""}
+              onClick={() => setModalTargetTier("pro")}
+            >
+              <Flame size={15} /> {plansConfig.pro.name} ({plansConfig.pro.priceLkr})
+            </button>
+            <button
+              type="button"
+              className={modalTargetTier === "ultra" ? "active" : ""}
+              onClick={() => setModalTargetTier("ultra")}
+            >
+              <Crown size={15} /> {plansConfig.ultra.name} ({plansConfig.ultra.priceLkr})
+            </button>
+          </div>
+
+          <div className="modal-body-content">
+            <span className="eyebrow">
+              {plansConfig[modalTargetTier].badge}
+            </span>
+            <h3>Unlock {plansConfig[modalTargetTier].name}</h3>
+            <p>{plansConfig[modalTargetTier].tagline}</p>
+
+            <div className="modal-highlights-box">
+              <div>
+                <strong>{plansConfig[modalTargetTier].maxWordsPerRun.toLocaleString()} words</strong>
+                <small>Max per run</small>
+              </div>
+              <div>
+                <strong>{plansConfig[modalTargetTier].dailyCredits} credits</strong>
+                <small>Priority allowance</small>
+              </div>
+              <div>
+                <strong>{plansConfig[modalTargetTier].priceLkr}</strong>
+                <small>{plansConfig[modalTargetTier].singlePassLkr}</small>
+              </div>
+            </div>
+
+            {/* Enter Access Key Form */}
+            <form onSubmit={handleVerifyAccessKey} className="modal-key-form">
+              <label htmlFor="humanizer-key-input">
+                <KeyRound size={14} /> Already received an Access Key from StHelp?
+              </label>
+              <div className="key-input-row">
+                <input
+                  id="humanizer-key-input"
+                  type="text"
+                  placeholder="Enter Access Key (e.g. STHELP-PRO-2026)..."
+                  value={accessKeyInput}
+                  onChange={(e) => setAccessKeyInput(e.target.value)}
+                />
+                <button type="submit" disabled={verifyingKey}>
+                  <Unlock size={15} />
+                  <span>{verifyingKey ? "Checking..." : "Activate"}</span>
+                </button>
+              </div>
+              {keyStatusMsg && (
+                <p className={`key-feedback ${keyStatusMsg.type}`}>{keyStatusMsg.text}</p>
+              )}
+            </form>
+
+            {/* Free 2-Credit Preview Trial Button for Evaluators */}
+            {!usedTrialPreview && unlockedTier === "free" && (
+              <div className="modal-preview-trial-box">
+                <div>
+                  <strong>Want to test {plansConfig[modalTargetTier].name} features first?</strong>
+                  <small>Activate a complimentary 2-credit preview pass right now in your browser.</small>
+                </div>
+                <button
+                  type="button"
+                  className="btn-trial-preview"
+                  onClick={() => handleActivateOneRunPreview(modalTargetTier)}
+                >
+                  <Sparkles size={14} /> Try 2 Free {modalTargetTier === "ultra" ? "Ultra" : "Pro"} Credits
+                </button>
+              </div>
+            )}
+
+            <div className="modal-purchase-actions">
+              <a
+                href={getPlanWaLink(modalTargetTier)}
+                target="_blank"
+                rel="noreferrer"
+                className="btn btn-coral modal-wa-btn"
+              >
+                <WhatsAppIcon />
+                <span>Get Instant Access Key via WhatsApp</span>
+              </a>
+
+              <Link
+                href={`/place-assignment?fromCalc=1&cat=turnitin&catLabel=${encodeURIComponent(
+                    plansConfig[modalTargetTier].name
+                )}&title=${encodeURIComponent(
+                    `StHelp VerbaFlow™ — ${plansConfig[modalTargetTier].name} Activation`
+                  )}&level=Undergraduate%20%2F%20Degree&urgency=Express&min=${Math.round(plansConfig[modalTargetTier].priceNumeric * 0.7).toLocaleString()
+              }&max=${plansConfig[modalTargetTier].priceNumeric.toLocaleString()}&rawMin=${Math.round(plansConfig[modalTargetTier].priceNumeric * 0.7)
+              }&rawMax=${plansConfig[modalTargetTier].priceNumeric}`}
+              className="btn btn-dark modal-portal-btn"
+              onClick={() => setShowUpgradeModal(false)}
+                >
+              <span>Order via StHelp Portal</span>
+              <ArrowRight size={16} />
+            </Link>
+          </div>
+        </div>
+      </div>
+        </div >
+      )
+  }
+    </div >
   );
 }
 

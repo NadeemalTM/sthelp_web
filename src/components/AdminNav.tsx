@@ -9,13 +9,15 @@ import {
   ExternalLink,
   LayoutDashboard,
   LogOut,
-  Settings2
+  Settings2,
+  Sparkles
 } from "lucide-react";
 
 const navigation = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard, match: (path: string) => path === "/admin" },
   { href: "/admin#assignments", label: "Assignments", icon: ClipboardList, match: (path: string) => path.startsWith("/admin/assignments") },
   { href: "/admin/pricing", label: "Pricing", icon: BadgeDollarSign, match: (path: string) => path.startsWith("/admin/pricing") },
+  { href: "/admin/humanizer", label: "AI Humanizer", icon: Sparkles, match: (path: string) => path.startsWith("/admin/humanizer") },
   { href: "/admin/content", label: "Website", icon: Settings2, match: (path: string) => path.startsWith("/admin/content") }
 ];
 

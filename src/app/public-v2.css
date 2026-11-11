@@ -5093,10 +5093,135 @@ main.public-site-v2 .transformations-summary-bar span {
 main.public-site-v2 .clean-output-container {
   flex: 1;
   display: flex;
+  flex-direction: column;
 }
 
 main.public-site-v2 .output-clean-textarea {
   min-height: 250px;
+}
+
+/* Live Typing / Generating Animation in Output Pane */
+main.public-site-v2 .humanizer-typing-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 16px;
+  background: linear-gradient(90deg, #102a20 0%, #194433 100%);
+  color: #e8fdf3;
+  font-size: .76rem;
+  border-bottom: 1px solid rgba(56, 227, 133, .28);
+  flex-wrap: wrap;
+}
+
+main.public-site-v2 .typing-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+main.public-site-v2 .typing-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #38e385;
+  box-shadow: 0 0 10px #38e385;
+  animation: humanizerPulseDot 1s ease-in-out infinite;
+}
+
+main.public-site-v2 .typing-phase-label {
+  font-weight: 700;
+  letter-spacing: .01em;
+}
+
+main.public-site-v2 .typing-pct-badge {
+  background: rgba(56, 227, 133, .2);
+  color: #6ff5aa;
+  padding: 2px 7px;
+  border-radius: 99px;
+  font-size: .7rem;
+  font-weight: 800;
+}
+
+main.public-site-v2 .typing-banner-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+main.public-site-v2 .typing-mini-progress {
+  width: 90px;
+  height: 5px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, .18);
+  overflow: hidden;
+}
+
+main.public-site-v2 .typing-mini-progress-fill {
+  height: 100%;
+  background: #38e385;
+  transition: width .08s linear;
+}
+
+main.public-site-v2 .btn-skip-typing {
+  padding: 3px 9px;
+  font-size: .69rem;
+  font-weight: 800;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, .28);
+  background: rgba(255, 255, 255, .1);
+  color: #fff;
+  cursor: pointer;
+  transition: background .15s ease;
+}
+
+main.public-site-v2 .btn-skip-typing:hover {
+  background: rgba(255, 255, 255, .22);
+}
+
+main.public-site-v2 .humanizer-typing-stream-box {
+  flex: 1;
+  min-height: 250px;
+  padding: 18px;
+  background: linear-gradient(180deg, rgba(233, 245, 236, .38) 0%, rgba(255, 253, 248, 0) 100%);
+  cursor: pointer;
+}
+
+main.public-site-v2 .typing-stream-text {
+  margin: 0;
+  font-family: Aptos, "Segoe UI", sans-serif;
+  font-size: .95rem;
+  line-height: 1.72;
+  color: var(--public-ink);
+  white-space: pre-wrap;
+}
+
+main.public-site-v2 .humanizer-typing-cursor {
+  display: inline-block;
+  margin-left: 3px;
+  color: #1f7a55;
+  font-weight: 900;
+  animation: humanizerCursorBlink .65s steps(2, start) infinite;
+}
+
+@keyframes humanizerCursorBlink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes humanizerPulseDot {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.35);
+    opacity: .55;
+  }
 }
 
 main.public-site-v2 .diff-output-container,
