@@ -357,32 +357,32 @@ export function analyzeTextForensics(text: string, customFrozenWords: string[] =
     }
 
     if (hasDashOrSemicolon && !/—like\s+/i.test(s)) sAiScore -= 14;
-      if (/^(Where|Rather than|While|Although|Still|Even so|Yet|And|But|Most|Instead of|Instead,|It’s|It's|There are|Compared with|More than|The uni|To fix|To lower|To cut|As you|If you|Remote work)\b/i.test(s)) {
-        sAiScore -= 13;
-      }
-        if (/\b(?:it’s|it's|don’t|don't|you’re|you're|that’s|that's|gives way to|refers to teaching|is home to|that flow around it|for example—|learns through|budget on your own|set foot on|brand new|quietly powering|covers some|was declared|was built by|cut straight into|still draws|remarkable feat of|goes up and down|store extra energy|cuts reliance|keeps .* steady|cutting out tiring|find it hard to match|that way, nobody|soak up a lot of|keeping .* trapped|for hours after the sun goes down|making people|putting pressure on|air quality that people breathe|can both|helps both|seldom start|take advantage of|does far more than just|starts out on|allows workers flexibility)\b/i.test(s)) {
-          sAiScore -= 14;
-        }
-        if (/\([A-Z][A-Za-z\s&.,]+?(?:19|20)\d{2}/.test(s) || /\[\d+\]/.test(s)) {
-          sAiScore -= 6;
-        }
-        if (sLen <= 14 || sLen >= 28) {
-          sAiScore -= 11;
-        }
+    if (/^(Where|Rather than|While|Although|Still|Even so|Yet|And|But|Most|Instead of|Instead,|It’s|It's|There are|Compared with|More than|The uni|To fix|To lower|To cut|As you|If you|Remote work)\b/i.test(s)) {
+      sAiScore -= 13;
+    }
+    if (/\b(?:it’s|it's|don’t|don't|you’re|you're|that’s|that's|gives way to|refers to teaching|is home to|that flow around it|for example—|learns through|budget on your own|set foot on|brand new|quietly powering|covers some|was declared|was built by|cut straight into|still draws|remarkable feat of|goes up and down|store extra energy|cuts reliance|keeps .* steady|cutting out tiring|find it hard to match|that way, nobody|soak up a lot of|keeping .* trapped|for hours after the sun goes down|making people|putting pressure on|air quality that people breathe|can both|helps both|seldom start|take advantage of|does far more than just|starts out on|allows workers flexibility)\b/i.test(s)) {
+      sAiScore -= 14;
+    }
+    if (/\([A-Z][A-Za-z\s&.,]+?(?:19|20)\d{2}/.test(s) || /\[\d+\]/.test(s)) {
+      sAiScore -= 6;
+    }
+    if (sLen <= 14 || sLen >= 28) {
+      sAiScore -= 11;
+    }
 
-        const clampedScore = Math.max(3, Math.min(98, Math.round(sAiScore)));
-        const riskLevel: "low" | "medium" | "high" =
-          clampedScore >= 58 ? "high" : clampedScore >= 34 ? "medium" : "low";
+    const clampedScore = Math.max(3, Math.min(98, Math.round(sAiScore)));
+    const riskLevel: "low" | "medium" | "high" =
+      clampedScore >= 58 ? "high" : clampedScore >= 34 ? "medium" : "low";
 
-        return {
-          index: idx,
-          text: s,
-          wordCount: sLen,
-          aiScore: clampedScore,
-          riskLevel,
-          flags: flags.slice(0, 3)
-        };
-      });
+    return {
+      index: idx,
+      text: s,
+      wordCount: sLen,
+      aiScore: clampedScore,
+      riskLevel,
+      flags: flags.slice(0, 3)
+    };
+  });
 
   // Calculate Burstiness
   let burstinessScore = 54;
