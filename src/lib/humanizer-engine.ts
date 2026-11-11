@@ -1878,9 +1878,11 @@ function restructureSentenceSyntax(
   }
 
   if (!restructured) {
-    const universalTailMatch = out.match(
-      /^ (.{ 18, 140} ?), \s+(?: thereby\s +)?(? !including\b | such\s + as\b | according\b | depending\b | ranging\b | starting\b | beginning\b | adjusting\b | laughing\b | desperately\b | scrambling\b | keeping\b | making\b) ([a - z]{ 4, 15 }ing) \s + ([^,.;?!]{ 8, 115 }) (\.| !|\?) $ / i
-    );
+    const universalTailRegex = new RegExp(
+        "^(.{18,140}?),\\s+(?:thereby\\s+)?(?!including\\b|such\\s+as\\b|according\\b|depending\\b|ranging\\b|starting\\b|beginning\\b|adjusting\\b|laughing\\b|desperately\\b|scrambling\\b|keeping\\b|making\\b)([a-z]{4,15}ing)\\s+([^,.;?!]{8,115})(\\.|!|\\?)$",
+        "i"
+      );
+    const universalTailMatch = out.match(universalTailRegex);
     if (universalTailMatch) {
       const mainClause = universalTailMatch[1].trim();
       const ingWord = universalTailMatch[2].toLowerCase();
